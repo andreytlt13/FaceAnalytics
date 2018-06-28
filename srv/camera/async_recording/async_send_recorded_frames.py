@@ -27,7 +27,7 @@ frame_type = config[FRAME_TYPE_PROPERTY]
 frames_dir = config[FRAMES_DIR_PROPERTY]
 
 # Send frames
-for path in [img for img in glob.glob(frames_dir + '*' + frame_type)]:
+for path in glob.glob(frames_dir + '*' + frame_type):
     frame = cv2.imread(path)
     # encode frame as frame_type
     _, img_encoded = cv2.imencode(frame_type, frame)

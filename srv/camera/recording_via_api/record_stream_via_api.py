@@ -12,7 +12,6 @@ CONTENT_TYPE_PROPERTY = 'api_request_content_type'
 DEFAULT_SECTION = 'DEFAULT'
 FRAME_INDEX_PROPERTY = 'frame_index'
 FRAME_TYPE_PROPERTY = 'frame_type'
-FRAMES_DIR_PROPERTY = 'frames_dir'
 LOG_LEVEL = logging.DEBUG
 LOG_PATH_PROPERTY = 'log_path'
 
