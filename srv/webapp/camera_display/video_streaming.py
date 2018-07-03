@@ -2,9 +2,11 @@
 import cv2
 import flask
 
-CascadePath = 'haarcascade_face.xml'
-face_cascade = cv2.CascadeClassifier(CascadePath)
-video_capture = cv2.VideoCapture(0)
+from srv.camera_stream.opencv_read_stream import Camera
+from srv.video_processing.haar_cascade import FaceDetector
+
+CAMERA_URL_PARAMETER = 'camera_url'
+FRAME_TYPE = '.jpg'
 
 app = flask.Flask(__name__)
 
@@ -14,33 +16,25 @@ def index():
     return flask.render_template('index.html')
 
 
-def generate_stream():
-
+def generate_stream(camera):
     while True:
-        _, frame = video_capture.read()
-
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
-        faces = face_cascade.detectMultiScale(
-            gray,
-            scaleFactor=1.1,
-            minNeighbors=5,
-            minSize=(30, 30)
-        )
-
+        _, frame = camera.get_frame()
+        faces = FaceDetector.detect(frame)
         for (x, y, w, h) in faces:
             cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
-        cv2.imwrite('frame.jpg', frame)
+        _, img_encoded = cv2.imencode(FRAME_TYPE, frame)
 
         yield (b'--frame\r\n'
-               b'Content-Type: image/jpeg\r\n\r\n' + open('frame.jpg', 'rb').read() + b'\r\n')
+               b'Content-Type: image/jpeg\r\n\r\n' + img_encoded.tobytes() + b'\r\n')
 
 
 @app.route('/video_feed')
 def video_feed():
-    return flask.Response(generate_stream(),
-                          mimetype='multipart/x-mixed-replace; boundary=frame')
+    return flask.Response(
+        generate_stream(Camera("0")),
+        mimetype='multipart/x-mixed-replace; boundary=frame'
+    )
 
 
 if __name__ == '__main__':
