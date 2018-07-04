@@ -1,6 +1,6 @@
 import cv2
 
-CASCADE_CLASSIFIER = cv2.CascadeClassifier('../../video_processing/haar_cascade_face.xml')
+CASCADE_CLASSIFIER = cv2.CascadeClassifier('../video_processing/haar_cascade_face.xml')
 
 
 class FaceDetector:

@@ -5,15 +5,30 @@ import flask
 from srv.camera_stream.opencv_read_stream import Camera
 from srv.video_processing.haar_cascade import FaceDetector
 
-CAMERA_URL_PARAMETER = 'camera_url'
-FRAME_TYPE = '.jpg'
-
 app = flask.Flask(__name__)
 
 
 @app.route('/')
 def index():
     return flask.render_template('index.html')
+
+
+@app.route('/analyse', methods=['POST'])
+def analyse():
+    return flask.render_template(
+        'response.html',
+        cam_url=flask.request.form.get('camera_url')
+    )
+
+
+@app.route('/video_stream', methods=['GET'])
+def video_stream():
+    return flask.Response(
+        generate_stream(
+            Camera(int(flask.request.args.get('url')))
+        ),
+        mimetype='multipart/x-mixed-replace; boundary=frame'
+    )
 
 
 def generate_stream(camera):
@@ -23,19 +38,11 @@ def generate_stream(camera):
         for (x, y, w, h) in faces:
             cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
-        _, img_encoded = cv2.imencode(FRAME_TYPE, frame)
+        _, img_encoded = cv2.imencode('.jpg', frame)
 
         yield (b'--frame\r\n'
                b'Content-Type: image/jpeg\r\n\r\n' + img_encoded.tobytes() + b'\r\n')
 
 
-@app.route('/video_feed')
-def video_feed():
-    return flask.Response(
-        generate_stream(Camera("0")),
-        mimetype='multipart/x-mixed-replace; boundary=frame'
-    )
-
-
-if __name__ == '__main__':
+def run():
     app.run(port='9090', debug=True)

@@ -7,7 +7,7 @@
 <div id="header">
     <h1>Video Streaming Demonstration</h1>
 </div>
-<img src="/static/images/noise.jpg" id="stream">
+<img src="{{ url_for('video_stream', url=cam_url) }}" id="stream"/>
 <textarea rows="25" cols="70" id="text">
             There is nobody there yet :(
         </textarea>
