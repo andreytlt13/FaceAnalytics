@@ -45,4 +45,4 @@ def generate_stream(camera):
 
 
 def run():
-    app.run(port='9090', debug=True)
+    app.run(port=9090, debug=True)
