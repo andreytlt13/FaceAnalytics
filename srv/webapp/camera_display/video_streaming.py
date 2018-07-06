@@ -6,7 +6,7 @@ import srv.models as face_recognition
 from srv.camera_stream.opencv_read_stream import Camera
 from srv.video_processing.haar_cascade import FaceDetector
 
-andreym_image = face_recognition.load_image_file("srv/webapp/photo/andrey_m.jpg")
+andreym_image = face_recognition.load_image_file("srv/webapp/photo/simon.jpg")
 andreym_face_encoding = face_recognition.face_encodings(andreym_image)[0]
 
 known_face_encodings = [
@@ -14,7 +14,7 @@ known_face_encodings = [
 ]
 
 known_face_names = [
-    "Andrey_M"
+    "Is it Simon?"
 ]
 
 face_locations = []
