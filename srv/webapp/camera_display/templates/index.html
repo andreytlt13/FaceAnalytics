@@ -1,20 +1,49 @@
 <html>
 <head>
-    <title>Video Stream</title>
-    <link rel="stylesheet" href='../static/style.css'/>
+    <title>Face Analytics</title>
+    <link rel="stylesheet" href='../static/css/style.css'/>
+
+    <script src="http://code.jquery.com/jquery-latest.min.js"></script>
+    <script>
+        $(document).ready(setInterval(function () {
+            $.ajax({
+                type: 'GET',
+                url: 'text_stream',
+                dataType: "TEXT",
+                success: function (result) {
+                    $("<div />").text(result).appendTo("#tail")
+                }
+            });
+        }, 1000 * 60));
+
+
+
+
+
+
+
+
+
+
+
+    </script>
 </head>
 <body>
 <div id="header">
-    <h1>Video Streaming Demonstration</h1>
+    <h1>Face Analytics Demonstration</h1>
 </div>
-<img src="/static/images/noise.jpg" id="stream">
-<textarea rows="25" cols="70" id="text">
-            There is nobody there yet :(
-        </textarea>
-<form action="{{ url_for('analyse') }}" method="POST">
+
+<form action="{{ url_for('analyse') }}" method="POST" id="stream_f">
     Web-cam URL:<br>
+    <img src="{{ img_path }}" id="stream">
+
+    <div id="tail">
+
+    </div>
+
     <input type="text" name="camera_url" id="url_in">
     <input type="submit" value="Go" id="submit">
 </form>
+
 </body>
 </html>

@@ -4,7 +4,7 @@ import cv2
 class Camera:
     def __init__(self, camera_url) -> None:
         self.camera_id = camera_url
-        self.capture = cv2.VideoCapture(0) #int(self.camera_id)
+        self.capture = cv2.VideoCapture(int(self.camera_id))
 
     def __del__(self):
         self.capture.release()

@@ -1,10 +1,11 @@
 #!/usr/bin/env python
+from datetime import datetime
+
 import cv2
 import flask
-import srv.models as face_recognition
 
+import srv.models as face_recognition
 from srv.camera_stream.opencv_read_stream import Camera
-from srv.video_processing.haar_cascade import FaceDetector
 
 andreym_image = face_recognition.load_image_file("srv/webapp/photo/simon.jpg")
 andreym_face_encoding = face_recognition.face_encodings(andreym_image)[0]
@@ -22,34 +23,36 @@ face_encodings = []
 face_names = []
 process_this_frame = True
 
+log_time = 0
+
 app = flask.Flask(__name__)
 
 
 @app.route('/')
 def index():
-    return flask.render_template('index.html')
+    return flask.render_template(
+        'index.html',
+        img_path='/static/images/noise.jpg'
+    )
 
 
 @app.route('/analyse', methods=['POST'])
 def analyse():
     return flask.render_template(
-        'response.html',
-        cam_url=flask.request.form.get('camera_url')
+        'index.html',
+        img_path='video_stream?camera_url=' + flask.request.form.get('camera_url')
     )
 
 
 @app.route('/video_stream', methods=['GET'])
 def video_stream():
     return flask.Response(
-        generate_stream(
-            Camera(int(flask.request.args.get('url')))
-        ),
+        generate_stream(Camera(int(flask.request.args.get('camera_url')))),
         mimetype='multipart/x-mixed-replace; boundary=frame'
     )
 
 
 def generate_stream(camera):
-
     process_this_frame = True
 
     while True:
@@ -62,6 +65,7 @@ def generate_stream(camera):
             face_locations = face_recognition.face_locations(rgb_small_frame)
             face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
 
+            out = open('camera_display/log/faces_log.txt', 'a+')
             face_names = []
             for face_encoding in face_encodings:
                 matches = face_recognition.compare_faces(known_face_encodings, face_encoding)
@@ -72,6 +76,20 @@ def generate_stream(camera):
                     name = known_face_names[first_match_index]
 
                 face_names.append(name)
+
+                global log_time
+                current_time = datetime.now()
+                minutes_since_last_log = (current_time.timestamp() - log_time) // 60000
+                # log every minute
+                if minutes_since_last_log >= 1:
+                    log_time = current_time.timestamp()
+                    out.write(
+                        name + ' was there at '
+                        + current_time.strftime('%H:%M')[0:5]
+                        + ' on ' + str(current_time.date()) + '\n'
+                    )
+
+            out.close()
 
         process_this_frame = not process_this_frame
 
@@ -97,5 +115,17 @@ def generate_stream(camera):
                b'Content-Type: image/jpeg\r\n\r\n' + img_encoded.tobytes() + b'\r\n')
 
 
+@app.route('/text_stream', methods=['GET'])
+def text_stream():
+    faces = open('camera_display/log/faces_log.txt', 'r')
+    objects_info = faces.readlines()[-1]
+    faces.close()
+    return flask.Response(
+        objects_info,
+        mimetype='text/xml'
+    )
+
+
 def run():
-    app.run(port=9090, debug=True)
+    if __name__ == "main":
+        app.run(port=9090, debug=True)
