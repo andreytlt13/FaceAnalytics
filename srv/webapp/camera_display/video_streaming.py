@@ -1,10 +1,12 @@
 #!/usr/bin/env python
+from datetime import datetime
+
 import cv2
 import flask
-import srv.models as face_recognition
+from flask_restful.representations import json
 
+import srv.models as face_recognition
 from srv.camera_stream.opencv_read_stream import Camera
-from srv.video_processing.haar_cascade import FaceDetector
 
 andreym_image = face_recognition.load_image_file("srv/webapp/photo/simon.jpg")
 andreym_face_encoding = face_recognition.face_encodings(andreym_image)[0]
@@ -22,34 +24,37 @@ face_encodings = []
 face_names = []
 process_this_frame = True
 
+log_time = 0
+last_read_row = ''
+
 app = flask.Flask(__name__)
 
 
 @app.route('/')
 def index():
-    return flask.render_template('index.html')
+    return flask.render_template(
+        'index.html',
+        img_path='/static/images/noise.jpg'
+    )
 
 
 @app.route('/analyse', methods=['POST'])
 def analyse():
     return flask.render_template(
-        'response.html',
-        cam_url=flask.request.form.get('camera_url')
+        'index.html',
+        img_path='video_stream?camera_url=' + flask.request.form.get('camera_url')
     )
 
 
 @app.route('/video_stream', methods=['GET'])
 def video_stream():
     return flask.Response(
-        generate_stream(
-            Camera(int(flask.request.args.get('url')))
-        ),
+        generate_stream(Camera(int(flask.request.args.get('camera_url')))),
         mimetype='multipart/x-mixed-replace; boundary=frame'
     )
 
 
 def generate_stream(camera):
-
     process_this_frame = True
 
     while True:
@@ -72,6 +77,13 @@ def generate_stream(camera):
                     name = known_face_names[first_match_index]
 
                 face_names.append(name)
+
+            # log results
+            log_msg_builder = ''
+            for name in face_names:
+                log_msg_builder += name + ', '
+            log_msg_builder = log_msg_builder[:-2]  # truncate last ', '
+            log_faces(log_msg_builder)
 
         process_this_frame = not process_this_frame
 
@@ -97,5 +109,40 @@ def generate_stream(camera):
                b'Content-Type: image/jpeg\r\n\r\n' + img_encoded.tobytes() + b'\r\n')
 
 
+def log_faces(msg):
+    out = open('camera_display/log/faces_log.txt', 'a+')
+    global log_time
+    current_time = datetime.now()
+    minutes_since_last_log = (current_time.timestamp() - log_time) / 10
+    # log every 10 seconds
+    if minutes_since_last_log >= 1:
+        log_time = current_time.timestamp()
+        are_many_people = len(msg.split(',')) > 10
+        out.write(
+            '\n' + msg + (' were ' if are_many_people else ' was ') + 'there at '
+            + current_time.strftime('%H:%M:%S')[0:8]
+            + ' on ' + str(current_time.date())
+        )
+    out.close()
+
+
+@app.route('/text_stream', methods=['GET'])
+def text_stream():
+    faces = open('camera_display/log/faces_log.txt', 'r')
+    objects_info = faces.readlines()[-1]
+    faces.close()
+
+    global last_read_row
+    if last_read_row == objects_info:
+        return json.dumps({'success': False}), 400, {'ContentType': 'application/json'}
+
+    last_read_row = objects_info
+    return flask.Response(
+        objects_info,
+        mimetype='text/xml'
+    )
+
+
 def run():
-    app.run(port=9090, debug=True)
+    if __name__ == "main":
+        app.run(port=9090, debug=True)
