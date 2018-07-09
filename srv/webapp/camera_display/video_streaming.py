@@ -3,20 +3,24 @@ from datetime import datetime
 
 import cv2
 import flask
-from flask_restful.representations import json
 
 import srv.models as face_recognition
 from srv.camera_stream.opencv_read_stream import Camera
 
-andreym_image = face_recognition.load_image_file("srv/webapp/photo/simon.jpg")
-andreym_face_encoding = face_recognition.face_encodings(andreym_image)[0]
+andrey_image = face_recognition.load_image_file("srv/webapp/photo/andrey.jpg")
+andrey_face_encoding = face_recognition.face_encodings(andrey_image)[0]
+
+simon_image = face_recognition.load_image_file("srv/webapp/photo/simon.jpg")
+simon_face_encoding = face_recognition.face_encodings(simon_image)[0]
 
 known_face_encodings = [
-    andreym_face_encoding
+    andrey_face_encoding,
+    simon_face_encoding
 ]
 
 known_face_names = [
-    "Is it Simon?"
+    'Andrey',
+    'Simon'
 ]
 
 face_locations = []
@@ -25,7 +29,6 @@ face_names = []
 process_this_frame = True
 
 log_time = 0
-last_read_row = ''
 
 app = flask.Flask(__name__)
 
@@ -67,10 +70,11 @@ def generate_stream(camera):
             face_locations = face_recognition.face_locations(rgb_small_frame)
             face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
 
+            out = open('srv/webapp/camera_display/log/faces_log.txt', 'a+')
             face_names = []
             for face_encoding in face_encodings:
                 matches = face_recognition.compare_faces(known_face_encodings, face_encoding)
-                name = "Unknown"
+                name = 'Unknown'
 
                 if True in matches:
                     first_match_index = matches.index(True)
@@ -78,12 +82,19 @@ def generate_stream(camera):
 
                 face_names.append(name)
 
-            # log results
-            log_msg_builder = ''
-            for name in face_names:
-                log_msg_builder += name + ', '
-            log_msg_builder = log_msg_builder[:-2]  # truncate last ', '
-            log_faces(log_msg_builder)
+                global log_time
+                current_time = datetime.now()
+                minutes_since_last_log = (current_time.timestamp() - log_time) // 60000
+                # log every minute
+                if minutes_since_last_log >= 1:
+                    log_time = current_time.timestamp()
+                    out.write(
+                        name + ' was there at '
+                        + current_time.strftime('%H:%M')[0:5]
+                        + ' on ' + str(current_time.date()) + '\n'
+                    )
+
+            out.close()
 
         process_this_frame = not process_this_frame
 
@@ -94,10 +105,18 @@ def generate_stream(camera):
             bottom *= 4
             left *= 4
 
-            cv2.rectangle(frame, (left, top), (right, bottom), (0, 0, 255), 2)
-            cv2.rectangle(frame, (left, bottom - 35), (right, bottom), (0, 0, 255), cv2.FILLED)
-            font = cv2.FONT_HERSHEY_DUPLEX
-            cv2.putText(frame, name, (left + 6, bottom - 6), font, 1.0, (255, 255, 255), 1)
+            if face_names[0] == 'Unknown':
+                cv2.rectangle(frame, (left, top), (right, bottom), (0, 0, 255), 2)
+                cv2.rectangle(frame, (left, bottom - 35), (right, bottom), (0, 0, 255), cv2.FILLED)
+                font = cv2.FONT_HERSHEY_DUPLEX
+                #cv2.putText(frame, name, (left + 6, bottom - 6), font, 1.0, (255, 255, 255), 2)
+                cv2.putText(frame, name, (right + 6, top - 6), font, 1.0, (0, 255, 0), 2)
+            else:
+                #cv2.rectangle(frame, (left, top), (right, bottom), (25, 255, 25), 2)
+                #cv2.rectangle(frame, (left, bottom - 35), (right, bottom), (25, 255, 25), cv2.FILLED)
+                font = cv2.FONT_HERSHEY_DUPLEX
+                cv2.putText(frame, name, (right + 6, top - 6), font, 1.0, (0, 255, 0), 2)
+
 
         # faces = FaceDetector.detect(frame)
         # for (x, y, w, h) in faces:
@@ -109,34 +128,11 @@ def generate_stream(camera):
                b'Content-Type: image/jpeg\r\n\r\n' + img_encoded.tobytes() + b'\r\n')
 
 
-def log_faces(msg):
-    out = open('camera_display/log/faces_log.txt', 'a+')
-    global log_time
-    current_time = datetime.now()
-    minutes_since_last_log = (current_time.timestamp() - log_time) / 10
-    # log every 10 seconds
-    if minutes_since_last_log >= 1:
-        log_time = current_time.timestamp()
-        are_many_people = len(msg.split(',')) > 10
-        out.write(
-            '\n' + msg + (' were ' if are_many_people else ' was ') + 'there at '
-            + current_time.strftime('%H:%M:%S')[0:8]
-            + ' on ' + str(current_time.date())
-        )
-    out.close()
-
-
 @app.route('/text_stream', methods=['GET'])
 def text_stream():
-    faces = open('camera_display/log/faces_log.txt', 'r')
+    faces = open('srv/webapp/camera_display/log/faces_log.txt', 'r')
     objects_info = faces.readlines()[-1]
     faces.close()
-
-    global last_read_row
-    if last_read_row == objects_info:
-        return json.dumps({'success': False}), 400, {'ContentType': 'application/json'}
-
-    last_read_row = objects_info
     return flask.Response(
         objects_info,
         mimetype='text/xml'
@@ -144,5 +140,6 @@ def text_stream():
 
 
 def run():
-    if __name__ == "main":
-        app.run(port=9090, debug=True)
+    app.run(port=9090, debug=True)
+    # if __name__ == "main":
+    #     app.run(port=9090, debug=True)
