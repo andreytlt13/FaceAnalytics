@@ -125,11 +125,11 @@ def log_faces(msg):
     out = open(LOG_PATH, 'a+')
     global log_time
     current_time = datetime.now()
-    minutes_since_last_log = (current_time.timestamp() - log_time) / 10
+    tens_of_secs_since_last_log = (current_time.timestamp() - log_time) / 10
     # log every 10 seconds
-    if minutes_since_last_log >= 1:
+    if tens_of_secs_since_last_log >= 1:
         log_time = current_time.timestamp()
-        are_many_people = len(msg.split(',')) > 10
+        are_many_people = len(msg.split(',')) > 1
         out.write(
             '\n' + msg + (' were ' if are_many_people else ' was ') + 'there at '
             + current_time.strftime('%H:%M:%S')[0:8]
