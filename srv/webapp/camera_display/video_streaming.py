@@ -106,11 +106,11 @@ def generate_stream(camera):
             left *= 4
 
             if face_names[0] == 'Unknown':
-                cv2.rectangle(frame, (left, top), (right, bottom), (0, 0, 255), 2)
-                cv2.rectangle(frame, (left, bottom - 35), (right, bottom), (0, 0, 255), cv2.FILLED)
+                #cv2.rectangle(frame, (left, top), (right, bottom), (0, 0, 255), 2)
+                #cv2.rectangle(frame, (left, bottom - 35), (right, bottom), (0, 0, 255), cv2.FILLED)
                 font = cv2.FONT_HERSHEY_DUPLEX
                 #cv2.putText(frame, name, (left + 6, bottom - 6), font, 1.0, (255, 255, 255), 2)
-                cv2.putText(frame, name, (right + 6, top - 6), font, 1.0, (0, 255, 0), 2)
+                cv2.putText(frame, name, (right + 6, top - 6), font, 1.0, (0, 0, 255), 2)
             else:
                 #cv2.rectangle(frame, (left, top), (right, bottom), (25, 255, 25), 2)
                 #cv2.rectangle(frame, (left, bottom - 35), (right, bottom), (25, 255, 25), cv2.FILLED)
