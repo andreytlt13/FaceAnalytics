@@ -65,7 +65,6 @@ def generate_stream(camera):
             face_locations = face_recognition.face_locations(rgb_small_frame)
             face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
 
-            out = open('camera_display/log/faces_log.txt', 'a+')
             face_names = []
             for face_encoding in face_encodings:
                 matches = face_recognition.compare_faces(known_face_encodings, face_encoding)
@@ -77,19 +76,12 @@ def generate_stream(camera):
 
                 face_names.append(name)
 
-                global log_time
-                current_time = datetime.now()
-                minutes_since_last_log = (current_time.timestamp() - log_time) // 60000
-                # log every minute
-                if minutes_since_last_log >= 1:
-                    log_time = current_time.timestamp()
-                    out.write(
-                        name + ' was there at '
-                        + current_time.strftime('%H:%M')[0:5]
-                        + ' on ' + str(current_time.date()) + '\n'
-                    )
-
-            out.close()
+            # log results
+            log_msg_builder = ''
+            for name in face_names:
+                log_msg_builder += name + ', '
+            log_msg_builder = log_msg_builder[:-2]  # truncate last ', '
+            log_faces(log_msg_builder)
 
         process_this_frame = not process_this_frame
 
@@ -113,6 +105,23 @@ def generate_stream(camera):
         yield (b'--frame\r\n'
 
                b'Content-Type: image/jpeg\r\n\r\n' + img_encoded.tobytes() + b'\r\n')
+
+
+def log_faces(msg):
+    out = open('camera_display/log/faces_log.txt', 'a+')
+    global log_time
+    current_time = datetime.now()
+    minutes_since_last_log = (current_time.timestamp() - log_time) / 10
+    # log every 10 seconds
+    if minutes_since_last_log >= 1:
+        log_time = current_time.timestamp()
+        are_many_people = len(msg.split(',')) > 10
+        out.write(
+            '\n' + msg + (' were ' if are_many_people else ' was ') + 'there at '
+            + current_time.strftime('%H:%M:%S')[0:8]
+            + ' on ' + str(current_time.date())
+        )
+    out.close()
 
 
 @app.route('/text_stream', methods=['GET'])

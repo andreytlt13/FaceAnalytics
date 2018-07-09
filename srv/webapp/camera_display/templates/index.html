@@ -5,7 +5,7 @@
 
     <script src="http://code.jquery.com/jquery-latest.min.js"></script>
     <script>
-        $(document).ready(setInterval(function () {
+        function log() {
             $.ajax({
                 type: 'GET',
                 url: 'text_stream',
@@ -14,20 +14,17 @@
                     $("<div />").text(result).appendTo("#tail")
                 }
             });
-        }, 1000 * 60));
-
-
-
-
-
-
-
-
-
-
+        }
+        log();
+        $(document).ready(
+            setInterval(function() {
+                    log();
+                },
+                1000 * 10
+            )
+        );
 
     </script>
-</head>
 <body>
 <div id="header">
     <h1>Face Analytics Demonstration</h1>
@@ -37,13 +34,13 @@
     Web-cam URL:<br>
     <img src="{{ img_path }}" id="stream">
 
-    <div id="tail">
-
-    </div>
-
     <input type="text" name="camera_url" id="url_in">
     <input type="submit" value="Go" id="submit">
 </form>
+
+<div id="tail">
+
+</div>
 
 </body>
 </html>

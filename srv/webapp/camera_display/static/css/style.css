@@ -11,15 +11,14 @@ body {
 }
 
 #stream_f {
-    width: 1004px;
-    height: 720px;
+    width: 512px;
+    height: 512px;
     align: center;
 }
 
 #stream {
     width: 512px;
     height: 288px;
-    align: left;
 }
 
 #url_in {
@@ -40,9 +39,10 @@ body {
 }
 
 #tail {
-    width: 450px;
+    width: 400px;
     height: 288px;
-    align: right;
+    float: right;
+    vertical-align: top;
     border: 1px solid blue;
     overflow: hidden;
 }
