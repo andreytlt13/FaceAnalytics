@@ -1,13 +1,47 @@
 #!/usr/bin/env python
-from datetime import datetime
 
+import dlib
 import cv2
 import flask
-
-import srv.models as face_recognition
+import numpy as np
+import tensorflow as tf
+import srv.common as face_recognition
+from datetime import datetime
+from imutils.face_utils import FaceAligner
 from srv.camera_stream.opencv_read_stream import Camera
+from srv.models import inception_resnet_v1
 
 LOG_PATH = '/tmp/faces_log.txt'
+
+
+def load_network(model_path):
+    sess = tf.Session()
+    images_pl = tf.placeholder(tf.float32, shape=[None, 160, 160, 3], name='input_image')
+    images_norm = tf.map_fn(lambda frame: tf.image.per_image_standardization(frame), images_pl)
+    train_mode = tf.placeholder(tf.bool)
+    age_logits, gender_logits, _ = inception_resnet_v1.inference(images_norm, keep_probability=0.8,
+                                                                 phase_train=train_mode,
+                                                                 weight_decay=1e-5)
+    gender = tf.argmax(tf.nn.softmax(gender_logits), 1)
+    age_ = tf.cast(tf.constant([i for i in range(0, 101)]), tf.float32)
+    age = tf.reduce_sum(tf.multiply(tf.nn.softmax(age_logits), age_), axis=1)
+    init_op = tf.group(tf.global_variables_initializer(),
+                       tf.local_variables_initializer())
+    sess.run(init_op)
+    saver = tf.train.Saver()
+    ckpt = tf.train.get_checkpoint_state(model_path)
+    if ckpt and ckpt.model_checkpoint_path:
+        saver.restore(sess, ckpt.model_checkpoint_path)
+        print("restore model!")
+    else:
+        pass
+    return sess, age, gender, train_mode, images_pl
+
+
+def draw_label(image, point, label, font=cv2.FONT_HERSHEY_SIMPLEX,
+               font_scale=1, thickness=2):
+    cv2.putText(image, label, point, font, font_scale, (255, 255, 255), thickness)
+
 
 andrey_image = face_recognition.load_image_file("srv/webapp/photo/andrey.jpg")
 andrey_face_encoding = face_recognition.face_encodings(andrey_image)[0]
@@ -60,15 +94,39 @@ def video_stream():
 
 
 def generate_stream(camera):
+    sess, age, gender, train_mode, images_pl = load_network(
+        'srv/models')
+    detector = dlib.get_frontal_face_detector()
+    predictor = dlib.shape_predictor(
+        "srv/models/shape_predictor_68_face_landmarks.dat")
+    fa = FaceAligner(predictor, desiredFaceWidth=160)
+    img_size = 160
+
     process_this_frame = True
 
     while True:
         _, frame = camera.get_frame()
 
+        input_img = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        img_h, img_w, _ = np.shape(frame)
+
+        detected = detector(input_img, 1)
+        faces = np.empty((len(detected), img_size, img_size, 3))
+
+        for i, d in enumerate(detected):
+            faces[i, :, :, :] = fa.align(input_img, gray, detected[i])
+
+        if len(detected) > 0:
+            ages, genders = sess.run([age, gender], feed_dict={images_pl: faces, train_mode: False})
+
+        for i, d in enumerate(detected):
+            label = "{}, {}".format(int(ages[i]), "Female" if genders[i] == 0 else "Male")
+            draw_label(frame, (d.left(), d.bottom()), label)
+
         small_frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
         rgb_small_frame = small_frame[:, :, ::-1]
         if process_this_frame:
-            # Find all the faces and face encodings in the current frame of video
             face_locations = face_recognition.face_locations(rgb_small_frame)
             face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
 
@@ -100,20 +158,12 @@ def generate_stream(camera):
             left *= 4
 
             if face_names[0] == 'Unknown':
-                # cv2.rectangle(frame, (left, top), (right, bottom), (0, 0, 255), 2)
-                # cv2.rectangle(frame, (left, bottom - 35), (right, bottom), (0, 0, 255), cv2.FILLED)
                 font = cv2.FONT_HERSHEY_DUPLEX
-                # cv2.putText(frame, name, (left + 6, bottom - 6), font, 1.0, (255, 255, 255), 2)
                 cv2.putText(frame, name, (right + 6, top - 6), font, 1.0, (0, 0, 255), 2)
+
             else:
-                # cv2.rectangle(frame, (left, top), (right, bottom), (25, 255, 25), 2)
-                # cv2.rectangle(frame, (left, bottom - 35), (right, bottom), (25, 255, 25), cv2.FILLED)
                 font = cv2.FONT_HERSHEY_DUPLEX
                 cv2.putText(frame, name, (right + 6, top - 6), font, 1.0, (0, 255, 0), 2)
-
-        # faces = FaceDetector.detect(frame)
-        # for (x, y, w, h) in faces:
-        #     cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
         _, img_encoded = cv2.imencode('.jpg', frame)
         yield (b'--frame\r\n'
@@ -160,5 +210,4 @@ def text_stream():
 
 
 def run():
-    if __name__ == "main":
-        app.run(port=9090, debug=True)
+    app.run(port=9090, debug=True)

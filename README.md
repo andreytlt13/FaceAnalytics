@@ -20,7 +20,7 @@ conda install scikit-image
 ```
 
 ##Download models
-You need download this [models](https://github.com/davisking/dlib-models)
+You need download this [models](https://drive.google.com/drive/folders/1PO1zneiefNjcNdf9PZz-2Y2a7ns8umxe?usp=sharing)
 ```
  pip install face_recognition_models
 ```
