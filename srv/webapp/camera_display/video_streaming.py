@@ -3,6 +3,7 @@ from datetime import datetime
 
 import cv2
 import flask
+from flask_restful.representations import json
 
 import srv.models as face_recognition
 from srv.camera_stream.opencv_read_stream import Camera
@@ -31,6 +32,7 @@ face_names = []
 process_this_frame = True
 
 log_time = 0
+last_read_row = ''
 
 app = flask.Flask(__name__)
 
@@ -153,6 +155,10 @@ def text_stream():
     else:
         msg = objects_info[-1]
 
+    global last_read_row
+    if last_read_row == msg:
+        return json.dumps({'success': False}), 400, {'ContentType': 'application/json'}
+    last_read_row = msg
     return flask.Response(
         msg,
         mimetype='text/xml'
