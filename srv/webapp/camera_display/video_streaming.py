@@ -7,6 +7,8 @@ import flask
 import srv.models as face_recognition
 from srv.camera_stream.opencv_read_stream import Camera
 
+LOG_PATH = '/tmp/faces_log.txt'
+
 andrey_image = face_recognition.load_image_file("srv/webapp/photo/andrey.jpg")
 andrey_face_encoding = face_recognition.face_encodings(andrey_image)[0]
 
@@ -70,7 +72,6 @@ def generate_stream(camera):
             face_locations = face_recognition.face_locations(rgb_small_frame)
             face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
 
-            out = open('srv/webapp/camera_display/log/faces_log.txt', 'a+')
             face_names = []
             for face_encoding in face_encodings:
                 matches = face_recognition.compare_faces(known_face_encodings, face_encoding)
@@ -82,19 +83,12 @@ def generate_stream(camera):
 
                 face_names.append(name)
 
-                global log_time
-                current_time = datetime.now()
-                minutes_since_last_log = (current_time.timestamp() - log_time) // 60000
-                # log every minute
-                if minutes_since_last_log >= 1:
-                    log_time = current_time.timestamp()
-                    out.write(
-                        name + ' was there at '
-                        + current_time.strftime('%H:%M')[0:5]
-                        + ' on ' + str(current_time.date()) + '\n'
-                    )
-
-            out.close()
+            # log results
+            log_msg_builder = ''
+            for name in face_names:
+                log_msg_builder += name + ', '
+            log_msg_builder = log_msg_builder[:-2]  # truncate last ', '
+            log_faces(log_msg_builder)
 
         process_this_frame = not process_this_frame
 
@@ -106,17 +100,16 @@ def generate_stream(camera):
             left *= 4
 
             if face_names[0] == 'Unknown':
-                #cv2.rectangle(frame, (left, top), (right, bottom), (0, 0, 255), 2)
-                #cv2.rectangle(frame, (left, bottom - 35), (right, bottom), (0, 0, 255), cv2.FILLED)
+                # cv2.rectangle(frame, (left, top), (right, bottom), (0, 0, 255), 2)
+                # cv2.rectangle(frame, (left, bottom - 35), (right, bottom), (0, 0, 255), cv2.FILLED)
                 font = cv2.FONT_HERSHEY_DUPLEX
-                #cv2.putText(frame, name, (left + 6, bottom - 6), font, 1.0, (255, 255, 255), 2)
+                # cv2.putText(frame, name, (left + 6, bottom - 6), font, 1.0, (255, 255, 255), 2)
                 cv2.putText(frame, name, (right + 6, top - 6), font, 1.0, (0, 0, 255), 2)
             else:
-                #cv2.rectangle(frame, (left, top), (right, bottom), (25, 255, 25), 2)
-                #cv2.rectangle(frame, (left, bottom - 35), (right, bottom), (25, 255, 25), cv2.FILLED)
+                # cv2.rectangle(frame, (left, top), (right, bottom), (25, 255, 25), 2)
+                # cv2.rectangle(frame, (left, bottom - 35), (right, bottom), (25, 255, 25), cv2.FILLED)
                 font = cv2.FONT_HERSHEY_DUPLEX
                 cv2.putText(frame, name, (right + 6, top - 6), font, 1.0, (0, 255, 0), 2)
-
 
         # faces = FaceDetector.detect(frame)
         # for (x, y, w, h) in faces:
@@ -128,18 +121,44 @@ def generate_stream(camera):
                b'Content-Type: image/jpeg\r\n\r\n' + img_encoded.tobytes() + b'\r\n')
 
 
+def log_faces(msg):
+    out = open(LOG_PATH, 'a+')
+    global log_time
+    current_time = datetime.now()
+    minutes_since_last_log = (current_time.timestamp() - log_time) / 10
+    # log every 10 seconds
+    if minutes_since_last_log >= 1:
+        log_time = current_time.timestamp()
+        are_many_people = len(msg.split(',')) > 10
+        out.write(
+            '\n' + msg + (' were ' if are_many_people else ' was ') + 'there at '
+            + current_time.strftime('%H:%M:%S')[0:8]
+            + ' on ' + str(current_time.date())
+        )
+    out.close()
+
+
 @app.route('/text_stream', methods=['GET'])
 def text_stream():
-    faces = open('srv/webapp/camera_display/log/faces_log.txt', 'r')
-    objects_info = faces.readlines()[-1]
+    try:
+        faces = open(LOG_PATH, 'r')
+    except IOError:
+        faces = open(LOG_PATH, 'w+')
+
+    objects_info = faces.readlines()
     faces.close()
+
+    if not objects_info:
+        msg = 'Logging started...'
+    else:
+        msg = objects_info[-1]
+
     return flask.Response(
-        objects_info,
+        msg,
         mimetype='text/xml'
     )
 
 
 def run():
-    app.run(port=9090, debug=True)
-    # if __name__ == "main":
-    #     app.run(port=9090, debug=True)
+    if __name__ == "main":
+        app.run(port=9090, debug=True)
