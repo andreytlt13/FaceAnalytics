@@ -4,7 +4,7 @@ import cv2
 class Camera:
     def __init__(self, camera_url) -> None:
         self.camera_id = camera_url
-        self.capture = cv2.VideoCapture(int(self.camera_id))
+        self.capture = cv2.VideoCapture(self.camera_id)
 
     def __del__(self):
         self.capture.release()
@@ -14,4 +14,4 @@ class Camera:
         if success:
             return success, frame
         else:
-            raise RuntimeError(str.format('Camera %d has been disconnected', self.camera_id))
+            raise RuntimeError(str.format('Camera %s has been disconnected', self.camera_id))
