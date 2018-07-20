@@ -1,13 +1,15 @@
 #!/usr/bin/env python
 
-import dlib
+from datetime import datetime
+
 import cv2
+import dlib
 import flask
 import numpy as np
 import tensorflow as tf
-import srv.common as face_recognition
-from datetime import datetime
 from imutils.face_utils import FaceAligner
+
+import srv.common as face_recognition
 from srv.camera_stream.opencv_read_stream import Camera
 from srv.models import inception_resnet_v1
 
@@ -87,13 +89,17 @@ def analyse():
 
 @app.route('/video_stream', methods=['GET'])
 def video_stream():
+    try:
+        camera_url = int(flask.request.args.get('camera_url'))
+    except:
+        camera_url = flask.request.args.get('camera_url')
     return flask.Response(
-        generate_stream(Camera(int(flask.request.args.get('camera_url')))),
+        generate_stream(camera_url),
         mimetype='multipart/x-mixed-replace; boundary=frame'
     )
 
 
-def generate_stream(camera):
+def generate_stream(camera_url):
     sess, age, gender, train_mode, images_pl = load_network(
         'srv/models')
     detector = dlib.get_frontal_face_detector()
@@ -105,17 +111,16 @@ def generate_stream(camera):
     process_this_frame = True
 
     while True:
-        _, frame = camera.get_frame()
+        _, frame = Camera(camera_url).get_frame()
 
-        input_img = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        gray = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
         img_h, img_w, _ = np.shape(frame)
 
-        detected = detector(input_img, 1)
+        detected = detector(frame, 1)
         faces = np.empty((len(detected), img_size, img_size, 3))
 
         for i, d in enumerate(detected):
-            faces[i, :, :, :] = fa.align(input_img, gray, detected[i])
+            faces[i, :, :, :] = fa.align(frame, gray, detected[i])
 
         if len(detected) > 0:
             ages, genders = sess.run([age, gender], feed_dict={images_pl: faces, train_mode: False})
