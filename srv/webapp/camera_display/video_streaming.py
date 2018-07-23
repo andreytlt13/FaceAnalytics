@@ -5,6 +5,7 @@ from datetime import datetime
 import cv2
 import dlib
 import flask
+import imutils
 import numpy as np
 import tensorflow as tf
 from imutils.face_utils import FaceAligner
@@ -110,26 +111,39 @@ def generate_stream(camera_url):
 
     process_this_frame = True
 
+    # Below is the output of calibrate.py script
+    DIM = (1280, 720)
+    K = np.array(
+        [[601.406657865378, 0.0, 714.6361088321798], [0.0, 605.7953276079065, 316.1816796984329], [0.0, 0.0, 1.0]])
+    D = np.array([[0.05540844317604619], [-0.8784316408407845], [2.7661761909290625], [-1.5287598287880562]])
+
+    #  Map fish eye image into flat one
+    map1, map2 = cv2.fisheye.initUndistortRectifyMap(K, D, np.eye(3), K, DIM, cv2.CV_16SC2)
+
     while True:
         _, frame = Camera(camera_url).get_frame()
 
-        gray = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
+        rotated_frame = imutils.rotate(frame, 15)
+        undistorted_frame = cv2.remap(rotated_frame, map1, map2, interpolation=cv2.INTER_LINEAR,
+                                    borderMode=cv2.BORDER_CONSTANT)
+
+        gray = cv2.cvtColor(undistorted_frame, cv2.COLOR_RGB2GRAY)
         img_h, img_w, _ = np.shape(frame)
 
-        detected = detector(frame, 1)
+        detected = detector(undistorted_frame, 1)
         faces = np.empty((len(detected), img_size, img_size, 3))
 
         for i, d in enumerate(detected):
-            faces[i, :, :, :] = fa.align(frame, gray, detected[i])
+            faces[i, :, :, :] = fa.align(undistorted_frame, gray, detected[i])
 
         if len(detected) > 0:
             ages, genders = sess.run([age, gender], feed_dict={images_pl: faces, train_mode: False})
 
         for i, d in enumerate(detected):
             label = "{}, {}".format(int(ages[i]), "Female" if genders[i] == 0 else "Male")
-            draw_label(frame, (d.left(), d.bottom()), label)
+            draw_label(undistorted_frame, (d.left(), d.bottom()), label)
 
-        small_frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
+        small_frame = cv2.resize(undistorted_frame, (0, 0), fx=0.25, fy=0.25)
         rgb_small_frame = small_frame[:, :, ::-1]
         if process_this_frame:
             face_locations = face_recognition.face_locations(rgb_small_frame)
@@ -164,13 +178,13 @@ def generate_stream(camera_url):
 
             if face_names[0] == 'Unknown':
                 font = cv2.FONT_HERSHEY_DUPLEX
-                cv2.putText(frame, name, (right + 6, top - 6), font, 1.0, (0, 0, 255), 2)
+                cv2.putText(undistorted_frame, name, (right + 6, top - 6), font, 1.0, (0, 0, 255), 2)
 
             else:
                 font = cv2.FONT_HERSHEY_DUPLEX
-                cv2.putText(frame, name, (right + 6, top - 6), font, 1.0, (0, 255, 0), 2)
+                cv2.putText(undistorted_frame, name, (right + 6, top - 6), font, 1.0, (0, 255, 0), 2)
 
-        _, img_encoded = cv2.imencode('.jpg', frame)
+        _, img_encoded = cv2.imencode('.jpg', undistorted_frame)
         yield (b'--frame\r\n'
 
                b'Content-Type: image/jpeg\r\n\r\n' + img_encoded.tobytes() + b'\r\n')
