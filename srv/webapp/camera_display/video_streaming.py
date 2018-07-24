@@ -15,6 +15,7 @@ from srv.camera_stream.opencv_read_stream import Camera
 from srv.models import inception_resnet_v1
 
 LOG_PATH = '/tmp/faces_log.txt'
+last_log_message = ''
 
 
 def load_network(model_path):
@@ -120,6 +121,7 @@ def generate_stream(camera_url):
     #  Map fish eye image into flat one
     map1, map2 = cv2.fisheye.initUndistortRectifyMap(K, D, np.eye(3), K, DIM, cv2.CV_16SC2)
 
+    global last_log_message
     while True:
         _, frame = Camera(camera_url).get_frame()
 
@@ -165,7 +167,10 @@ def generate_stream(camera_url):
             for name in face_names:
                 log_msg_builder += name + ', '
             log_msg_builder = log_msg_builder[:-2]  # truncate last ', '
-            log_faces(log_msg_builder)
+
+            if last_log_message != log_msg_builder:
+                last_log_message = log_msg_builder
+                log_faces(log_msg_builder)
 
         process_this_frame = not process_this_frame
 
@@ -222,10 +227,19 @@ def text_stream():
     else:
         msg = objects_info[-1]
 
-    return flask.Response(
-        msg,
-        mimetype='text/xml'
-    )
+    global last_log_message
+    if last_log_message != msg:
+        last_log_message = msg
+        return flask.Response(
+            msg,
+            mimetype='text/xml'
+        )
+    else:
+        return flask.Response(
+            'Too many similar requests',
+            status=429,
+            mimetype='text/xml'
+        )
 
 
 def run():

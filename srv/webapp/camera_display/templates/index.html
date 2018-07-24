@@ -5,6 +5,14 @@
 
     <script src="http://code.jquery.com/jquery-latest.min.js"></script>
     <script>
+        // tail effect
+        function tailScroll() {
+            var height = $("#tail").get(0).scrollHeight;
+            $("#tail").animate({
+                scrollTop: height
+            }, 500);
+        }
+
         function log() {
             $.ajax({
                 type: 'GET',
@@ -12,6 +20,7 @@
                 dataType: "TEXT",
                 success: function (result) {
                     $("<div />").text(result).appendTo("#tail")
+                    tailScroll();
                 }
             });
         }
