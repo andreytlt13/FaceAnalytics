@@ -4,18 +4,23 @@ from datetime import datetime
 
 import cv2
 import dlib
+import face_recognition
 import flask
-import imutils
 import numpy as np
 import tensorflow as tf
 from imutils.face_utils import FaceAligner
 
-import srv.common as face_recognition
 from srv.camera_stream.opencv_read_stream import Camera
 from srv.models import inception_resnet_v1
+from srv.utils.normalize_image import fisheye_to_flat
+from srv.video_processing.centroidtracker import CentroidTracker
+from srv.video_processing.pedestrians_detector import detect_people
 
 LOG_PATH = '/tmp/faces_log.txt'
 last_log_message = ''
+detected_regions_count = 1
+
+ct = CentroidTracker()
 
 
 def load_network(model_path):
@@ -42,9 +47,17 @@ def load_network(model_path):
     return sess, age, gender, train_mode, images_pl
 
 
+sess, age, gender, train_mode, images_pl = load_network(
+    'srv/models')
+detector = dlib.get_frontal_face_detector()
+predictor = dlib.shape_predictor(
+    "srv/models/shape_predictor_68_face_landmarks.dat")
+fa = FaceAligner(predictor, desiredFaceWidth=160)
+
+
 def draw_label(image, point, label, font=cv2.FONT_HERSHEY_SIMPLEX,
-               font_scale=1, thickness=2):
-    cv2.putText(image, label, point, font, font_scale, (255, 255, 255), thickness)
+               font_scale=1.4, thickness=3):
+    cv2.putText(image, label, point, font, font_scale, (54, 255, 81), thickness)
 
 
 andrey_image = face_recognition.load_image_file("srv/webapp/photo/andrey.jpg")
@@ -102,97 +115,98 @@ def video_stream():
 
 
 def generate_stream(camera_url):
-    sess, age, gender, train_mode, images_pl = load_network(
-        'srv/models')
-    detector = dlib.get_frontal_face_detector()
-    predictor = dlib.shape_predictor(
-        "srv/models/shape_predictor_68_face_landmarks.dat")
-    fa = FaceAligner(predictor, desiredFaceWidth=160)
     img_size = 160
 
-    process_this_frame = True
-
-    # Below is the output of calibrate.py script
-    DIM = (1280, 720)
-    K = np.array(
-        [[601.406657865378, 0.0, 714.6361088321798], [0.0, 605.7953276079065, 316.1816796984329], [0.0, 0.0, 1.0]])
-    D = np.array([[0.05540844317604619], [-0.8784316408407845], [2.7661761909290625], [-1.5287598287880562]])
-
-    #  Map fish eye image into flat one
-    map1, map2 = cv2.fisheye.initUndistortRectifyMap(K, D, np.eye(3), K, DIM, cv2.CV_16SC2)
-
-    global last_log_message
     while True:
         _, frame = Camera(camera_url).get_frame()
-
-        rotated_frame = imutils.rotate(frame, 15)
-        undistorted_frame = cv2.remap(rotated_frame, map1, map2, interpolation=cv2.INTER_LINEAR,
-                                    borderMode=cv2.BORDER_CONSTANT)
-
-        gray = cv2.cvtColor(undistorted_frame, cv2.COLOR_RGB2GRAY)
         img_h, img_w, _ = np.shape(frame)
 
-        detected = detector(undistorted_frame, 1)
-        faces = np.empty((len(detected), img_size, img_size, 3))
+        frame = fisheye_to_flat(frame)
+        people = detect_people(frame, img_w)
+        if len(people) > 0:
+            for i, (x, y, w, h) in enumerate(people):
+                cv2.rectangle(frame, (x, y), (w, h), (0, 255, 0), 2)
 
-        for i, d in enumerate(detected):
-            faces[i, :, :, :] = fa.align(undistorted_frame, gray, detected[i])
+                cropped = frame[y:h, x:w, :]
+                crop_h, crop_w, _ = np.shape(cropped)
+                print('Detected region: ' + str(crop_w) + ', ' + str(crop_h))
+                global detected_regions_count
+                cv2.imwrite('/tmp/images/frame' + str(detected_regions_count) + '.jpg', cropped)
+                detected_regions_count += 1
 
-        if len(detected) > 0:
-            ages, genders = sess.run([age, gender], feed_dict={images_pl: faces, train_mode: False})
+                detect_face_features(cropped, frame, img_size, x, y)
+        else:
+            detect_face_features(frame, frame, img_size, 0, 0)
 
-        for i, d in enumerate(detected):
-            label = "{}, {}".format(int(ages[i]), "Female" if genders[i] == 0 else "Male")
-            draw_label(undistorted_frame, (d.left(), d.bottom()), label)
-
-        small_frame = cv2.resize(undistorted_frame, (0, 0), fx=0.25, fy=0.25)
-        rgb_small_frame = small_frame[:, :, ::-1]
-        if process_this_frame:
-            face_locations = face_recognition.face_locations(rgb_small_frame)
-            face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
-
-            face_names = []
-            for face_encoding in face_encodings:
-                matches = face_recognition.compare_faces(known_face_encodings, face_encoding)
-                name = 'Unknown'
-
-                if True in matches:
-                    first_match_index = matches.index(True)
-                    name = known_face_names[first_match_index]
-
-                face_names.append(name)
-
-            # log results
-            log_msg_builder = ''
-            for name in face_names:
-                log_msg_builder += name + ', '
-            log_msg_builder = log_msg_builder[:-2]  # truncate last ', '
-
-            if last_log_message != log_msg_builder:
-                last_log_message = log_msg_builder
-                log_faces(log_msg_builder)
-
-        process_this_frame = not process_this_frame
-
-        for (top, right, bottom, left), name in zip(face_locations, face_names):
-            # Scale back up face locations since the frame we detected in was scaled to 1/4 size
-            top *= 4
-            right *= 4
-            bottom *= 4
-            left *= 4
-
-            if face_names[0] == 'Unknown':
-                font = cv2.FONT_HERSHEY_DUPLEX
-                cv2.putText(undistorted_frame, name, (right + 6, top - 6), font, 1.0, (0, 0, 255), 2)
-
-            else:
-                font = cv2.FONT_HERSHEY_DUPLEX
-                cv2.putText(undistorted_frame, name, (right + 6, top - 6), font, 1.0, (0, 255, 0), 2)
-
-        _, img_encoded = cv2.imencode('.jpg', undistorted_frame)
+        detect_person(frame)
+        _, img_encoded = cv2.imencode('.jpg', frame)
         yield (b'--frame\r\n'
 
                b'Content-Type: image/jpeg\r\n\r\n' + img_encoded.tobytes() + b'\r\n')
+
+
+def detect_face_features(frame_area, frame, img_size, body_left, body_bottom):
+    detected = detector(frame_area, 1)
+    detected_faces_count = len(detected)
+
+    faces = np.empty((detected_faces_count, img_size, img_size, 3))
+    for i, d in enumerate(detected):
+        faces[i, :, :, :] = fa.align(frame_area, cv2.cvtColor(frame_area, cv2.COLOR_RGB2GRAY), d)
+
+    if detected_faces_count > 0:
+        print('we have detected somebody!')
+
+        objects = ct.update(detected)
+        ages, genders = sess.run([age, gender], feed_dict={images_pl: faces, train_mode: False})
+
+        ids = list(objects.keys())
+        for i, obj_id in enumerate(ids):
+            if i >= detected_faces_count:
+                break
+
+            label = "{}, {}, ID={}".format(int(ages[i]), "Female" if genders[i] == 0 else "Male", obj_id)
+            draw_label(frame, (detected[i].left() + body_left, detected[i].bottom() + body_bottom), label)
+            log_faces(label)
+
+
+def detect_person(frame):
+    small_frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
+    rgb_small_frame = small_frame[:, :, ::-1]
+    face_locations = face_recognition.face_locations(rgb_small_frame)
+    face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
+
+    face_names = []
+    for face_encoding in face_encodings:
+        matches = face_recognition.compare_faces(known_face_encodings, face_encoding)
+        name = 'Unknown'
+
+        if True in matches:
+            first_match_index = matches.index(True)
+            name = known_face_names[first_match_index]
+
+        face_names.append(name)
+
+    # log results
+    log_msg_builder = ''
+    for name in face_names:
+        log_msg_builder += name + ', '
+    log_msg_builder = log_msg_builder[:-2]  # truncate last ', '
+    log_faces(log_msg_builder)
+
+    for (top, right, bottom, left), name in zip(face_locations, face_names):
+        # Scale back up face locations since the frame we detected in was scaled to 1/4 size
+        top *= 4
+        right *= 4
+        bottom *= 4
+        left *= 4
+
+        if face_names[0] == 'Unknown':
+            font = cv2.FONT_HERSHEY_DUPLEX
+            cv2.putText(frame, name, (right + 6, top - 6), font, 1.0, (0, 0, 255), 2)
+
+        else:
+            font = cv2.FONT_HERSHEY_DUPLEX
+            cv2.putText(frame, name, (right + 6, top - 6), font, 1.0, (0, 255, 0), 2)
 
 
 def log_faces(msg):
