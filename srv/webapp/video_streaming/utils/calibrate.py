@@ -11,6 +11,7 @@ subpix_criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.1)
 calibration_flags = cv2.fisheye.CALIB_RECOMPUTE_EXTRINSIC + cv2.fisheye.CALIB_CHECK_COND + cv2.fisheye.CALIB_FIX_SKEW
 objp = np.zeros((1, CHECKERBOARD[0] * CHECKERBOARD[1], 3), np.float32)
 objp[0, :, :2] = np.mgrid[0:CHECKERBOARD[0], 0:CHECKERBOARD[1]].T.reshape(-1, 2)
+
 _img_shape = None
 objpoints = []  # 3d point in real world space
 imgpoints = []  # 2d points in image plane.
@@ -30,6 +31,7 @@ for fname in images:
         objpoints.append(objp)
         cv2.cornerSubPix(gray, corners, (3, 3), (-1, -1), subpix_criteria)
         imgpoints.append(corners)
+
 N_OK = len(objpoints)
 K = np.zeros((3, 3))
 D = np.zeros((4, 1))
@@ -47,6 +49,7 @@ rms, _, _, _, _ = \
         calibration_flags,
         (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 1e-6)
     )
+
 print("Found " + str(N_OK) + " valid images for calibration")
 print("DIM=" + str(_img_shape[::-1]))
 print("K=np.array(" + str(K.tolist()) + ")")

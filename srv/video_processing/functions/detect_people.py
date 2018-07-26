@@ -15,6 +15,6 @@ def detect_people(frame, img_w):
         gray, winStride=(8, 8), padding=(24, 24), scale=1.15
     )
     rects = np.array([[2 * x - 10, 2 * y - 10, 2 * (x + w) + 10, 2 * (y + h) + 10] for (x, y, w, h) in objects])
-    pedestrians = non_max_suppression(rects, probs=None, overlapThresh=0.65)
-    pedestrians = [p for i, p in enumerate(pedestrians) if weights[i] > 0.5]
-    return pedestrians
+    people = non_max_suppression(rects, probs=None, overlapThresh=0.65)
+    people = [p for i, p in enumerate(people) if weights[i] > 0.5]
+    return people

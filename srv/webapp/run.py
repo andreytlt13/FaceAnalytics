@@ -1,3 +1,3 @@
-from srv.webapp.camera_display import video_streaming
+from srv.webapp.video_streaming import flask_streaming_api
 
-video_streaming.run()
+flask_streaming_api.run()
