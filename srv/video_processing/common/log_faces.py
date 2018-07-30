@@ -5,18 +5,19 @@ LOG_PATH = '/tmp/faces_log.txt'
 log_time = 0
 
 
-def log(msg):
-    out = open(LOG_PATH, 'a+')
+def log(face_feature_map):
     global log_time
     current_time = datetime.now()
     tens_of_secs_since_last_log = (current_time.timestamp() - log_time) / 10
     # log every 10 seconds
     if tens_of_secs_since_last_log >= 1:
-        log_time = current_time.timestamp()
-        are_many_people = len(msg.split(',')) > 1
-        out.write(
-            '\n' + msg + (' were ' if are_many_people else ' was ') + 'there at '
-            + current_time.strftime('%H:%M:%S')[0:8]
-            + ' on ' + str(current_time.date())
-        )
-    out.close()
+        out = open(LOG_PATH, 'a+')
+        for i in range(len(face_feature_map['name'])):
+            msg = ''
+            for v in face_feature_map.values():
+                msg += repr(v[i]) + ', '
+            msg = msg[:-2]  # truncate last ', '
+
+            log_time = current_time.timestamp()
+            out.write('\n' + msg)
+        out.close()

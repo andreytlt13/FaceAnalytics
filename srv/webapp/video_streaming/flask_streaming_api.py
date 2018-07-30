@@ -4,9 +4,10 @@ import cv2
 import flask
 import numpy as np
 
+from srv.video_processing.common.log_faces import log
 from srv.video_processing.functions.detect_face_features import detect_face_features
 from srv.video_processing.functions.detect_people import detect_people
-from srv.video_processing.functions.recognize_face import recognize_face
+from srv.video_processing.functions.recognize_face import recognize_faces
 from srv.webapp.video_streaming.utils.normalize_image import fisheye_to_flat
 
 LOG_PATH = '/tmp/faces_log.txt'
@@ -55,8 +56,8 @@ def generate_stream(camera_url):
     while True:
         _, frame = cv2.VideoCapture(camera_url).read()
         img_h, img_w, _ = np.shape(frame)
-
         frame = fisheye_to_flat(frame)
+
         people = detect_people(frame, img_w)
         if len(people) > 0:
             for i, (x, y, w, h) in enumerate(people):
@@ -65,19 +66,27 @@ def generate_stream(camera_url):
                 cropped = frame[y:h, x:w, :]
                 crop_h, crop_w, _ = np.shape(cropped)
                 print('Detected region: ' + str(crop_w) + ', ' + str(crop_h))
+
                 global detected_regions_count
                 cv2.imwrite('/tmp/images/frame' + str(detected_regions_count) + '.jpg', cropped)
                 detected_regions_count += 1
 
-                detect_face_features(cropped, frame, img_size, x, y)
+                process_frame(cropped, frame, img_size, x, y)
         else:
-            detect_face_features(frame, frame, img_size, 0, 0)
+            process_frame(frame, frame, img_size, 0, 0)
 
-        recognize_face(frame)
         _, img_encoded = cv2.imencode('.jpg', frame)
         yield (b'--frame\r\n'
 
                b'Content-Type: image/jpeg\r\n\r\n' + img_encoded.tobytes() + b'\r\n')
+
+
+def process_frame(cropped, frame, img_size, x, y):
+    _, face_feature_map = detect_face_features(cropped, frame, img_size, x, y)
+    _, person_feature_map = recognize_faces(cropped, is_cropped=True)
+    if len(person_feature_map) > 0:
+        face_feature_map['name'] = person_feature_map['name']
+        log(face_feature_map)
 
 
 @app.route('/text_stream', methods=['GET'])

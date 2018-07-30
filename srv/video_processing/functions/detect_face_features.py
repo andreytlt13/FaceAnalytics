@@ -8,7 +8,6 @@ from imutils.face_utils import FaceAligner
 
 from srv.models import inception_resnet_v1
 from srv.video_processing.common.draw_label import draw_label
-from srv.video_processing.common.log_faces import log
 from srv.video_processing.object_tracker import CentroidTracker
 
 ct = CentroidTracker()
@@ -69,15 +68,14 @@ def detect_face_features(frame_area, frame, img_size, body_left, body_bottom):
             if i >= detected_faces_count:
                 break
 
-            age_i = ages[i]
-            gender_i = genders[i]
+            age_i = int(ages[i])
+            gender_i = "Female" if genders[i] == 0 else "Male"
             result.setdefault('id', []).append(obj_id)
             result.setdefault('time', []).append(datetime.now().strftime('%H:%M:%S')[0:8])
             result.setdefault('age', []).append(age_i)
             result.setdefault('gender', []).append(gender_i)
 
-            label = "{}, {}, ID={}".format(int(age_i), "Female" if gender_i == 0 else "Male", obj_id)
+            label = "{}, {}, ID={}".format(age_i, gender_i, obj_id)
             draw_label(frame, (detected[i].left() + body_left, detected[i].bottom() + body_bottom), label)
-            log(label)
 
     return frame_area, result
