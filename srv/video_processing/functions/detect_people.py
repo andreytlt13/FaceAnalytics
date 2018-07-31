@@ -4,17 +4,26 @@ import numpy as np
 
 from imutils.object_detection import non_max_suppression
 
+MIN_CONFIDENCE_LEVEL = 0.5
+SAFE_MARGIN = 10
+
 hog = cv2.HOGDescriptor()
 hog.setSVMDetector(cv2.HOGDescriptor_getDefaultPeopleDetector())
 
 
 def detect_people(frame, img_w):
-    resized = imutils.resize(frame, width=int(img_w * 0.5))
+    scale_factor = 0.5
+    resized = imutils.resize(frame, width=int(img_w * scale_factor))
     gray = cv2.cvtColor(resized, cv2.COLOR_RGB2GRAY)
     objects, weights = hog.detectMultiScale(
         gray, winStride=(8, 8), padding=(24, 24), scale=1.15
     )
-    rects = np.array([[2 * x - 10, 2 * y - 10, 2 * (x + w) + 10, 2 * (y + h) + 10] for (x, y, w, h) in objects])
+    scale_back_factor = int(1 / scale_factor)
+    rects = np.array(
+        [[scale_back_factor * x - SAFE_MARGIN, scale_back_factor * y - SAFE_MARGIN,
+          scale_back_factor * (x + w) + SAFE_MARGIN, scale_back_factor * (y + h) + SAFE_MARGIN]
+         for (x, y, w, h) in objects]
+    )
     people = non_max_suppression(rects, probs=None, overlapThresh=0.65)
-    people = [p for i, p in enumerate(people) if weights[i] > 0.5]
+    people = [p for i, p in enumerate(people) if weights[i] > MIN_CONFIDENCE_LEVEL]
     return people

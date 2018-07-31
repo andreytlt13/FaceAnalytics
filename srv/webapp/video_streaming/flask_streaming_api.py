@@ -5,14 +5,20 @@ import flask
 import numpy as np
 
 from srv.video_processing.common.log_faces import log
-from srv.video_processing.functions.detect_face_features import detect_face_features
+from srv.video_processing.functions.detect_age import detect_age
+from srv.video_processing.functions.detect_gender import detect_gender
 from srv.video_processing.functions.detect_people import detect_people
+from srv.video_processing.functions.face_feature_detector import load_network
 from srv.video_processing.functions.recognize_face import recognize_faces
 from srv.webapp.video_streaming.utils.normalize_image import fisheye_to_flat
 
 LOG_PATH = '/tmp/faces_log.txt'
 last_log_message = ''
 detected_regions_count = 1
+
+sess, age, gender, train_mode, images_pl = load_network(
+    'srv/models'
+)
 
 face_locations = []
 face_encodings = []
@@ -82,10 +88,13 @@ def generate_stream(camera_url):
 
 
 def process_frame(cropped, frame, img_size, x, y):
-    _, face_feature_map = detect_face_features(cropped, frame, img_size, x, y)
+    _, age_map = detect_age(cropped, frame, img_size, x, y, sess, age, train_mode, images_pl)
+    _, gender_map = detect_gender(cropped, frame, img_size, x, y, sess, gender, train_mode, images_pl)
     _, person_feature_map = recognize_faces(cropped, is_cropped=True)
+    face_feature_map = age_map.copy()
+    face_feature_map.update(gender_map)
+    face_feature_map.update(person_feature_map)
     if len(person_feature_map) > 0:
-        face_feature_map['name'] = person_feature_map['name']
         log(face_feature_map)
 
 
