@@ -5,14 +5,20 @@ import flask
 import numpy as np
 
 from srv.video_processing.common.log_faces import log
-from srv.video_processing.functions.detect_face_features import detect_face_features
+from srv.video_processing.functions.detect_age import detect_age
+from srv.video_processing.functions.detect_gender import detect_gender
 from srv.video_processing.functions.detect_people import detect_people
+from srv.video_processing.functions.face_feature_detector import load_network
 from srv.video_processing.functions.recognize_face import recognize_faces
 from srv.webapp.video_streaming.utils.normalize_image import fisheye_to_flat
 
 LOG_PATH = '/tmp/faces_log.txt'
 last_log_message = ''
 detected_regions_count = 1
+
+sess, age, gender, train_mode, images_pl = load_network(
+    'srv/models'
+)
 
 face_locations = []
 face_encodings = []
@@ -51,11 +57,10 @@ def video_stream():
 
 
 def generate_stream(camera_url):
-    img_size = 160
-
     while True:
         _, frame = cv2.VideoCapture(camera_url).read()
-        img_h, img_w, _ = np.shape(frame)
+        _, img_w, _ = np.shape(frame)
+
         frame = fisheye_to_flat(frame)
 
         people = detect_people(frame, img_w)
@@ -71,9 +76,9 @@ def generate_stream(camera_url):
                 cv2.imwrite('/tmp/images/frame' + str(detected_regions_count) + '.jpg', cropped)
                 detected_regions_count += 1
 
-                process_frame(cropped, frame, img_size, x, y)
+                process_frame(cropped, frame, x, y)
         else:
-            process_frame(frame, frame, img_size, 0, 0)
+            process_frame(frame, frame, 0, 0)
 
         _, img_encoded = cv2.imencode('.jpg', frame)
         yield (b'--frame\r\n'
@@ -81,11 +86,14 @@ def generate_stream(camera_url):
                b'Content-Type: image/jpeg\r\n\r\n' + img_encoded.tobytes() + b'\r\n')
 
 
-def process_frame(cropped, frame, img_size, x, y):
-    _, face_feature_map = detect_face_features(cropped, frame, img_size, x, y)
+def process_frame(cropped, frame, x, y):
+    _, age_map = detect_age(cropped, frame, x, y, sess, age, train_mode, images_pl)
+    _, gender_map = detect_gender(cropped, frame, x, y, sess, gender, train_mode, images_pl)
     _, person_feature_map = recognize_faces(cropped, is_cropped=True)
+    face_feature_map = age_map.copy()
+    face_feature_map.update(gender_map)
+    face_feature_map.update(person_feature_map)
     if len(person_feature_map) > 0:
-        face_feature_map['name'] = person_feature_map['name']
         log(face_feature_map)
 
 
