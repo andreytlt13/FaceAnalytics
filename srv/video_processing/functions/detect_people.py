@@ -14,9 +14,8 @@ hog.setSVMDetector(cv2.HOGDescriptor_getDefaultPeopleDetector())
 def detect_people(frame, img_w):
     scale_factor = 0.5
     resized = imutils.resize(frame, width=int(img_w * scale_factor))
-    gray = cv2.cvtColor(resized, cv2.COLOR_RGB2GRAY)
     objects, weights = hog.detectMultiScale(
-        gray, winStride=(8, 8), padding=(24, 24), scale=1.15
+        resized, winStride=(8, 8), padding=(24, 24), scale=1.15
     )
     scale_back_factor = int(1 / scale_factor)
     rects = np.array(
