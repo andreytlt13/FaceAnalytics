@@ -9,6 +9,10 @@ ct = CentroidTracker()
 
 def detect_gender(frame_area, frame, img_size, body_left, body_bottom, sess, gender, train_mode, images_pl):
     result = {}
+    genders = sess.run(gender, feed_dict={images_pl: frame, train_mode: False})
+
+
+
 
     detected, faces = detect_faces(frame_area, img_size)
     detected_faces_count = len(detected)
