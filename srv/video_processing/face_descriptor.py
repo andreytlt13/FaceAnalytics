@@ -8,7 +8,7 @@ from os.path import isfile, join
 import cv2
 
 import srv.common as face_recognition
-from srv.video_processing.functions.face_feature_detector import load_network, detect_faces
+from srv.video_processing.face_feature_detector import load_network, detect_faces
 
 SOURCE = 'source'
 
