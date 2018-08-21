@@ -33,10 +33,9 @@ def detect_age(frame_area, frame, img_size, body_left, body_bottom, sess, age, t
 
             label = "age={}".format(age_i, obj_id)
             draw_label(
-                frame,
+                frame, label,
                 (body_left + centroid[0] - min_horizontal_center,
-                 body_bottom + centroid[1] - min_vertical_center),
-                label
+                 body_bottom + centroid[1] - min_vertical_center)
             )
 
     return frame_area, result

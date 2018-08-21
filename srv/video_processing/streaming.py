@@ -1,15 +1,21 @@
-import datetime
 import argparse
-import imutils
-import time
-import cv2
-import numpy as np
-import os
+import datetime
 import json
+import os
+import time
 
-from srv.video_processing.common.tracker import CentroidTracker
-from imutils.video import VideoStream
+import cv2
+import imutils
+import numpy as np
 from imutils.video import FPS
+from imutils.video import VideoStream
+
+from srv.video_processing.common.draw_label import draw_label
+from srv.video_processing.common.tracker import CentroidTracker
+
+FRAME_WIDTH = 400
+RED_COLOR = (0, 0, 255)
+SCALE_FACTOR = 1.0
 
 ap = argparse.ArgumentParser()
 ap.add_argument("-p", "--prototxt", required=False, default='models/deploy.prototxt',
@@ -22,8 +28,6 @@ ap.add_argument("-o", "--output", required=False, default='video_processing/tmp/
                 help="path to output directory")
 args = vars(ap.parse_args())
 
-WIDTH = 400
-
 # initialize our centroid tracker and frame dimensions
 ct = CentroidTracker()
 (H, W) = (None, None)
@@ -34,16 +38,15 @@ net = cv2.dnn.readNetFromCaffe(args["prototxt"], args["model"])
 
 # initialize the video stream and allow the camera sensor to warmup
 print("[INFO] starting video stream...")
-vs = VideoStream(src=0).start() #'rtsp://admin:admin@10.101.106.12:554/ch01/0' tNgB4SZD
+vs = VideoStream(src=0).start()  # 'rtsp://admin:admin@10.101.106.12:554/ch01/0' tNgB4SZD
 time.sleep(2.0)
 
 # initialize the FPS throughput estimator
 fps = None
 
-
 while True:
     frame = vs.read()
-    frame = imutils.resize(frame, width=WIDTH)
+    frame = imutils.resize(frame, width=FRAME_WIDTH)
 
     fps = FPS().start()
 
@@ -51,7 +54,7 @@ while True:
     if W is None or H is None:
         (H, W) = frame.shape[:2]
 
-    blob = cv2.dnn.blobFromImage(frame, 1.0, (W, H),
+    blob = cv2.dnn.blobFromImage(frame, SCALE_FACTOR, (W, H),
                                  (104.0, 177.0, 123.0))
     net.setInput(blob)
     detections = net.forward()
@@ -60,11 +63,10 @@ while True:
     for i in range(0, detections.shape[2]):
         if detections[0, 0, i, 2] > args["confidence"]:
             box = detections[0, 0, i, 3:7] * np.array([W, H, W, H])
-            rects.append(box.astype("int"))
+            box_coordinates = box.astype("int")
+            rects.append(box_coordinates)
 
-            (startX, startY, endX, endY) = box.astype("int")
-            # cv2.rectangle(frame, (startX, startY), (endX, endY),
-            #               (0, 255, 0), 2)
+            (startX, startY, endX, endY) = box_coordinates
 
     objects = ct.update(rects)
 
@@ -76,21 +78,19 @@ while True:
 
         if datetime.datetime.now().second % 10 == 0:
             imgCrop = frame[y:h, x:w]
-            p = os.path.sep.join([args["output"], "id_{}.png".format(
-                str(objectID))])
+            p = os.path.sep.join(
+                [args["output"], "id_{}.png".format(str(objectID))]
+            )
             cv2.imwrite(p, imgCrop)
 
-        if os.path.exists('video_processing/tmp/description/id_{}.json'.format(objectID)):
-            description = json.loads(open('video_processing/tmp/description/id_{0}.json'.format(objectID)).read())
-            cv2.putText(frame, description['sex'], (centroid[0] - 100, centroid[1] - 10),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-            cv2.putText(frame, str(description['age']), (centroid[0] - 100, centroid[1] - 50),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-            cv2.putText(frame, description['name'], (centroid[0] - 100, centroid[1] - 100),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+        description_path = 'video_processing/tmp/description/id_{}.json'.format(objectID)
+        if os.path.exists(description_path):
+            description = json.loads(open(description_path).read())
+            draw_label(frame, description['gender'], (centroid[0] - 100, centroid[1] + 20))
+            draw_label(frame, str(description['age']), (centroid[0] - 100, centroid[1]))
+            draw_label(frame, description['name'], (centroid[0] - 100, centroid[1] - 20))
 
-        cv2.putText(frame, text, (centroid[0] - 10, centroid[1] - 10),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+        draw_label(frame, text, (centroid[0], centroid[1] + 75))
 
     fps.update()
     fps.stop()
@@ -101,8 +101,7 @@ while True:
 
     for (i, (k, v)) in enumerate(info):
         text = "{}: {}".format(k, v)
-        cv2.putText(frame, text, (10, H - ((i * 20) + 20)),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+        draw_label(image=frame, label=text, point=(10, H - ((i * 20) + 20)), color=RED_COLOR)
 
     cv2.imshow("Frame", frame)
     key = cv2.waitKey(1) & 0xFF1

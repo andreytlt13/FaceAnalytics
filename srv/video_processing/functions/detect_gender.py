@@ -36,11 +36,7 @@ def detect_gender(frame_area, frame, img_size, body_left, body_bottom, sess, gen
             result.setdefault('gender', []).append(gender_i)
 
             label = "{}, ID={}".format(gender_i, obj_id)
-            draw_label(
-                frame,
-                (body_left + centroid[0] - min_horizontal_center,
-                 body_bottom + centroid[1] + min_vertical_center),
-                label
-            )
+            draw_label(frame, label, (body_left + centroid[0] - min_horizontal_center,
+                                      body_bottom + centroid[1] + min_vertical_center))
 
     return frame_area, result
