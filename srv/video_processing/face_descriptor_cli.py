@@ -12,4 +12,4 @@ ap.add_argument("-o", "--output", required=False, default='/tmp/description',
                 help="path to output directory")
 args = vars(ap.parse_args())
 
-describe(args[SOURCE])
+describe(camera_url=0, source=args[SOURCE])

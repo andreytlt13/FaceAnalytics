@@ -10,6 +10,7 @@ from imutils.video import FPS
 from srv.common.config import config_parser
 from srv.video_processing.common.draw_label import draw_label
 from srv.video_processing.common.tracker import CentroidTracker
+from video_processing.common import enhasher
 
 FRAME_WIDTH = 400
 SCALE_FACTOR = 1.0
@@ -24,8 +25,10 @@ class FrameProcessor:
         self.camera_url = camera_url  # 'rtsp://admin:admin@10.101.106.12:554/ch01/0' tNgB4SZD
         self.confidence = float(confidence)
         self.ct = CentroidTracker()
-        self.descriptions_dir = CONFIG['descriptions_dir']
-        self.detected_face_img_pattern = detected_faces_dir + '/id_{}.png'
+
+        camera_url_hash = enhasher.hash_string(camera_url)
+        self.description_pattern = CONFIG['descriptions_dir'] + '/' + camera_url_hash + '/id_{}.json'
+        self.detected_face_img_pattern = detected_faces_dir + '/' + camera_url_hash + '/id_{}.png'
         (self.H, self.W) = (None, None)
 
         # load our serialized model from disk
@@ -70,12 +73,12 @@ class FrameProcessor:
                 imgCrop = frame[y:h, x:w]
                 cv2.imwrite(self.detected_face_img_pattern.format(str(objectID)), imgCrop)
 
-            description_path = self.descriptions_dir + '/id_{}.json'.format(objectID)
+            description_path = self.description_pattern.format(objectID)
             if os.path.exists(description_path):
                 description = json.loads(open(description_path).read())
                 draw_label(frame, description['gender'], (centroid[0] - 100, centroid[1] + 20))
                 draw_label(frame, str(description['age']), (centroid[0] - 100, centroid[1]))
-                draw_label(frame, description['name'], (centroid[0] - 100, centroid[1] - 20))
+                draw_label(frame, description['person_name'], (centroid[0] - 100, centroid[1] - 20))
 
             draw_label(frame, text, (centroid[0], centroid[1] + 75))
 

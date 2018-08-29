@@ -8,8 +8,10 @@ from os.path import isfile, join
 import cv2
 
 import srv.common as face_recognition
+from db import event_db_logger
 from srv.common.config import config_parser
 from srv.video_processing.face_feature_detector import load_network, detect_faces
+from video_processing.common import enhasher
 
 CONFIG = config_parser.parse_default()
 
@@ -34,18 +36,20 @@ def measure_performance(t, pattern):
     return time.process_time()
 
 
-def describe(source=CONFIG['detected_faces_dir']):
-    description_file_pattern = CONFIG['descriptions_dir'] + '/id_{}.json'
+def describe(camera_url, source=CONFIG['detected_faces_dir']):
+    description_file_pattern = CONFIG['descriptions_dir'] + '/' + enhasher.hash_string(camera_url) + '/id_{}.json'
     descriptions_dir = os.path.dirname(description_file_pattern)
     if not os.path.exists(descriptions_dir):
         os.makedirs(descriptions_dir)
+    db_logger = event_db_logger.EventDBLogger()
+    camera_source = source + '/' + enhasher.hash_string(camera_url)
     while True:
-        img_sources = [f for f in listdir(source) if isfile(join(source, f))]
+        img_sources = [f for f in listdir(camera_source) if isfile(join(camera_source, f))]
 
         for img_source in img_sources:
 
             t = time.process_time()
-            frame = cv2.imread('{0}/{1}'.format(source, img_source), cv2.IMREAD_UNCHANGED)
+            frame = cv2.imread('{0}/{1}'.format(camera_source, img_source), cv2.IMREAD_UNCHANGED)
             t = measure_performance(t, '1. Read image: {}')
 
             detected, faces = detect_faces(frame)
@@ -76,9 +80,11 @@ def describe(source=CONFIG['detected_faces_dir']):
 
                 _id = img_source.replace('.png', '').replace('id_', '')
                 description = {
-                    'id': _id, 'name': name, 'age': _age, 'gender': _gender,
-                    'time': int(datetime.timestamp(datetime.now()))
+                    'id': _id, 'person_name': name, 'age': _age, 'gender': _gender,
+                    'log_time': int(datetime.timestamp(datetime.now())),
+                    'camera_url': camera_url
                 }
+                db_logger.log(description)
                 with open(description_file_pattern.format(_id), 'w+') as f:
                     json.dump(description, f)
 
