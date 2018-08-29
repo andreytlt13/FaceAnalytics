@@ -51,34 +51,35 @@ def describe(source=CONFIG['detected_faces_dir']):
             detected, faces = detect_faces(frame)
             t = measure_performance(t, '2. Face detect: {}')
 
-            ages, genders = sess.run([age, gender], feed_dict={images_pl: faces, train_mode: False})
-            t = measure_performance(t, '3. Estimate age and gender: {}')
+            if len(faces) > 0:
+                ages, genders = sess.run([age, gender], feed_dict={images_pl: faces, train_mode: False})
+                t = measure_performance(t, '3. Estimate age and gender: {}')
 
-            face_locations = face_recognition.face_locations(frame)
-            face_encodings = face_recognition.face_encodings(frame, face_locations)
-            t = measure_performance(t, '4. Recognize face: {}')
+                face_locations = face_recognition.face_locations(frame)
+                face_encodings = face_recognition.face_encodings(frame, face_locations)
+                t = measure_performance(t, '4. Recognize face: {}')
 
-            if len(detected) > 1 or len(ages) > 1 or len(genders) > 1 or len(face_encodings) > 1:
-                raise RuntimeError('There should be exactly one face per img_source')
+                if len(detected) > 1 or len(ages) > 1 or len(genders) > 1 or len(face_encodings) > 1:
+                    raise RuntimeError('There should be exactly one face per img_source')
 
-            _gender = "Female" if genders[0] == 0 else "Male"
-            _age = int(ages[0])
+                _gender = "Female" if genders[0] == 0 else "Male"
+                _age = int(ages[0])
 
-            matches = face_recognition.compare_faces(known_face_encodings, face_encodings[0])
-            name = 'Unknown'
+                matches = face_recognition.compare_faces(known_face_encodings, face_encodings[0])
+                name = 'Unknown'
 
-            if True in matches:
-                first_match_index = matches.index(True)
-                name = known_face_names[first_match_index]
+                if True in matches:
+                    first_match_index = matches.index(True)
+                    name = known_face_names[first_match_index]
 
-            t = measure_performance(t, '5. Name detected: {}')
+                t = measure_performance(t, '5. Name detected: {}')
 
-            _id = img_source.replace('.png', '').replace('id_', '')
-            description = {
-                'id': _id, 'name': name, 'age': _age, 'gender': _gender,
-                'time': int(datetime.timestamp(datetime.now()))
-            }
-            with open(description_file_pattern.format(_id), 'w+') as f:
-                json.dump(description, f)
+                _id = img_source.replace('.png', '').replace('id_', '')
+                description = {
+                    'id': _id, 'name': name, 'age': _age, 'gender': _gender,
+                    'time': int(datetime.timestamp(datetime.now()))
+                }
+                with open(description_file_pattern.format(_id), 'w+') as f:
+                    json.dump(description, f)
 
         time.sleep(10)
