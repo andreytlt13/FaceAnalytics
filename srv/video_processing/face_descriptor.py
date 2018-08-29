@@ -1,5 +1,5 @@
-import argparse
 import json
+import os
 import time
 from datetime import datetime
 from os import listdir
@@ -8,38 +8,24 @@ from os.path import isfile, join
 import cv2
 
 import srv.common as face_recognition
+from srv.common.config import config_parser
 from srv.video_processing.face_feature_detector import load_network, detect_faces
 
-SOURCE = 'source'
+CONFIG = config_parser.parse_default()
 
-# construct the arguments and parse them
-ap = argparse.ArgumentParser()
-ap.add_argument("-s", "--source", required=False, default='video_processing/tmp/photo',
-                help="path to output directory")
-ap.add_argument("-o", "--output", required=False, default='video_processing/tmp/description',
-                help="path to output directory")
-args = vars(ap.parse_args())
+sess, age, gender, train_mode, images_pl = load_network(CONFIG['models_dir'])
 
-sess, age, gender, train_mode, images_pl = load_network('models')
-
-andrey_image = face_recognition.load_image_file("photo/andrey.jpg")
+andrey_image = face_recognition.load_image_file(CONFIG['known_people_dir'] + "/andrey.jpg")
 andrey_face_encoding = face_recognition.face_encodings(andrey_image)[0]
 
-simon_image = face_recognition.load_image_file("photo/simon.jpg")
+simon_image = face_recognition.load_image_file(CONFIG['known_people_dir'] + "/simon.jpg")
 simon_face_encoding = face_recognition.face_encodings(simon_image)[0]
 
-misha_image = face_recognition.load_image_file("photo/misha.jpg")
+misha_image = face_recognition.load_image_file(CONFIG['known_people_dir'] + "/misha.jpg")
 misha_face_encoding = face_recognition.face_encodings(misha_image)[0]
 
 known_face_encodings = [andrey_face_encoding, simon_face_encoding, misha_face_encoding]
 known_face_names = ['Andrey', 'Simon', 'Misha']
-
-face_locations = []
-face_encodings = []
-face_names = []
-process_this_frame = True
-
-log_time = 0
 
 
 def measure_performance(t, pattern):
@@ -48,49 +34,51 @@ def measure_performance(t, pattern):
     return time.process_time()
 
 
-while True:
-    img_sources = [f for f in listdir(args[SOURCE]) if isfile(join(args[SOURCE], f))]
+def describe(source=CONFIG['detected_faces_dir']):
+    description_file_pattern = CONFIG['descriptions_dir'] + '/id_{}.json'
+    descriptions_dir = os.path.dirname(description_file_pattern)
+    if not os.path.exists(descriptions_dir):
+        os.makedirs(descriptions_dir)
+    while True:
+        img_sources = [f for f in listdir(source) if isfile(join(source, f))]
 
-    for img_source in img_sources:
+        for img_source in img_sources:
 
-        t = time.process_time()
-        frame = cv2.imread('{0}/{1}'.format(args[SOURCE], img_source), cv2.IMREAD_UNCHANGED)
-        t = measure_performance(t, '1. Read image: {}')
+            t = time.process_time()
+            frame = cv2.imread('{0}/{1}'.format(source, img_source), cv2.IMREAD_UNCHANGED)
+            t = measure_performance(t, '1. Read image: {}')
 
-        detected, faces = detect_faces(frame)
-        t = measure_performance(t, '2. Face detect: {}')
+            detected, faces = detect_faces(frame)
+            t = measure_performance(t, '2. Face detect: {}')
 
-        if len(detected) > 0:
             ages, genders = sess.run([age, gender], feed_dict={images_pl: faces, train_mode: False})
-        t = measure_performance(t, '3. Estimate age and gender: {}')
+            t = measure_performance(t, '3. Estimate age and gender: {}')
 
-        for i, d in enumerate(detected):
-            _gender = "Female" if genders[i] == 0 else "Male"
-            _age = int(ages[i])
-        t = measure_performance(t, '4. Draw age and gender: {}')
+            face_locations = face_recognition.face_locations(frame)
+            face_encodings = face_recognition.face_encodings(frame, face_locations)
+            t = measure_performance(t, '4. Recognize face: {}')
 
-        face_locations = face_recognition.face_locations(frame)
-        face_encodings = face_recognition.face_encodings(frame, face_locations)
+            if len(detected) > 1 or len(ages) > 1 or len(genders) > 1 or len(face_encodings) > 1:
+                raise RuntimeError('There should be exactly one face per img_source')
 
-        face_names = []
-        for face_encoding in face_encodings:
-            matches = face_recognition.compare_faces(known_face_encodings, face_encoding)
+            _gender = "Female" if genders[0] == 0 else "Male"
+            _age = int(ages[0])
+
+            matches = face_recognition.compare_faces(known_face_encodings, face_encodings[0])
             name = 'Unknown'
 
             if True in matches:
                 first_match_index = matches.index(True)
                 name = known_face_names[first_match_index]
 
-            face_names.append(name)
-        t = measure_performance(t, '5. Name detected: {}')
+            t = measure_performance(t, '5. Name detected: {}')
 
-        if len(detected) > 0:
             _id = img_source.replace('.png', '').replace('id_', '')
             description = {
                 'id': _id, 'name': name, 'age': _age, 'gender': _gender,
                 'time': int(datetime.timestamp(datetime.now()))
             }
-            with open('video_processing/tmp/description/id_{}.json'.format(_id), 'w+') as f:
+            with open(description_file_pattern.format(_id), 'w+') as f:
                 json.dump(description, f)
 
-    time.sleep(10)
+        time.sleep(10)

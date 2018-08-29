@@ -4,10 +4,12 @@ import numpy as np
 import tensorflow as tf
 from imutils.face_utils import FaceAligner
 
+from srv.common.config import config_parser
 from srv.models import inception_resnet_v1
 
 COLOR_DEPTH = 3
 FACE_WIDTH = 160
+CONFIG = config_parser.parse_default()
 
 
 def load_network(model_path):
@@ -36,7 +38,7 @@ def load_network(model_path):
 
 detector = dlib.get_frontal_face_detector()
 predictor = dlib.shape_predictor(
-    "models/shape_predictor_68_face_landmarks.dat"
+    CONFIG['models_dir'] + "/shape_predictor_68_face_landmarks.dat"
 )
 fa = FaceAligner(predictor, desiredFaceWidth=FACE_WIDTH)
 
