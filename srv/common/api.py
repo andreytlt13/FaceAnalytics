@@ -1,6 +1,6 @@
-import scipy.misc
 import dlib
 import numpy as np
+import scipy.misc
 
 try:
     import face_recognition_models
@@ -55,9 +55,11 @@ def _raw_face_locations(img, number_of_times_to_upsample=1, model="hog"):
 
 def face_locations(img, number_of_times_to_upsample=1, model="hog"):
     if model == "cnn":
-        return [_trim_css_to_bounds(_rect_to_css(face.rect), img.shape) for face in _raw_face_locations(img, number_of_times_to_upsample, "cnn")]
+        return [_trim_css_to_bounds(_rect_to_css(face.rect), img.shape) for face in
+                _raw_face_locations(img, number_of_times_to_upsample, "cnn")]
     else:
-        return [_trim_css_to_bounds(_rect_to_css(face), img.shape) for face in _raw_face_locations(img, number_of_times_to_upsample, model)]
+        return [_trim_css_to_bounds(_rect_to_css(face), img.shape) for face in
+                _raw_face_locations(img, number_of_times_to_upsample, model)]
 
 
 def _raw_face_locations_batched(images, number_of_times_to_upsample=1, batch_size=128):
@@ -101,14 +103,16 @@ def face_landmarks(face_image, face_locations=None):
         "left_eye": points[36:42],
         "right_eye": points[42:48],
         "top_lip": points[48:55] + [points[64]] + [points[63]] + [points[62]] + [points[61]] + [points[60]],
-        "bottom_lip": points[54:60] + [points[48]] + [points[60]] + [points[67]] + [points[66]] + [points[65]] + [points[64]]
+        "bottom_lip": points[54:60] + [points[48]] + [points[60]] + [points[67]] + [points[66]] + [points[65]] + [
+            points[64]]
     } for points in landmarks_as_tuples]
 
 
 def face_encodings(face_image, known_face_locations=None, num_jitters=1):
     raw_landmarks = _raw_face_landmarks(face_image, known_face_locations, model="small")
 
-    return [np.array(face_encoder.compute_face_descriptor(face_image, raw_landmark_set, num_jitters)) for raw_landmark_set in raw_landmarks]
+    return [np.array(face_encoder.compute_face_descriptor(face_image, raw_landmark_set, num_jitters)) for
+            raw_landmark_set in raw_landmarks]
 
 
 def compare_faces(known_face_encodings, face_encoding_to_check, tolerance=0.6):

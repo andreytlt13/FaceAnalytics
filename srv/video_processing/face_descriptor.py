@@ -93,6 +93,4 @@ while True:
             with open('video_processing/tmp/description/id_{}.json'.format(_id), 'w+') as f:
                 json.dump(description, f)
 
-
-
     time.sleep(10)

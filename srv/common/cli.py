@@ -1,13 +1,16 @@
 from __future__ import print_function
-import click
+
+import itertools
+import multiprocessing
 import os
 import re
-import scipy.misc
-import warnings
-import srv.common.api as face_recognition
-import multiprocessing
-import itertools
 import sys
+import warnings
+
+import click
+import scipy.misc
+
+import srv.common.api as face_recognition
 
 
 def scan_known_people(known_people_folder):
@@ -54,7 +57,8 @@ def test_image(image_to_check, known_names, known_face_encodings, tolerance=0.6,
         result = list(distances <= tolerance)
 
         if True in result:
-            [print_result(image_to_check, name, distance, show_distance) for is_match, name, distance in zip(result, known_names, distances) if is_match]
+            [print_result(image_to_check, name, distance, show_distance) for is_match, name, distance in
+             zip(result, known_names, distances) if is_match]
         else:
             print_result(image_to_check, "unknown_person", None, show_distance)
 
@@ -63,7 +67,8 @@ def image_files_in_folder(folder):
     return [os.path.join(folder, f) for f in os.listdir(folder) if re.match(r'.*\.(jpg|jpeg|png)', f, flags=re.I)]
 
 
-def process_images_in_process_pool(images_to_check, known_names, known_face_encodings, number_of_cpus, tolerance, show_distance):
+def process_images_in_process_pool(images_to_check, known_names, known_face_encodings, number_of_cpus, tolerance,
+                                   show_distance):
     if number_of_cpus == -1:
         processes = None
     else:
@@ -89,21 +94,27 @@ def process_images_in_process_pool(images_to_check, known_names, known_face_enco
 @click.command()
 @click.argument('known_people_folder')
 @click.argument('image_to_check')
-@click.option('--cpus', default=1, help='number of CPU cores to use in parallel (can speed up processing lots of images). -1 means "use all in system"')
-@click.option('--tolerance', default=0.6, help='Tolerance for face comparisons. Default is 0.6. Lower this if you get multiple matches for the same person.')
-@click.option('--show-distance', default=False, type=bool, help='Output face distance. Useful for tweaking tolerance setting.')
+@click.option('--cpus', default=1,
+              help='number of CPU cores to use in parallel (can speed up processing lots of images). -1 means "use all in system"')
+@click.option('--tolerance', default=0.6,
+              help='Tolerance for face comparisons. Default is 0.6. Lower this if you get multiple matches for the same person.')
+@click.option('--show-distance', default=False, type=bool,
+              help='Output face distance. Useful for tweaking tolerance setting.')
 def main(known_people_folder, image_to_check, cpus, tolerance, show_distance):
     known_names, known_face_encodings = scan_known_people(known_people_folder)
 
     if (sys.version_info < (3, 4)) and cpus != 1:
-        click.echo("WARNING: Multi-processing support requires Python 3.4 or greater. Falling back to single-threaded processing!")
+        click.echo(
+            "WARNING: Multi-processing support requires Python 3.4 or greater. Falling back to single-threaded processing!")
         cpus = 1
 
     if os.path.isdir(image_to_check):
         if cpus == 1:
-            [test_image(image_file, known_names, known_face_encodings, tolerance, show_distance) for image_file in image_files_in_folder(image_to_check)]
+            [test_image(image_file, known_names, known_face_encodings, tolerance, show_distance) for image_file in
+             image_files_in_folder(image_to_check)]
         else:
-            process_images_in_process_pool(image_files_in_folder(image_to_check), known_names, known_face_encodings, cpus, tolerance, show_distance)
+            process_images_in_process_pool(image_files_in_folder(image_to_check), known_names, known_face_encodings,
+                                           cpus, tolerance, show_distance)
     else:
         test_image(image_to_check, known_names, known_face_encodings, tolerance, show_distance)
 
