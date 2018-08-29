@@ -1,10 +1,10 @@
 # Borrowed from https://medium.com/@kennethjiang/calibrate-fisheye-lens-using-opencv-333b05afa0b0
+import glob
 
 import cv2
+import numpy as np
 
 assert cv2.__version__[0] == '3', 'The fisheye module requires opencv version >= 3.0.0'
-import numpy as np
-import glob
 
 CHECKERBOARD = (6, 9)
 subpix_criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.1)
@@ -21,7 +21,7 @@ for fname in images:
     if _img_shape == None:
         _img_shape = img.shape[:2]
     else:
-        assert _img_shape == img.shape[:2], "All images must share the same size."
+        assert _img_shape == img.shape[:2], 'All images must share the same size.'
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     # Find the chess board corners
     ret, corners = cv2.findChessboardCorners(gray, CHECKERBOARD,
@@ -50,7 +50,7 @@ rms, _, _, _, _ = \
         (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 1e-6)
     )
 
-print("Found " + str(N_OK) + " valid images for calibration")
-print("DIM=" + str(_img_shape[::-1]))
-print("K=np.array(" + str(K.tolist()) + ")")
-print("D=np.array(" + str(D.tolist()) + ")")
+print('Found ' + str(N_OK) + ' valid images for calibration')
+print('DIM=' + str(_img_shape[::-1]))
+print('K=np.array(' + str(K.tolist()) + ')')
+print('D=np.array(' + str(D.tolist()) + ')')

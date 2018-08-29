@@ -1,5 +1,6 @@
-import cv2
 import dlib
+
+import cv2
 import numpy as np
 import tensorflow as tf
 from imutils.face_utils import FaceAligner
@@ -30,7 +31,7 @@ def load_network(model_path):
     ckpt = tf.train.get_checkpoint_state(model_path)
     if ckpt and ckpt.model_checkpoint_path:
         saver.restore(sess, ckpt.model_checkpoint_path)
-        print("restore model!")
+        print('restore model!')
     else:
         pass
     return sess, age, gender, train_mode, images_pl
@@ -38,7 +39,7 @@ def load_network(model_path):
 
 detector = dlib.get_frontal_face_detector()
 predictor = dlib.shape_predictor(
-    CONFIG['models_dir'] + "/shape_predictor_68_face_landmarks.dat"
+    CONFIG['models_dir'] + '/shape_predictor_68_face_landmarks.dat'
 )
 fa = FaceAligner(predictor, desiredFaceWidth=FACE_WIDTH)
 

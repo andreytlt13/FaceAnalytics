@@ -1,5 +1,4 @@
 import cv2
-
 import numpy as np
 
 # Below is the output of calibrate.py script

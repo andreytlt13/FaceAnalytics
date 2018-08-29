@@ -32,7 +32,7 @@ class FrameProcessor:
         (self.H, self.W) = (None, None)
 
         # load our serialized model from disk
-        print("[INFO] loading model...")
+        print('[INFO] loading model...')
         self.net = cv2.dnn.readNetFromCaffe(prototxt, model)
 
         detected_faces_dir_path = os.path.dirname(self.detected_face_img_pattern)
@@ -59,7 +59,7 @@ class FrameProcessor:
         for i in range(0, detections.shape[2]):
             if detections[0, 0, i, 2] > self.confidence:
                 box = detections[0, 0, i, 3:7] * np.array([self.W, self.H, self.W, self.H])
-                box_coordinates = box.astype("int")
+                box_coordinates = box.astype('int')
                 rects.append(box_coordinates)
         objects = self.ct.update(rects)
 
@@ -67,7 +67,7 @@ class FrameProcessor:
         for (objectID, centroid), (x, y, w, h) in zip(objects.items(), rects):
             # draw both the ID of the object and the centroid of the
             # object on the output frame
-            text = "ID {}".format(objectID)
+            text = 'ID {}'.format(objectID)
 
             if datetime.datetime.now().second % 10 == 0:
                 imgCrop = frame[y:h, x:w]

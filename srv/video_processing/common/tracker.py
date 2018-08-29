@@ -9,13 +9,13 @@ class CentroidTracker():
         # initialize the next unique object ID along with two ordered
         # dictionaries used to keep track of mapping a given object
         # ID to its centroid and number of consecutive frames it has
-        # been marked as "disappeared", respectively
+        # been marked as 'disappeared', respectively
         self.nextObjectID = 0
         self.objects = OrderedDict()
         self.disappeared = OrderedDict()
 
         # store the number of maximum consecutive frames a given
-        # object is allowed to be marked as "disappeared" until we
+        # object is allowed to be marked as 'disappeared' until we
         # need to deregister the object from tracking
         self.maxDisappeared = maxDisappeared
 
@@ -52,7 +52,7 @@ class CentroidTracker():
             return self.objects
 
         # initialize an array of input centroids for the current frame
-        inputCentroids = np.zeros((len(rects), 2), dtype="int")
+        inputCentroids = np.zeros((len(rects), 2), dtype='int')
 
         # loop over the bounding box rectangles
         for (i, (startX, startY, endX, endY)) in enumerate(rects):
@@ -138,7 +138,7 @@ class CentroidTracker():
                     self.disappeared[objectID] += 1
 
                     # check to see if the number of consecutive
-                    # frames the object has been marked "disappeared"
+                    # frames the object has been marked 'disappeared'
                     # for warrants deregistering the object
                     if self.disappeared[objectID] > self.maxDisappeared:
                         self.deregister(objectID)

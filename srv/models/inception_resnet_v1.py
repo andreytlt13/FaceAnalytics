@@ -1,24 +1,24 @@
 # Copyright 2016 The TensorFlow Authors. All Rights Reserved.
 #
-# Licensed under the Apache License, Version 2.0 (the "License");
+# Licensed under the Apache License, Version 2.0 (the 'License');
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
 # http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
+# distributed under the License is distributed on an 'AS IS' BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
 
-"""Contains the definition of the Inception Resnet V1 architecture.
+'''Contains the definition of the Inception Resnet V1 architecture.
 As described in http://arxiv.org/abs/1602.07261.
   Inception-v4, Inception-ResNet and the Impact of Residual Connections
     on Learning
   Christian Szegedy, Sergey Ioffe, Vincent Vanhoucke, Alex Alemi
-"""
+'''
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -29,7 +29,7 @@ import tensorflow.contrib.slim as slim
 
 # Inception-Resnet-A
 def block35(net, scale=1.0, activation_fn=tf.nn.relu, scope=None, reuse=None):
-    """Builds the 35x35 resnet block."""
+    '''Builds the 35x35 resnet block.'''
     with tf.variable_scope(scope, 'Block35', [net], reuse=reuse):
         with tf.variable_scope('Branch_0'):
             tower_conv = slim.conv2d(net, 32, 1, scope='Conv2d_1x1')
@@ -51,7 +51,7 @@ def block35(net, scale=1.0, activation_fn=tf.nn.relu, scope=None, reuse=None):
 
 # Inception-Resnet-B
 def block17(net, scale=1.0, activation_fn=tf.nn.relu, scope=None, reuse=None):
-    """Builds the 17x17 resnet block."""
+    '''Builds the 17x17 resnet block.'''
     with tf.variable_scope(scope, 'Block17', [net], reuse=reuse):
         with tf.variable_scope('Branch_0'):
             tower_conv = slim.conv2d(net, 128, 1, scope='Conv2d_1x1')
@@ -72,7 +72,7 @@ def block17(net, scale=1.0, activation_fn=tf.nn.relu, scope=None, reuse=None):
 
 # Inception-Resnet-C
 def block8(net, scale=1.0, activation_fn=tf.nn.relu, scope=None, reuse=None):
-    """Builds the 8x8 resnet block."""
+    '''Builds the 8x8 resnet block.'''
     with tf.variable_scope(scope, 'Block8', [net], reuse=reuse):
         with tf.variable_scope('Branch_0'):
             tower_conv = slim.conv2d(net, 192, 1, scope='Conv2d_1x1')
@@ -174,7 +174,7 @@ def inception_resnet_v1(inputs, is_training=True,
                         bottleneck_layer_size=128,
                         reuse=None,
                         scope='InceptionResnetV1'):
-    """Creates the Inception Resnet V1 model.
+    '''Creates the Inception Resnet V1 model.
     Args:
       inputs: a 4-D tensor of size [batch_size, height, width, 3].
       num_classes: number of predicted classes.
@@ -186,7 +186,7 @@ def inception_resnet_v1(inputs, is_training=True,
     Returns:
       logits: the logits outputs of the model.
       end_points: the set of end_points from the inception model.
-    """
+    '''
     end_points = {}
 
     with tf.variable_scope(scope, 'InceptionResnetV1', [inputs], reuse=reuse):

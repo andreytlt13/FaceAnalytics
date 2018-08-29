@@ -17,13 +17,13 @@ CONFIG = config_parser.parse_default()
 
 sess, age, gender, train_mode, images_pl = load_network(CONFIG['models_dir'])
 
-andrey_image = face_recognition.load_image_file(CONFIG['known_people_dir'] + "/andrey.jpg")
+andrey_image = face_recognition.load_image_file(CONFIG['known_people_dir'] + '/andrey.jpg')
 andrey_face_encoding = face_recognition.face_encodings(andrey_image)[0]
 
-simon_image = face_recognition.load_image_file(CONFIG['known_people_dir'] + "/simon.jpg")
+simon_image = face_recognition.load_image_file(CONFIG['known_people_dir'] + '/simon.jpg')
 simon_face_encoding = face_recognition.face_encodings(simon_image)[0]
 
-misha_image = face_recognition.load_image_file(CONFIG['known_people_dir'] + "/misha.jpg")
+misha_image = face_recognition.load_image_file(CONFIG['known_people_dir'] + '/misha.jpg')
 misha_face_encoding = face_recognition.face_encodings(misha_image)[0]
 
 known_face_encodings = [andrey_face_encoding, simon_face_encoding, misha_face_encoding]
@@ -66,7 +66,7 @@ def describe(camera_url, source=CONFIG['detected_faces_dir']):
                 if len(detected) > 1 or len(ages) > 1 or len(genders) > 1 or len(face_encodings) > 1:
                     raise RuntimeError('There should be exactly one face per img_source')
 
-                _gender = "Female" if genders[0] == 0 else "Male"
+                _gender = 'Female' if genders[0] == 0 else 'Male'
                 _age = int(ages[0])
 
                 matches = face_recognition.compare_faces(known_face_encodings, face_encodings[0])
