@@ -1,14 +1,14 @@
 #!/usr/bin/env python
+import os
 import time
 
 import cv2
 import flask
 from imutils.video import VideoStream
 
-from video_processing import face_descriptor
 from video_processing.frame_processor import FrameProcessor
 
-app = flask.Flask(__name__)
+app = flask.Flask(__name__, instance_path=os.getenv('PROJECT_DIR') + '/srv/common/config')
 
 
 @app.route('/video_stream', methods=['GET'])
@@ -25,15 +25,13 @@ def video_stream():
 
 
 def stream(camera_url):
-    # start async process that'll describe images read by FrameProcessor
-    face_descriptor.describe(camera_url)
-
     # initialize the video stream and allow the camera sensor to warmup
     print('[INFO] starting video stream...')
     vs = VideoStream(src=camera_url).start()
     time.sleep(2.0)
+    frame_processor = FrameProcessor()
     while True:
-        frame, _, _ = FrameProcessor(camera_url).process_next_frame(vs)
+        frame, _, _ = frame_processor.process_next_frame(vs)
         _, img_encoded = cv2.imencode('.jpg', frame)
         yield (b'--frame\r\n'
 

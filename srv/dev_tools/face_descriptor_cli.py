@@ -1,9 +1,7 @@
 # construct the arguments and parse them
 import argparse
 
-from video_processing.face_descriptor import describe
-
-SOURCE = 'source'
+from video_processing import face_descriptor
 
 ap = argparse.ArgumentParser()
 ap.add_argument('-s', '--source', required=False, default='/tmp/faces',
@@ -12,4 +10,4 @@ ap.add_argument('-o', '--output', required=False, default='/tmp/description',
                 help='path to output directory')
 args = vars(ap.parse_args())
 
-describe(camera_url=0, source=args[SOURCE])
+face_descriptor.start(source=args['source'], descriptions_dir=args['output'])

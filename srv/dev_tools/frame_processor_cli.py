@@ -10,17 +10,20 @@ from video_processing.frame_processor import FrameProcessor
 RED_COLOR = (0, 0, 255)
 
 ap = argparse.ArgumentParser()
-ap.add_argument('-p', '--prototxt', required=False, default='models/deploy.prototxt',
+ap.add_argument('-p', '--prototxt', required=False, default='../models/deploy.prototxt',
                 help='path to Caffe deploy prototxt file')
-ap.add_argument('-m', '--model', required=False, default='models/res10_300x300_ssd_iter_140000.caffemodel',
+ap.add_argument('-m', '--model', required=False, default='../models/res10_300x300_ssd_iter_140000.caffemodel',
                 help='path to Caffe pre-trained model')
 ap.add_argument('-c', '--confidence', type=float, default=0.75,
                 help='minimum probability to filter weak detections')
-ap.add_argument('-o', '--output', required=False, default='video_processing/tmp/photo',
+ap.add_argument('-o', '--output', required=False, default='/tmp/faces',
                 help='path to output directory')
+ap.add_argument('-d', '--descriptions_dir', required=False, default='/tmp/description',
+                help='path to descriptor output directory')
 args = vars(ap.parse_args())
 
-processor = FrameProcessor(confidence=args['confidence'], model=args['model'], detected_faces_dir=args['output'],
+processor = FrameProcessor(confidence=args['confidence'], descriptions_dir=args['descriptions_dir'],
+                           detected_faces_dir=args['output'], model=args['model'],
                            prototxt=args['prototxt'])
 
 # initialize the video stream and allow the camera sensor to warmup
