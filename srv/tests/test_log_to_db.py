@@ -19,31 +19,27 @@ class TestDBLogger(unittest.TestCase):
     def test_log_to_db(self):
         logger = EventDBLogger(db_url='sqlite:///test.db')
         logger.log({
-            "id": 0,
+            "person_id": 0,
             "person_name": "Jack",
             "age": 69,
             "gender": "Male",
-            "log_time": "1533886427",
-            "camera_url": "rtsp://admin:admin@10.101.106.12:554/ch01/1"
+            "log_time": "1533886427"
         })
         logger.log({
-            "id": 5,
+            "person_id": 5,
             "person_name": "Judy",
             "age": 27,
             "gender": "Female",
-            "log_time": "1533886429",
-            "camera_url": "rtsp://admin:admin@10.101.106.12:554/ch01/0"
+            "log_time": "1533886429"
         })
 
         self.assertEqual(
             str(session.query(Event).filter_by(person_name='Jack').first()),
-            "<Event(id=1, person_id='0', person_name='Jack', age='69', gender='Male', log_time='1533886427', "
-            + "camera_url='rtsp://admin:admin@10.101.106.12:554/ch01/1')>"
+            "<Event(id=1, person_id='0', person_name='Jack', age='69', gender='Male', log_time='1533886427')>"
         )
         self.assertEqual(
             str(session.query(Event).filter_by(gender='Female').first()),
-            "<Event(id=2, person_id='5', person_name='Judy', age='27', gender='Female', log_time='1533886429', "
-            + "camera_url='rtsp://admin:admin@10.101.106.12:554/ch01/0')>"
+            "<Event(id=2, person_id='5', person_name='Judy', age='27', gender='Female', log_time='1533886429')>"
         )
 
     def tearDown(self):

@@ -16,12 +16,9 @@ class EventDBLogger:
         self.session = Session()
 
     def log(self, data):
-        # with open(json_log, "r") as read_file:
-        #     data = json.load(read_file)
         event = Event(
-            person_id=int(data['id']), person_name=data['person_name'], age=int(data['age']),
-            gender=data['gender'], log_time=int(data['log_time']),
-            camera_url=data['camera_url']
+            person_id=int(data['person_id']), person_name=data['person_name'], age=int(data['age']),
+            gender=data['gender'], log_time=int(data['log_time'])
         )
         self.session.add(event)
         self.session.commit()

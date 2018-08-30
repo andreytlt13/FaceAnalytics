@@ -10,7 +10,6 @@ from imutils.video import FPS
 from srv.common.config import config_parser
 from srv.video_processing.common.draw_label import draw_label
 from srv.video_processing.common.tracker import CentroidTracker
-from video_processing.common import enhasher
 
 FRAME_WIDTH = 400
 SCALE_FACTOR = 1.0
@@ -20,15 +19,14 @@ CONFIG = config_parser.parse_default()
 
 class FrameProcessor:
 
-    def __init__(self, camera_url=0, confidence=CONFIG['confidence'], detected_faces_dir=CONFIG['detected_faces_dir'],
-                 model=CONFIG['model'], prototxt=CONFIG['prototxt']) -> None:
-        self.camera_url = camera_url  # 'rtsp://admin:admin@10.101.106.12:554/ch01/0' tNgB4SZD
+    def __init__(self, confidence=CONFIG['confidence'], descriptions_dir=CONFIG['descriptions_dir'],
+                 detected_faces_dir=CONFIG['detected_faces_dir'], model=CONFIG['model'],
+                 prototxt=CONFIG['prototxt']) -> None:
         self.confidence = float(confidence)
         self.ct = CentroidTracker()
 
-        camera_url_hash = enhasher.hash_string(camera_url)
-        self.description_pattern = CONFIG['descriptions_dir'] + '/' + camera_url_hash + '/id_{}.json'
-        self.detected_face_img_pattern = detected_faces_dir + '/' + camera_url_hash + '/id_{}.png'
+        self.description_pattern = descriptions_dir + '/id_{}.json'
+        self.detected_face_img_pattern = detected_faces_dir + '/id_{}.png'
         (self.H, self.W) = (None, None)
 
         # load our serialized model from disk

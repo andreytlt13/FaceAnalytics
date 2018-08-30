@@ -13,8 +13,7 @@ class Event(Base):
     age = Column(Integer)
     gender = Column(String)
     log_time = Column(BigInteger)
-    camera_url = Column(String)
 
     def __repr__(self):
-        return "<Event(id=%d, person_id='%d', person_name='%s', age='%d', gender='%s', log_time='%d', camera_url='%s')>" % (
-            self.id, self.person_id, self.person_name, self.age, self.gender, self.log_time, self.camera_url)
+        return "<Event(id=%d, person_id='%d', person_name='%s', age='%d', gender='%s', log_time='%d')>" % (
+            self.id, self.person_id, self.person_name, self.age, self.gender, self.log_time)
