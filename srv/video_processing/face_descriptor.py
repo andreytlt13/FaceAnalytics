@@ -10,24 +10,14 @@ import cv2
 import srv.common as face_recognition
 from db import event_db_logger
 from srv.common.config import config_parser
+from srv.video_processing.common.known_face_encodings import known_face_encoding
 from srv.video_processing.face_feature_detector import load_network, detect_faces
 from video_processing.common import enhasher
 
 CONFIG = config_parser.parse_default()
 
 sess, age, gender, train_mode, images_pl = load_network(CONFIG['models_dir'])
-
-andrey_image = face_recognition.load_image_file(CONFIG['known_people_dir'] + '/andrey.jpg')
-andrey_face_encoding = face_recognition.face_encodings(andrey_image)[0]
-
-simon_image = face_recognition.load_image_file(CONFIG['known_people_dir'] + '/simon.jpg')
-simon_face_encoding = face_recognition.face_encodings(simon_image)[0]
-
-misha_image = face_recognition.load_image_file(CONFIG['known_people_dir'] + '/misha.jpg')
-misha_face_encoding = face_recognition.face_encodings(misha_image)[0]
-
-known_face_encodings = [andrey_face_encoding, simon_face_encoding, misha_face_encoding]
-known_face_names = ['Andrey', 'Simon', 'Misha']
+known_face_encodings, known_face_names = known_face_encoding(CONFIG['known_people_dir'])
 
 
 def measure_performance(t, pattern):
