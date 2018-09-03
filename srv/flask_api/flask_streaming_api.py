@@ -1,14 +1,14 @@
 #!/usr/bin/env python
-import os
 import time
 
 import cv2
 import flask
 from imutils.video import VideoStream
 
-from video_processing.frame_processor import FrameProcessor
+from frame_processsing.frame_processor import FrameProcessor
 
-app = flask.Flask(__name__, instance_path=os.getenv('PROJECT_DIR') + '/srv/common/config')
+app = flask.Flask(__name__,
+                  instance_path='/home/andrey/PycharmProjects/FaceAnalytics/srv/common/config')  # '../common/config')
 
 
 @app.route('/video_stream', methods=['GET'])
