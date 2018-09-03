@@ -61,7 +61,7 @@ class FrameProcessor:
                 rects.append(box_coordinates)
         objects = self.ct.update(rects)
 
-        # loop over the tracked objectsч
+        # loop over the tracked objects
         for (objectID, centroid), (x, y, w, h) in zip(objects.items(), rects):
             # draw both the ID of the object and the centroid of the
             # object on the output frame

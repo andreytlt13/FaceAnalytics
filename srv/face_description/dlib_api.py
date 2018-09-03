@@ -24,6 +24,31 @@ face_recognition_model = face_recognition_models.face_recognition_model_location
 face_encoder = dlib.face_recognition_model_v1(face_recognition_model)
 
 
+def face_encodings(face_image, known_face_locations=None, num_jitters=1):
+    raw_landmarks = _raw_face_landmarks(face_image, known_face_locations, model='small')
+
+    return [np.array(face_encoder.compute_face_descriptor(face_image, raw_landmark_set, num_jitters)) for
+            raw_landmark_set in raw_landmarks]
+
+
+def _raw_face_landmarks(face_image, face_locations=None, model='large'):
+    if face_locations is None:
+        face_locations = _raw_face_locations(face_image)
+    else:
+        face_locations = [_css_to_rect(face_location) for face_location in face_locations]
+
+    pose_predictor = pose_predictor_68_point
+
+    if model == 'small':
+        pose_predictor = pose_predictor_5_point
+
+    return [pose_predictor(face_image, face_location) for face_location in face_locations]
+
+
+def compare_faces(known_face_encodings, face_encoding_to_check, tolerance=0.6):
+    return list(face_distance(known_face_encodings, face_encoding_to_check) <= tolerance)
+
+
 def face_distance(face_encodings, face_to_compare):
     if len(face_encodings) == 0:
         return np.empty((0))
@@ -68,17 +93,6 @@ def face_landmarks(face_image, face_locations=None):
     } for points in landmarks_as_tuples]
 
 
-def face_encodings(face_image, known_face_locations=None, num_jitters=1):
-    raw_landmarks = _raw_face_landmarks(face_image, known_face_locations, model='small')
-
-    return [np.array(face_encoder.compute_face_descriptor(face_image, raw_landmark_set, num_jitters)) for
-            raw_landmark_set in raw_landmarks]
-
-
-def compare_faces(known_face_encodings, face_encoding_to_check, tolerance=0.6):
-    return list(face_distance(known_face_encodings, face_encoding_to_check) <= tolerance)
-
-
 def _raw_face_locations_batched(images, number_of_times_to_upsample=1, batch_size=128):
     return cnn_face_detector(images, number_of_times_to_upsample, batch_size=batch_size)
 
@@ -88,20 +102,6 @@ def _raw_face_locations(img, number_of_times_to_upsample=1, model='hog'):
         return cnn_face_detector(img, number_of_times_to_upsample)
     else:
         return face_detector(img, number_of_times_to_upsample)
-
-
-def _raw_face_landmarks(face_image, face_locations=None, model='large'):
-    if face_locations is None:
-        face_locations = _raw_face_locations(face_image)
-    else:
-        face_locations = [_css_to_rect(face_location) for face_location in face_locations]
-
-    pose_predictor = pose_predictor_68_point
-
-    if model == 'small':
-        pose_predictor = pose_predictor_5_point
-
-    return [pose_predictor(face_image, face_location) for face_location in face_locations]
 
 
 def _rect_to_css(rect):
