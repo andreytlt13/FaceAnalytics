@@ -5,14 +5,20 @@ import cv2
 import flask
 from imutils.video import VideoStream
 
-from frame_processsing.frame_processor import FrameProcessor
+from frame_processing.frame_processor import FrameProcessor
 
-app = flask.Flask(__name__,
-                  instance_path='/home/andrey/PycharmProjects/FaceAnalytics/srv/common/config')  # '../common/config')
+app = flask.Flask(
+    __name__,
+    instance_path='$PROJECT_DIR/srv/config'
+)  # '../common/config')
 
 
 @app.route('/video_stream', methods=['GET'])
 def video_stream():
+    """
+    Simple API for video streaming with face detection/recognition on top
+    :return: generator object so that on-the-fly stream can be shown to user
+    """
     try:
         camera_url = int(flask.request.args.get('camera_url'))
     except:

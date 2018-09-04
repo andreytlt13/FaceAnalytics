@@ -35,7 +35,7 @@ def load_network(model_path):
     return sess, age, gender, train_mode, images_pl
 
 
-def known_face_encoding(path):
+def load_known_face_encodings(path):
     photos = glob.glob(path + '/*.jpg')
     known_face_encodings = []
     known_face_names = []

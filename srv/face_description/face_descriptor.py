@@ -1,4 +1,3 @@
-import dlib
 import json
 import os
 import time
@@ -7,25 +6,27 @@ from os import listdir
 from os.path import isfile, join
 
 import cv2
+import dlib
 import numpy as np
 from imutils.face_utils import FaceAligner
 
 from config import config_parser
 from db import event_db_logger
 from face_description import dlib_api
-from face_description.network_loader import load_network, known_face_encoding
+from face_description.network_loader import load_network, load_known_face_encodings
 
 COLOR_DEPTH = 3
 FACE_WIDTH = 160
 CONFIG = config_parser.parse_default()
 
 detector = dlib.get_frontal_face_detector()
-fa = FaceAligner(dlib.shape_predictor(
-    CONFIG['models_dir'] + '/shape_predictor_68_face_landmarks.dat'),
-    desiredFaceWidth=FACE_WIDTH)
+fa = FaceAligner(
+    dlib.shape_predictor(CONFIG['models_dir'] + '/shape_predictor_68_face_landmarks.dat'),
+    desiredFaceWidth=FACE_WIDTH
+)
 
 sess, age, gender, train_mode, images_pl = load_network(CONFIG['models_dir'])
-known_face_encodings, known_face_names = known_face_encoding(CONFIG['known_people_dir'])
+known_face_encodings, known_face_names = load_known_face_encodings(CONFIG['known_people_dir'])
 
 db_logger = event_db_logger.EventDBLogger()
 
@@ -37,6 +38,15 @@ def measure_performance(t, pattern):
 
 
 def start(source=CONFIG['detected_faces_dir'], descriptions_dir=CONFIG['descriptions_dir']):
+    """
+    Detects new/matches known faces on given images using dlib,
+    determines age/sex of a human face on the image with a help of inception ResNet v1
+
+    :param source: path to a directory where frames
+                    (results of :func:`~frame_processing.FrameProcessor.process_next_frame`s work) were saved
+    :param descriptions_dir: path to a directory where json descriptions
+                            (results of this routine) will be saved
+    """
     description_file_pattern = descriptions_dir + '/id_{}.json'
     descriptions_dir_path = os.path.dirname(description_file_pattern)
     if not os.path.exists(descriptions_dir_path):

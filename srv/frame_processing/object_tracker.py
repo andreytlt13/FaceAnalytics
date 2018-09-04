@@ -4,7 +4,11 @@ import numpy as np
 from scipy.spatial import distance as dist
 
 
-class CentroidTracker():
+class CentroidTracker:
+    """
+    Calculates and stores center point of each already detected face
+    so that we're able to track/identify the same face and not count it twice
+    """
     def __init__(self, maxDisappeared=50):
         # initialize the next unique object ID along with two ordered
         # dictionaries used to keep track of mapping a given object

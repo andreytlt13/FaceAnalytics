@@ -7,9 +7,9 @@ import imutils
 import numpy as np
 from imutils.video import FPS
 
-from common.draw_label import draw_label
+from common.on_frame_drawer import draw_label
 from config import config_parser
-from srv.frame_processsing.object_tracker import CentroidTracker
+from srv.frame_processing.object_tracker import CentroidTracker
 
 FRAME_WIDTH = 400
 SCALE_FACTOR = 1.0
@@ -38,7 +38,13 @@ class FrameProcessor:
             os.makedirs(detected_faces_dir_path)
 
     def process_next_frame(self, vs):
+        """
+        Detects, tracks and stores people's faces as images so that another
+        asynchronous process (`face_descriptor.py`) can catch it up and describe face features
+        Also draws info onto frame for already completed face descriptions
 
+        :param vs: video stream from camera
+        """
         frame = vs.read()
         frame = imutils.resize(frame, width=FRAME_WIDTH)
 
