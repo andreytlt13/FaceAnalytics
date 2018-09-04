@@ -7,14 +7,14 @@ import imutils
 import numpy as np
 from imutils.video import FPS
 
+from common import config_parser
 from common.on_frame_drawer import draw_label
-from config import config_parser
 from srv.frame_processing.object_tracker import CentroidTracker
 
 FRAME_WIDTH = 400
 SCALE_FACTOR = 1.0
 
-CONFIG = config_parser.parse_default()
+CONFIG = config_parser.parse()
 
 
 class FrameProcessor:

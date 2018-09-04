@@ -10,14 +10,14 @@ import dlib
 import numpy as np
 from imutils.face_utils import FaceAligner
 
-from config import config_parser
+from common import config_parser
 from db import event_db_logger
 from face_description import dlib_api
 from face_description.network_loader import load_network, load_known_face_encodings
 
 COLOR_DEPTH = 3
 FACE_WIDTH = 160
-CONFIG = config_parser.parse_default()
+CONFIG = config_parser.parse()
 
 detector = dlib.get_frontal_face_detector()
 fa = FaceAligner(
