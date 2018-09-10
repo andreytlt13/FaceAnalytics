@@ -1,4 +1,4 @@
-FROM continuumio/miniconda3
+FROM python:3.6
 
 WORKDIR /srv
 
@@ -8,14 +8,11 @@ ADD flask_api /srv/flask_api
 ADD frame_processing /srv/frame_processing
 ADD requirements.txt /srv
 
-RUN conda create -n env python=3.6
-RUN echo "source activate env" > ~/.bashrc
-ENV PATH /opt/conda/envs/env/bin:$PATH
 ENV PYTHONPATH /srv
 ENTRYPOINT [ "python", "./run_flask.py" ]
 
 RUN apt-get update \
-        && apt-get install -y \
+        && apt-get install -y --fix-missing \
         build-essential \
         cmake \
         git \
@@ -31,9 +28,11 @@ RUN apt-get update \
         libtiff-dev \
         libavformat-dev \
         libpq-dev \
+        python3-dev \
+        python3-numpy \
         -y libgtk2.0-dev \
-        && conda install Flask \
-        && pip install --trusted-host pypi.python.org -r requirements.txt
+        && pip3 install --trusted-host pypi.python.org -r requirements.txt \
+        && apt-get clean && rm -rf /tmp/* /var/tmp/*
 
 
 WORKDIR /

@@ -3,8 +3,8 @@ import unittest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from srv.db.event import Base, Event
-from srv.db.event_db_logger import EventDBLogger
+from db.event import Base, Event
+from db.event_db_logger import EventDBLogger
 
 engine = create_engine('sqlite:///test.db', echo=True)
 Session = sessionmaker(bind=engine)

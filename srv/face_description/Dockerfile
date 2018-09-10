@@ -1,4 +1,4 @@
-FROM continuumio/miniconda3
+FROM python:3.6
 
 WORKDIR /srv
 
@@ -8,15 +8,12 @@ ADD db /srv/db
 ADD face_description /srv/face_description
 ADD face_description/requirements.txt /srv
 
-RUN conda create -n env python=3.6
-RUN echo "source activate env" > ~/.bashrc
-ENV PATH /opt/conda/envs/env/bin:$PATH
 ENV PYTHONPATH /srv
 
 ENTRYPOINT [ "python", "./run_descriptor.py" ]
 
 RUN apt-get update \
-        && apt-get install -y \
+        && apt-get install -y --fix-missing \
         build-essential \
         cmake \
         git \
@@ -32,16 +29,18 @@ RUN apt-get update \
         libtiff-dev \
         libavformat-dev \
         libpq-dev \
+        python3-dev \
+        python3-numpy \
         -y libgtk2.0-dev \
-        && conda install -c conda-forge dlib \
-        && pip install face_recognition_models \
-        && pip install --trusted-host pypi.python.org -r requirements.txt
+        && pip3 install --trusted-host pypi.python.org -r requirements.txt \
+        && apt-get clean && rm -rf /tmp/* /var/tmp/*
 
-RUN git clone https://github.com/davisking/dlib.git \
-        && cd dlib \
+RUN mkdir -p dlib \
+        && git clone https://github.com/davisking/dlib.git dlib/ \
+        && cd dlib/ \
         && mkdir build; cd build; cmake .. -DDLIB_USE_CUDA=0 -DUSE_AVX_INSTRUCTIONS=1; cmake --build . \
         && cd .. \
-        && python setup.py install --yes USE_AVX_INSTRUCTIONS --no DLIB_USE_CUDA
+        && python3 setup.py install --yes USE_AVX_INSTRUCTIONS --no DLIB_USE_CUDA
 
 WORKDIR /
 ENV OPENCV_VERSION="3.4.1"
