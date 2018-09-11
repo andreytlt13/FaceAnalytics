@@ -1,15 +1,11 @@
 FROM python:3.6
 
 WORKDIR /srv
-
 ADD common /srv/common
 ADD config /srv/config
-ADD flask_api /srv/flask_api
-ADD frame_processing /srv/frame_processing
 ADD requirements.txt /srv
 
 ENV PYTHONPATH /srv
-ENTRYPOINT [ "python", "./run_flask.py" ]
 
 RUN apt-get update \
         && apt-get install -y --fix-missing \
@@ -34,6 +30,12 @@ RUN apt-get update \
         && pip3 install --trusted-host pypi.python.org -r requirements.txt \
         && apt-get clean && rm -rf /tmp/* /var/tmp/*
 
+RUN mkdir -p dlib \
+        && git clone https://github.com/davisking/dlib.git dlib/ \
+        && cd dlib/ \
+        && mkdir build; cd build; cmake .. -DDLIB_USE_CUDA=0 -DUSE_AVX_INSTRUCTIONS=1; cmake --build . \
+        && cd .. \
+        && python3 setup.py install --yes USE_AVX_INSTRUCTIONS --no DLIB_USE_CUDA
 
 WORKDIR /
 ENV OPENCV_VERSION="3.4.1"
@@ -61,7 +63,3 @@ RUN wget https://github.com/opencv/opencv/archive/${OPENCV_VERSION}.zip \
         && make install \
         && rm /${OPENCV_VERSION}.zip \
         && rm -r /opencv-${OPENCV_VERSION}
-
-WORKDIR /srv/flask_api
-
-EXPOSE 9090

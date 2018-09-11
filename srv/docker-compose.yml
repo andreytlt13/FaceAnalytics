@@ -1,0 +1,18 @@
+version: '3'
+services:
+  base:
+    build: .
+  flask_api:
+    build:
+      context: .
+      dockerfile: flask_api/Dockerfile
+    ports:
+    - "9090:9090"
+    volumes:
+    - .:/srv
+  face_descriptor:
+    build:
+      context: .
+      dockerfile: face_description/Dockerfile
+    volumes:
+    - .:/srv
