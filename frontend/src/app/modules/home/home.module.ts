@@ -7,4 +7,4 @@ import { CommonModule } from '@angular/common';
   ],
   declarations: []
 })
-export class SharedModule { }
+export class HomeModule { }
