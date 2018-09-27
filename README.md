@@ -14,9 +14,21 @@ conda install -c conda-forge dlib
 ```
 conda install Flask
 ```
-* Scikit-image
+
+* Numpy
 ```
-conda install scikit-image
+pip install numpy
+```
+
+* OpenCV
+```
+conda install -c menpo opencv -y
+pip install opencv-python
+```
+
+* Scipy
+```
+pip install scipy
 ```
 
 ##Download models

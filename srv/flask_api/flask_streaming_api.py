@@ -9,7 +9,7 @@ from frame_processing.frame_processor import FrameProcessor
 
 app = flask.Flask(
     __name__,
-    instance_path='$PROJECT_DIR/srv/config'
+    instance_path='/srv/config'
 )  # '../common/config')
 
 
@@ -45,4 +45,4 @@ def stream(camera_url):
 
 
 def run():
-    app.run(port=9090, debug=True)
+    app.run(host='0.0.0.0', port=9090, debug=True)

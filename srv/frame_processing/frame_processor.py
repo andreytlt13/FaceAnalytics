@@ -7,20 +7,20 @@ import imutils
 import numpy as np
 from imutils.video import FPS
 
+from common import config_parser
 from common.on_frame_drawer import draw_label
-from config import config_parser
-from srv.frame_processing.object_tracker import CentroidTracker
+from frame_processing.object_tracker import CentroidTracker
 
 FRAME_WIDTH = 400
 SCALE_FACTOR = 1.0
 
-CONFIG = config_parser.parse_default()
+CONFIG = config_parser.parse()
 
 
 class FrameProcessor:
 
     def __init__(self, confidence=CONFIG['confidence'], descriptions_dir=CONFIG['descriptions_dir'],
-                 detected_faces_dir=CONFIG['detected_faces_dir'], model=CONFIG['model'],
+                 detected_faces_dir=CONFIG['detected_faces_dir'], model=CONFIG['caffe_model'],
                  prototxt=CONFIG['prototxt']) -> None:
         self.confidence = float(confidence)
         self.ct = CentroidTracker()
