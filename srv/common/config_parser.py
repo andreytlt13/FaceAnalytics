@@ -3,6 +3,7 @@ import configparser
 parser = configparser.ConfigParser()
 
 
-def parse(config_path='../config/config.ini', schema='DEFAULT'):
+# ../config/config.ini
+def parse(config_path='/home/andrey/PycharmProjects/FaceAnalytics/srv/config/config.ini', schema='DEFAULT'):
     parser.read(config_path)
     return parser[schema]

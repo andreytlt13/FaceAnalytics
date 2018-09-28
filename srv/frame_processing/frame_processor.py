@@ -5,7 +5,6 @@ import os
 import cv2
 import imutils
 import numpy as np
-from imutils.video import FPS
 
 from common import config_parser
 from common.on_frame_drawer import draw_label
@@ -15,7 +14,6 @@ FRAME_WIDTH = 400
 SCALE_FACTOR = 1.0
 
 CONFIG = config_parser.parse()
-
 
 class FrameProcessor:
 
@@ -48,8 +46,6 @@ class FrameProcessor:
         frame = vs.read()
         frame = imutils.resize(frame, width=FRAME_WIDTH)
 
-        fps = FPS().start()
-
         # if the frame dimensions are None, grab them
         if self.W is None or self.H is None:
             (self.H, self.W) = frame.shape[:2]
@@ -73,7 +69,7 @@ class FrameProcessor:
             # object on the output frame
             text = 'ID {}'.format(objectID)
 
-            if datetime.datetime.now().second % 10 == 0:
+            if datetime.datetime.now().second % 3 == 0:
                 imgCrop = frame[y:h, x:w]
                 cv2.imwrite(self.detected_face_img_pattern.format(str(objectID)), imgCrop)
 
@@ -86,7 +82,4 @@ class FrameProcessor:
 
             draw_label(frame, text, (centroid[0], centroid[1] + 75))
 
-        fps.update()
-        fps.stop()
-
-        return frame, fps, self.H
+        return frame, self.H
