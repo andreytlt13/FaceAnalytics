@@ -20,6 +20,7 @@ app = flask.Flask(
 # '/home/andrey/PycharmProjects/FaceAnalytics/srv/config'
 # '/srv/config'
 # '../common/config')
+# https://blog.miguelgrinberg.com/post/video-streaming-with-flask
 
 
 @app.route('/video_stream', methods=['GET'])
@@ -48,34 +49,52 @@ def stream(camera_url):
     fps = None
     (H, W) = (None, None)
 
+    totalFrames = 0
+    totalDown = 0
+    totalUp = 0
+    trackableObjects = {}
+
+
     while True:
         fps = FPS().start()
 
-        frame, _ = frame_processor.process_next_frame(vs)
+        frame, _, status, totalFrames, totalDown, totalUp = frame_processor.process_next_frame(vs, totalFrames,
+                                                                                               totalDown, totalUp)
 
         # fps start
         fps.update()
         fps.stop()
-        info = [
+        info_fps = [
             ("FPS", "{:.2f}".format(fps.fps())),
         ]
 
         if W is None or H is None:
             (H, W) = frame.shape[:2]
 
+        for (i, (k, v)) in enumerate(info_fps):
+            text = "{}: {}".format(k, v)
+            cv2.putText(frame, text, (10, H - ((i * 2) + 2)),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+        #fps stop
+
+        # count start
+        info = [
+            ('Enter', totalUp),
+            ('Exit', totalDown),
+            ('TotalFrames', totalFrames),
+            ('Status', status)
+        ]
+        # loop over the info tuples and draw them on our frame
         for (i, (k, v)) in enumerate(info):
             text = "{}: {}".format(k, v)
             cv2.putText(frame, text, (10, H - ((i * 20) + 20)),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
-        #fps stop
+        #count end
 
         _, img_encoded = cv2.imencode('.jpg', frame)
-
-
         yield (b'--frame\r\n'
 
                b'Content-Type: image/jpeg\r\n\r\n' + img_encoded.tobytes() + b'\r\n')
-
 
 def run():
     app.run(host='0.0.0.0', port=9090, debug=True)
