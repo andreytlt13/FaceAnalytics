@@ -10,9 +10,13 @@ services:
     - "9090:9090"
     volumes:
     - .:/srv
+    depends_on:
+      - base
   face_descriptor:
     build:
       context: .
       dockerfile: face_description/Dockerfile
     volumes:
     - .:/srv
+    depends_on:
+      - base
