@@ -17,7 +17,7 @@ async def full_report(web_socket, _):
     await web_socket.send(pickle.dumps(result))
 
 
-start_server = websockets.serve(full_report, host='localhost', port=8181)
+start_server = websockets.serve(full_report, host='0.0.0.0', port=8181)
 
 asyncio.get_event_loop().run_until_complete(start_server)
 asyncio.get_event_loop().run_forever()

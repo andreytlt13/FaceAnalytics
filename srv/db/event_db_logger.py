@@ -1,14 +1,14 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from db.event import Event, Base
+from srv.db.event import Event, Base
 
 Session = sessionmaker()
 
 
 class EventDBLogger:
 
-    def __init__(self, db_url='sqlite:///surveillance.db') -> None:
+    def __init__(self, db_url='sqlite:////srv/surveillance.db') -> None:
         engine = create_engine(db_url, echo=True)
         Base.metadata.create_all(engine)
         Session.configure(bind=engine)
