@@ -6,3 +6,4 @@ pillow==5.1.0
 scipy==1.1.0
 sqlalchemy==1.2.10
 tensorflow==1.9.0
+websockets==6.0
