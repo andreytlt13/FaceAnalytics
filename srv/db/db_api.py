@@ -3,8 +3,8 @@ import pickle
 
 import websockets
 
-from common import config_parser
-from db.db_report_reader import DBReportReader
+from srv.common import config_parser
+from srv.db.db_report_reader import DBReportReader
 
 CONFIG = config_parser.parse()
 db_report_reader = DBReportReader(db_url=CONFIG['db_url'])

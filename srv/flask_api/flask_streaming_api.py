@@ -5,7 +5,7 @@ import cv2
 import flask
 from imutils.video import VideoStream
 
-from frame_processing.frame_processor import FrameProcessor
+from srv.frame_processing.frame_processor import FrameProcessor
 
 app = flask.Flask(
     __name__,

@@ -12,7 +12,7 @@ Session = sessionmaker()
 
 class DBReportReader:
 
-    def __init__(self, db_url='sqlite:////srv/surveillance.db') -> None:
+    def __init__(self, db_url) -> None:
         engine = create_engine(db_url, echo=True)
         Base.metadata.create_all(engine)
         Session.configure(bind=engine)
