@@ -20,3 +20,13 @@ services:
     - .:/srv
     depends_on:
       - base
+  db_api:
+    build:
+      context: .
+      dockerfile: db/Dockerfile
+    ports:
+    - "8181:8181"
+    volumes:
+    - .:/srv
+    depends_on:
+      - base

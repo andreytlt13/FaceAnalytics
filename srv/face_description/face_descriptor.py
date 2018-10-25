@@ -10,10 +10,10 @@ import dlib
 import numpy as np
 from imutils.face_utils import FaceAligner
 
-from common import config_parser
-from db import event_db_logger
-from face_description import dlib_api
-from face_description.network_loader import load_network, load_known_face_encodings
+from srv.common import config_parser
+from srv.db import event_db_logger
+from srv.face_description import dlib_api
+from srv.face_description.network_loader import load_network, load_known_face_encodings
 
 COLOR_DEPTH = 3
 FACE_WIDTH = 160
@@ -28,7 +28,7 @@ fa = FaceAligner(
 sess, age, gender, train_mode, images_pl = load_network(CONFIG['models_dir'])
 known_face_encodings, known_face_names = load_known_face_encodings(CONFIG['known_people_dir'])
 
-db_logger = event_db_logger.EventDBLogger()
+db_logger = event_db_logger.EventDBLogger(CONFIG['db_url'])
 
 
 def measure_performance(t, pattern):

@@ -4,6 +4,6 @@ WORKDIR /srv
 ADD db /srv/db
 ADD face_description /srv/face_description
 
-ENV PYTHONPATH /srv
+ENV PYTHONPATH /
 ENTRYPOINT [ "python", "./run_descriptor.py" ]
 WORKDIR /srv/face_description

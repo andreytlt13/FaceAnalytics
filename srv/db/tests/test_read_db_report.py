@@ -3,8 +3,8 @@ import unittest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from db.db_report_reader import DBReportReader
-from db.event import Base, Event
+from srv.db.db_report_reader import DBReportReader
+from srv.db.event import Base, Event
 
 TEST_DB = 'sqlite:///test.db'
 

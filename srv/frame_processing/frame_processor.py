@@ -7,9 +7,9 @@ import imutils
 import numpy as np
 from imutils.video import FPS
 
-from common import config_parser
-from common.on_frame_drawer import draw_label
-from frame_processing.object_tracker import CentroidTracker
+from srv.common import config_parser
+from srv.common.on_frame_drawer import draw_label
+from srv.frame_processing.object_tracker import CentroidTracker
 
 FRAME_WIDTH = 400
 SCALE_FACTOR = 1.0

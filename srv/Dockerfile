@@ -5,7 +5,7 @@ ADD common /srv/common
 ADD config /srv/config
 ADD requirements.txt /srv
 
-ENV PYTHONPATH /srv
+ENV PYTHONPATH /
 
 RUN apt-get update \
         && apt-get install -y --fix-missing \
