@@ -10,11 +10,6 @@ export class SelectCamera {
   constructor(public payload: { camera: Camera }) {}
 }
 
-export class CreateCamera {
-  static readonly type = '[Dashboard] Create camera';
-  constructor(public payload: { camera: Camera }) {}
-}
-
 export class LoadGraphData {
   static readonly type = '[Dashboard] Load graph data';
 }

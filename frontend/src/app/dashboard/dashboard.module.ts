@@ -12,11 +12,9 @@ import {GraphDataService} from './graph-data/graph-data.service';
 import {HttpClientModule} from '@angular/common/http';
 import {CameraService} from './camera/camera.service';
 import {DashboardRoutingModule} from './dashboard-routing.module';
-import {CameraEditComponent} from './camera-edit/camera-edit.component';
-import {CameraViewComponent} from './camera-view/camera-view.component';
 
 @NgModule({
-  declarations: [DashboardComponent, CameraEditComponent, CameraViewComponent],
+  declarations: [DashboardComponent],
   imports: [
     CommonModule,
     FormsModule,

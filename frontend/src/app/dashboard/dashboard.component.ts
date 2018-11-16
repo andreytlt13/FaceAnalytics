@@ -1,12 +1,12 @@
 import {Component, OnInit, ViewEncapsulation} from '@angular/core';
-import {Store} from '@ngxs/store';
-import {LoadCameras, SelectCamera} from './dashboard.actions';
+import {Actions, ofActionDispatched, Store} from '@ngxs/store';
+import {GraphLoadedSuccess, LoadCameras, LoadGraphData, SelectCamera} from './dashboard.actions';
 import {DashboardState} from './dashboard.state';
 import {Observable} from 'rxjs';
 import {BreakpointObserver, Breakpoints} from '@angular/cdk/layout';
 import {map} from 'rxjs/operators';
+import {Graph} from './graph-data/graph';
 import {Camera} from './camera/camera';
-import {ActivatedRoute, Router} from '@angular/router';
 
 @Component({
   selector: 'app-dashboard',
@@ -19,37 +19,43 @@ export class DashboardComponent implements OnInit {
     .pipe(
       map(result => result.matches)
     );
+  public graphs: Array<Graph> = [];
+  public layout = {
+    autosize: true,
+    barmode: 'group',
+    xaxis: {
+      rangeslider: {
+        yaxis: {
+          rangemode: 'auto'
+        }
+      }
+    },
+    yaxis: {
+      autorange: true,
+      fixedrange: false
+    }
+  };
 
   public cameras$: Observable<Camera[]> = this.store.select(DashboardState.cameras);
-
-  public title = '';
+  public selected$: Observable<Camera> = this.store.select(DashboardState.selectedCamera);
 
   constructor(
     private breakpointObserver: BreakpointObserver,
     private store: Store,
-    private router: Router,
-    private route: ActivatedRoute
-  ) {
-  }
+    private actions: Actions
+  ) {}
 
   ngOnInit() {
     this.store.dispatch(new LoadCameras());
+    // this.store.dispatch(new LoadGraphData);
 
-    if (this.route.firstChild) {
-      this.route.firstChild.data.subscribe((data: { title: string }) => {
-        this.title = data.title;
-      });
-    }
+    // this.actions.pipe(ofActionDispatched(GraphLoadedSuccess)).subscribe(() => {
+    //   this.graphs = this.store.selectSnapshot(DashboardState.graphData);
+    // });
   }
 
   selectCamera(camera: Camera) {
-    this.title = 'Camera View';
+    console.log(camera);
     this.store.dispatch(new SelectCamera({camera}));
-  }
-
-  editCamera() {
-    this.title = 'Camera Edit';
-    this.store.dispatch(new SelectCamera({camera: new Camera()}));
-    this.router.navigate(['camera/create'], {relativeTo: this.route});
   }
 }
