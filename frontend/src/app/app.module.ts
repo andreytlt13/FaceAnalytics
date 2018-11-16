@@ -1,48 +1,39 @@
-import { BrowserModule } from '@angular/platform-browser';
-import { NgModule } from '@angular/core';
-import { CommonModule } from "@angular/common";
-import { FlexLayoutModule } from "@angular/flex-layout";
+import {BrowserModule} from '@angular/platform-browser';
+import {NgModule} from '@angular/core';
 
-import { AppComponent } from './app.component';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import {NgxsModule} from '@ngxs/store';
+import {NgxsStoragePluginModule} from '@ngxs/storage-plugin';
+import {NgxsLoggerPluginModule} from '@ngxs/logger-plugin';
 
-import { AppRouterModule } from './app-router.module';
-import { CoreModule } from "./core/core.module";
-import {AppHeaderComponent} from "./components/app-header/app-header.component";
-import {AppFooterComponent} from "./components/app-footer/app-footer.component";
-import {MaterialModule} from "./material.module";
-import { HomepageComponent } from './homepage/homepage.component';
-import { LayoutModule } from '@angular/cdk/layout';
-import { MatToolbarModule, MatButtonModule, MatSidenavModule, MatIconModule, MatListModule, MatCardModule } from '@angular/material';
-import {HomeComponent} from "./components/home/home.component";
-import {PlotlyModule} from "angular-plotly.js";
+import {AppRoutingModule} from './app-routing.module';
+import {AppComponent} from './app.component';
+import {AuthState} from './login/auth.state';
+import {DashboardModule} from './dashboard/dashboard.module';
+import {LoginModule} from './login/login.module';
+import {BrowserAnimationsModule} from '@angular/platform-browser/animations';
+import {SharedModule} from './shared/shared.module';
 
 @NgModule({
   declarations: [
-    AppComponent,
-    AppHeaderComponent,
-    AppFooterComponent,
-    HomepageComponent,
-    HomeComponent
+    AppComponent
   ],
   imports: [
     BrowserModule,
     BrowserAnimationsModule,
-    AppRouterModule,
-    CommonModule,
-    PlotlyModule,
-    FlexLayoutModule,
-    CoreModule,
-    MaterialModule,
-    LayoutModule,
-    MatToolbarModule,
-    MatButtonModule,
-    MatSidenavModule,
-    MatIconModule,
-    MatListModule,
-    MatCardModule
+    AppRoutingModule,
+
+    DashboardModule,
+    LoginModule,
+
+    NgxsStoragePluginModule.forRoot({
+      key: 'auth.username'
+    }),
+    NgxsLoggerPluginModule.forRoot(),
+    NgxsModule.forRoot([AuthState]),
+
+    SharedModule
   ],
-  providers: [],
   bootstrap: [AppComponent]
 })
-export class AppModule { }
+export class AppModule {
+}
