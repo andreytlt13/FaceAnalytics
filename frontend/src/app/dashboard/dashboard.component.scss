@@ -1,0 +1,28 @@
+app-dashboard {
+  flex: 1 1 auto;
+  display: flex;
+}
+
+app-dashboard > mat-sidenav-container {
+  flex: 1 1 auto;
+}
+
+.sidenav {
+  width: 200px;
+}
+
+.grid-container {
+  margin: 20px;
+}
+
+.dashboard-card {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  right: 15px;
+  bottom: 15px;
+}
+
+.dashboard-card-content {
+  text-align: center;
+}
