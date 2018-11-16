@@ -1,0 +1,53 @@
+<mat-sidenav-container class="dashboard-container">
+  <mat-sidenav #drawer class="sidenav"
+               [attr.role]="(isHandset$ | async) ? 'dialog' : 'navigation'"
+               [mode]="(isHandset$ | async) ? 'over' : 'side'"
+               [opened]="!(isHandset$ | async)">
+    <!--<mat-toolbar>Menu</mat-toolbar>-->
+    <mat-nav-list>
+      <!--<a mat-list-item routerLink="/dashboard">Camera 1</a>-->
+      <!--<a mat-list-item routerLink="/dashboard">Camera 2</a>-->
+      <!--<a mat-list-item routerLink="/dashboard">Camera 3</a>-->
+      <a *ngFor="let camera of cameras$ | async" mat-list-item (click)="selectCamera(camera)">{{camera.name}}</a>
+    </mat-nav-list>
+  </mat-sidenav>
+  <mat-sidenav-content>
+    <mat-toolbar color="primary">
+      <button
+        type="button"
+        aria-label="Toggle sidenav"
+        mat-icon-button
+        (click)="drawer.toggle()"
+        *ngIf="isHandset$ | async">
+        <mat-icon aria-label="Side nav toggle icon">menu</mat-icon>
+      </button>
+      <h1 class="mat-h1">Dashboard</h1>
+    </mat-toolbar>
+    <div class="grid-container">
+      <mat-progress-spinner
+        *ngIf="!selected$ | async"
+        mode="indeterminate"
+        [diameter]="60">
+      </mat-progress-spinner>
+      <mat-grid-list cols="1" rowHeight="600" *ngIf="selected$ | async; let selected">
+        <mat-grid-tile [colspan]="1" [rowspan]="1">
+          <mat-card class="dashboard-card mat-elevation-z6">
+            <mat-card-header>
+              <mat-card-title>
+                <h3 class="mat-h3">{{selected?.name}}</h3>
+              </mat-card-title>
+            </mat-card-header>
+            <mat-card-content class="dashboard-card-content" style="width: 100%; min-height: 500px;">
+              <video *ngIf="selected.type === 'video'">
+                <source src="{{selected?.url}}" type="application/dash+xml">
+              </video>
+              <img *ngIf="selected.type === 'image'" [src]="selected.url">
+              <!--<plotly-plot [config]="{locale: 'ru'}" [data]="graph.data" [layout]="layout"-->
+                           <!--[useResizeHandler]="true"></plotly-plot>-->
+            </mat-card-content>
+          </mat-card>
+        </mat-grid-tile>
+      </mat-grid-list>
+    </div>
+  </mat-sidenav-content>
+</mat-sidenav-container>
