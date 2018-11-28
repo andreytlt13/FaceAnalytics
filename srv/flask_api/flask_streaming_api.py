@@ -43,7 +43,7 @@ def video_stream():
 def stream(camera_url):
     # initialize the video stream and allow the camera sensor to warmup
     print('[INFO] starting video stream...')
-    vs = VideoStream(src=camera_url).start()
+    vs = VideoStream(src=camera_url).start()  # src=camera_url
     time.sleep(2.0)
     frame_processor = FrameProcessor()
     fps = None
@@ -53,48 +53,41 @@ def stream(camera_url):
     totalDown = 0
     totalUp = 0
     trackableObjects = {}
-
+    countObject = 0
 
     while True:
         fps = FPS().start()
 
-        frame, _, status, totalFrames, totalDown, totalUp = frame_processor.process_next_frame(vs, totalFrames,
-                                                                                               totalDown, totalUp)
+        frame, _, status, totalFrames, totalDown, totalUp, countObject = frame_processor.process_next_frame(vs,
+                                                                                                            totalFrames,
+                                                                                                            totalDown,
+                                                                                                            totalUp)
 
-        # fps start
         fps.update()
         fps.stop()
-        info_fps = [
-            ("FPS", "{:.2f}".format(fps.fps())),
-        ]
 
         if W is None or H is None:
             (H, W) = frame.shape[:2]
 
-        for (i, (k, v)) in enumerate(info_fps):
-            text = "{}: {}".format(k, v)
-            cv2.putText(frame, text, (10, H - ((i * 2) + 2)),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
-        #fps stop
-
-        # count start
         info = [
             ('Enter', totalUp),
             ('Exit', totalDown),
             ('TotalFrames', totalFrames),
-            ('Status', status)
+            ('Status', status),
+            ('Count Person', countObject),
+            ("FPS", "{:.2f}".format(fps.fps()))
         ]
         # loop over the info tuples and draw them on our frame
         for (i, (k, v)) in enumerate(info):
             text = "{}: {}".format(k, v)
             cv2.putText(frame, text, (10, H - ((i * 20) + 20)),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
-        #count end
 
         _, img_encoded = cv2.imencode('.jpg', frame)
         yield (b'--frame\r\n'
 
                b'Content-Type: image/jpeg\r\n\r\n' + img_encoded.tobytes() + b'\r\n')
+
 
 def run():
     app.run(host='0.0.0.0', port=9090, debug=True)
