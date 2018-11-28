@@ -6,6 +6,7 @@ import os
 import cv2
 import imutils
 import numpy as np
+import matplotlib.pyplot as plt
 
 from common import config_parser
 from common.on_frame_drawer import draw_label
@@ -50,6 +51,10 @@ class FrameProcessor:
         if not os.path.exists(detected_faces_dir_path):
             os.makedirs(detected_faces_dir_path)
 
+    def cut_object(self, frame, object):
+
+        return print('write framme to ' )
+
     def process_next_frame(self, vs, totalFrames=0, totalDown=0, totalUp=0):
         """
         Detects, tracks and stores people's faces as images so that another
@@ -61,9 +66,11 @@ class FrameProcessor:
         ct = CentroidTracker2(maxDisappeared=40, maxDistance=50)
         # trackers = []
         # trackableObjects = {}
+        objectID = 0
 
         frame = vs.read()
         frame = imutils.resize(frame, width=FRAME_WIDTH)
+
 
         # if the frame dimensions are None, grab them
         if self.W is None or self.H is None:
@@ -105,8 +112,9 @@ class FrameProcessor:
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
         # args["skip_frames"]
-        if totalFrames % 30 == 0:
+        if totalFrames % 3 == 0:
             status = "Detecting"
+            self.trackers = []
 
             blob = cv2.dnn.blobFromImage(frame, 0.007843, (self.W, self.H), 127.5)
             self.net2.setInput(blob)
@@ -127,11 +135,17 @@ class FrameProcessor:
                     # if the class label is not a person, ignore it
                     if CLASSES[idx] != "person":
                         continue
-
+                    self.cut_object(frame,  1)
                     # compute the (x, y)-coordinates of the bounding box
                     # for the object
                     box = detections[0, 0, i, 3:7] * np.array([self.W, self.H, self.W, self.H])
                     (startX, startY, endX, endY) = box.astype('int')
+                    cropped = frame[startY:endY, startX:endX]
+                    _, fr1 = cv2.imencode('.jpg', frame)
+                    _, cr1 = cv2.imencode('.jpg', cropped)
+                    cv2.imshow("cropped", cropped)
+                    cv2.waitKey(0)
+                    cv2.imwrite("thumbnail.png", cropped)
 
                     # construct a dlib rectangle object from the bounding
                     # box coordinates and then start the dlib correlation
@@ -213,7 +227,7 @@ class FrameProcessor:
 
             # draw both the ID of the object and the centroid of the
             # object on the output frame
-            text = "ID {}".format(objectID)
+            # text = "ID {}".format(objectID)
             # cv2.putText(frame, text, (centroid[0] - 10, centroid[1] - 10),
             #            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
             cv2.circle(frame, (centroid[0], centroid[1]), 4, (0, 255, 0), -1)
@@ -224,6 +238,7 @@ class FrameProcessor:
             ("Enter", totalUp),
             ("Exit", totalDown),
             ("TotalFrames", totalFrames),
+            ("Total pearson", objectID)
         ]
 
-        return frame, self.H, status, totalFrames, totalDown, totalUp
+        return frame, self.H, status, totalFrames, totalDown, totalUp, objectID
