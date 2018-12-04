@@ -5,7 +5,7 @@ import cv2
 from imutils.video import VideoStream
 
 from common.on_frame_drawer import draw_label
-from frame_processing.frame_processor import FrameProcessor
+from frame_processing.frame_processor2 import FrameProcessor
 
 RED_COLOR = (0, 0, 255)
 

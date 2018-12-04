@@ -24,7 +24,7 @@ def analyse():
 def video_stream():
     return flask.Response(
         get_stream(
-            'http://127.0.0.1:9090/video_stream?camera_url=0'
+            '/video_stream?camera_url=rtsp://admin:0ZKaxVFi@10.101.106.4:554/live/main'
         ),
         ramimetype='multipart/x-mixed-replace; boundary=frame'
     )

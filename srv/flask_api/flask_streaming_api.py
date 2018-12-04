@@ -1,13 +1,12 @@
 #!/usr/bin/env python
-import time
-
-import cv2
-import flask
+import cv2, os, flask, time
 from imutils.video import FPS
 from imutils.video import VideoStream
-
+from datetime import datetime
 from common import config_parser
+#from frame_processing.frame_processor2 import FrameProcessor
 from frame_processing.frame_processor import FrameProcessor
+from db.event_db_logger import EventDBLogger
 
 CONFIG = config_parser.parse()
 
@@ -45,23 +44,36 @@ def stream(camera_url):
     print('[INFO] starting video stream...')
     vs = VideoStream(src=camera_url).start()  # src=camera_url
     time.sleep(2.0)
-    frame_processor = FrameProcessor()
+
+    #create db connection
+    connection = EventDBLogger()
+
+
+    #create folder for image
+    image_camera_dir = '../image_for_processing/{}'.format(camera_url.replace('/', '_'))
+    if not os.path.exists(image_camera_dir):
+        os.makedirs(image_camera_dir)
+
+    image_camera_dir = '{0}/{1}'.format(image_camera_dir, datetime.now().strftime("%Y-%m-%d"))
+    if not os.path.exists(image_camera_dir):
+        os.makedirs(image_camera_dir)
+
+    frame_processor = FrameProcessor(path_for_image=image_camera_dir)
+
     fps = None
     (H, W) = (None, None)
 
     totalFrames = 0
     totalDown = 0
     totalUp = 0
-    trackableObjects = {}
-    countObject = 0
+
+
 
     while True:
         fps = FPS().start()
 
-        frame, _, status, totalFrames, totalDown, totalUp, countObject = frame_processor.process_next_frame(vs,
-                                                                                                            totalFrames,
-                                                                                                            totalDown,
-                                                                                                            totalUp)
+        frame, _, info = frame_processor.process_next_frame(vs, totalFrames, totalDown, totalUp)
+        totalFrames += 1
 
         fps.update()
         fps.stop()
@@ -69,14 +81,8 @@ def stream(camera_url):
         if W is None or H is None:
             (H, W) = frame.shape[:2]
 
-        info = [
-            ('Enter', totalUp),
-            ('Exit', totalDown),
-            ('TotalFrames', totalFrames),
-            ('Status', status),
-            ('Count Person', countObject),
-            ("FPS", "{:.2f}".format(fps.fps()))
-        ]
+        info.append(("FPS", "{:.2f}".format(fps.fps())))
+
         # loop over the info tuples and draw them on our frame
         for (i, (k, v)) in enumerate(info):
             text = "{}: {}".format(k, v)
@@ -85,9 +91,8 @@ def stream(camera_url):
 
         _, img_encoded = cv2.imencode('.jpg', frame)
         yield (b'--frame\r\n'
-
                b'Content-Type: image/jpeg\r\n\r\n' + img_encoded.tobytes() + b'\r\n')
 
 
 def run():
-    app.run(host='0.0.0.0', port=9090, debug=True)
+    app.run(host='0.0.0.0', port=9090, debug=True, threaded=True)
