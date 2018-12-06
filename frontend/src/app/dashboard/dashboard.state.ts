@@ -1,5 +1,5 @@
 import {Action, Selector, State, StateContext} from '@ngxs/store';
-import {GraphLoadedSuccess, LoadCameras, LoadGraphData, ResetGraphs, SelectCamera} from './dashboard.actions';
+import {CreateCamera, GraphLoadedSuccess, LoadCameras, LoadGraphData, ResetGraphs, SelectCamera} from './dashboard.actions';
 import {GraphDataService} from './graph-data/graph-data.service';
 import {Graph} from './graph-data/graph';
 import {tap} from 'rxjs/operators';
@@ -33,7 +33,7 @@ export class DashboardState {
   constructor(private cameraSerivce: CameraService, private graphDataService: GraphDataService) {}
 
   @Action(LoadGraphData)
-  loadGraphData({ dispatch }) {
+  loadGraphData({ dispatch }: StateContext<DashboardStateModel>) {
     return this.graphDataService.loadAll()
       .pipe(
         tap(graphs => graphs.forEach(graph => dispatch(new GraphLoadedSuccess({graph}))))
@@ -60,7 +60,7 @@ export class DashboardState {
 
   @Action(LoadCameras)
   loadCameras({ patchState }: StateContext<DashboardStateModel>) {
-    return this.cameraSerivce.load().subscribe((cameras) => {
+    return this.cameraSerivce.load().subscribe((cameras: Camera[]) => {
       patchState({
         cameras: cameras
       });
@@ -72,6 +72,22 @@ export class DashboardState {
     patchState({
       selectedCamera: payload.camera
     });
+  }
+
+  @Action(CreateCamera)
+  createCamera({ getState, patchState }: StateContext<DashboardStateModel>, { payload }: CreateCamera) {
+    return this.cameraSerivce.create(payload.camera)
+      .pipe(
+        tap((camera: Camera) => {
+          const ctx = getState();
+          patchState({
+            cameras: [
+              ...ctx.cameras,
+              camera
+            ]
+          });
+        })
+      );
   }
 
 }
