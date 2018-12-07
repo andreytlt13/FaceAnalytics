@@ -5,7 +5,6 @@ import {Graph} from './graph-data/graph';
 import {tap} from 'rxjs/operators';
 import {Camera} from './camera/camera';
 import {CameraService} from './camera/camera.service';
-import {Router} from '@angular/router';
 
 export interface DashboardStateModel {
   graphData: Array<Graph>;
