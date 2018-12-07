@@ -26,7 +26,7 @@ export class CameraService {
   }
 
   create(camera: Camera) {
-    const id = CAMERAS.reduce((memo, cmr) => cmr.id > memo ? cmr.id : memo, 0);
+    const id = CAMERAS.reduce((memo, cmr) => cmr.id > memo ? cmr.id : memo, 0) + 1;
     const newCamera = {
       ...camera.toJSON(),
       id
