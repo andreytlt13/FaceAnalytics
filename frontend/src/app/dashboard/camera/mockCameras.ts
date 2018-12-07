@@ -15,6 +15,6 @@ export default [
     id: 3,
     name: 'Camera Office 1',
     type: 'image',
-    url: 'http://10.101.1.18:9090/video_stream?camera_url=rtsp://admin:0ZKaxVFi@10.101.106.4:554/live/main'
+    url: 'rtsp://admin:0ZKaxVFi@10.101.106.4:554/live/main'
   }
 ];
