@@ -38,7 +38,6 @@ export class DashboardState {
   }
 
   constructor(
-    private router: Router,
     private cameraService: CameraService,
     private graphDataService: GraphDataService
   ) {
@@ -85,7 +84,7 @@ export class DashboardState {
       selectedCamera: payload.camera
     });
 
-    this.router.navigate(['/dashboard', payload.camera.id]);
+    return payload.camera;
   }
 
   @Action(CreateCamera)
