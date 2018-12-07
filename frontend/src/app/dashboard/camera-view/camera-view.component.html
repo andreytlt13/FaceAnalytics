@@ -1,0 +1,26 @@
+<div class="grid-container">
+  <mat-progress-spinner
+    *ngIf="!selected$ | async"
+    mode="indeterminate"
+    [diameter]="60">
+  </mat-progress-spinner>
+  <mat-grid-list cols="1" rowHeight="600" *ngIf="selected$ | async; let selected">
+    <mat-grid-tile [colspan]="1" [rowspan]="1">
+      <mat-card class="dashboard-card mat-elevation-z6">
+        <mat-card-header>
+          <mat-card-title>
+            <h3 class="mat-h3">{{selected?.name}}</h3>
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content class="dashboard-card-content" style="width: 100%; min-height: 500px;">
+          <video *ngIf="selected.type === 'video'">
+            <source src="{{selected?.url}}" type="application/dash+xml">
+          </video>
+          <img *ngIf="selected.type === 'image'" [src]="selected.url">
+          <!--<plotly-plot [config]="{locale: 'ru'}" [data]="graph.data" [layout]="layout"-->
+          <!--[useResizeHandler]="true"></plotly-plot>-->
+        </mat-card-content>
+      </mat-card>
+    </mat-grid-tile>
+  </mat-grid-list>
+</div>

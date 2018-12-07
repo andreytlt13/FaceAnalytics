@@ -30,3 +30,5 @@ $face-analytics-theme: mat-light-theme($face-analytics-primary, $face-analytics-
 
 html, body { height: 100%; }
 body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+
+*, *::after, *::before { box-sizing: border-box; }
