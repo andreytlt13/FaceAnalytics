@@ -1,3 +1,27 @@
-<p>
-  camera-edit works!
-</p>
+<div class="grid-container">
+  <mat-grid-list cols="1">
+    <mat-grid-tile [colspan]="1">
+      <mat-card class="dashboard-card mat-elevation-z6">
+        <mat-card-header>
+          <mat-card-title>
+            <h3 class="mat-h2">{{camera.id ? 'Update' : 'Create'}} Camera</h3>
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content class="dashboard-card-content">
+          <form (ngSubmit)="onLogin()" #cameraEditForm="ngForm" fxLayout="column" fxFlexFill>
+            <mat-form-field>
+              <input matInput [(ngModel)]="camera.name" name="cameraName" placeholder="Camera Name" required>
+            </mat-form-field>
+            <mat-form-field>
+              <input matInput [(ngModel)]="camera.url" name="cameraUrl" placeholder="Camera Url" required>
+            </mat-form-field>
+          </form>
+        </mat-card-content>
+        <mat-card-actions>
+          <button mat-raised-button color="primary" (click)="saveCamera()">Create</button>
+          <button mat-raised-button color="accent" (click)="cancel()">Cancel</button>
+        </mat-card-actions>
+      </mat-card>
+    </mat-grid-tile>
+  </mat-grid-list>
+</div>

@@ -5,6 +5,7 @@ import {Graph} from './graph-data/graph';
 import {tap} from 'rxjs/operators';
 import {Camera} from './camera/camera';
 import {CameraService} from './camera/camera.service';
+import {Router} from '@angular/router';
 
 export interface DashboardStateModel {
   graphData: Array<Graph>;
@@ -22,18 +23,29 @@ export interface DashboardStateModel {
 })
 export class DashboardState {
   @Selector()
-  static graphData(state: DashboardStateModel) { return state.graphData; }
+  static graphData(state: DashboardStateModel) {
+    return state.graphData;
+  }
 
   @Selector()
-  static cameras(state: DashboardStateModel) { return state.cameras; }
+  static cameras(state: DashboardStateModel) {
+    return state.cameras;
+  }
 
   @Selector()
-  static selectedCamera(state: DashboardStateModel) { return state.selectedCamera; }
+  static selectedCamera(state: DashboardStateModel) {
+    return state.selectedCamera;
+  }
 
-  constructor(private cameraSerivce: CameraService, private graphDataService: GraphDataService) {}
+  constructor(
+    private router: Router,
+    private cameraService: CameraService,
+    private graphDataService: GraphDataService
+  ) {
+  }
 
   @Action(LoadGraphData)
-  loadGraphData({ dispatch }: StateContext<DashboardStateModel>) {
+  loadGraphData({dispatch}: StateContext<DashboardStateModel>) {
     return this.graphDataService.loadAll()
       .pipe(
         tap(graphs => graphs.forEach(graph => dispatch(new GraphLoadedSuccess({graph}))))
@@ -41,7 +53,7 @@ export class DashboardState {
   }
 
   @Action(GraphLoadedSuccess)
-  graphDataLoaded({ getState, patchState }: StateContext<DashboardStateModel>, { payload }: GraphLoadedSuccess) {
+  graphDataLoaded({getState, patchState}: StateContext<DashboardStateModel>, {payload}: GraphLoadedSuccess) {
     const {graphData} = getState();
     patchState({
       graphData: [
@@ -52,15 +64,15 @@ export class DashboardState {
   }
 
   @Action(ResetGraphs)
-  resetGraphs({ patchState }: StateContext<DashboardStateModel>) {
+  resetGraphs({patchState}: StateContext<DashboardStateModel>) {
     patchState({
       graphData: []
     });
   }
 
   @Action(LoadCameras)
-  loadCameras({ patchState }: StateContext<DashboardStateModel>) {
-    return this.cameraSerivce.load().subscribe((cameras: Camera[]) => {
+  loadCameras({patchState}: StateContext<DashboardStateModel>) {
+    return this.cameraService.load().subscribe((cameras: Camera[]) => {
       patchState({
         cameras: cameras
       });
@@ -68,15 +80,17 @@ export class DashboardState {
   }
 
   @Action(SelectCamera)
-  selectCamera({ patchState }: StateContext<DashboardStateModel>, { payload }: SelectCamera) {
+  selectCamera({patchState}: StateContext<DashboardStateModel>, {payload}: SelectCamera) {
     patchState({
       selectedCamera: payload.camera
     });
+
+    this.router.navigate(['/dashboard', payload.camera.id]);
   }
 
   @Action(CreateCamera)
-  createCamera({ getState, patchState }: StateContext<DashboardStateModel>, { payload }: CreateCamera) {
-    return this.cameraSerivce.create(payload.camera)
+  createCamera({getState, patchState, dispatch}: StateContext<DashboardStateModel>, {payload}: CreateCamera) {
+    return this.cameraService.create(payload.camera)
       .pipe(
         tap((camera: Camera) => {
           const ctx = getState();
@@ -86,6 +100,8 @@ export class DashboardState {
               camera
             ]
           });
+
+          dispatch(new SelectCamera({camera}));
         })
       );
   }
