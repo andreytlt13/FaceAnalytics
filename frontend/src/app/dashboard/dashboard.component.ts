@@ -1,4 +1,4 @@
-import {Component, OnInit, ViewEncapsulation} from '@angular/core';
+import {Component, OnInit, ViewChild, ViewEncapsulation} from '@angular/core';
 import {Actions, ofActionDispatched, Store} from '@ngxs/store';
 import {GraphLoadedSuccess, LoadCameras, LoadGraphData, SelectCamera} from './dashboard.actions';
 import {DashboardState} from './dashboard.state';
@@ -8,6 +8,7 @@ import {map} from 'rxjs/operators';
 import {Graph} from './graph-data/graph';
 import {Camera} from './camera/camera';
 import {ActivatedRoute, Router} from '@angular/router';
+import {MatDrawer} from '@angular/material';
 
 @Component({
   selector: 'app-dashboard',

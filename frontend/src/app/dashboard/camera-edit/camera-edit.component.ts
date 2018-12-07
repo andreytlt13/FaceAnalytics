@@ -1,11 +1,12 @@
-import { Component, OnInit } from '@angular/core';
+import {Component, OnInit} from '@angular/core';
 import {Location} from '@angular/common';
 import {tap} from 'rxjs/operators';
 import {Camera} from '../camera/camera';
 import {Observable} from 'rxjs';
 import {DashboardState} from '../dashboard.state';
-import {Store} from '@ngxs/store';
-import {CreateCamera} from '../dashboard.actions';
+import {Actions, ofAction, ofActionDispatched, Store} from '@ngxs/store';
+import {CreateCamera, SelectCamera} from '../dashboard.actions';
+import {Router} from '@angular/router';
 
 @Component({
   selector: 'app-camera-edit',
@@ -18,16 +19,23 @@ export class CameraEditComponent implements OnInit {
 
   constructor(
     private store: Store,
+    private router: Router,
+    private actions: Actions,
     private location: Location
-  ) { }
+  ) {
+  }
 
   ngOnInit() {
-    console.log(this.camera);
-    this.selected$.pipe(
-      tap((camera: Camera) => {
+    this.selected$.subscribe((camera: Camera) => {
+      if (camera) {
         this.camera = camera;
-      })
-    );
+      }
+    });
+
+    this.actions.pipe(ofActionDispatched(SelectCamera)).subscribe(({ payload : { camera }}) => {
+      console.log('=====', camera);
+      this.router.navigate(['dashboard', camera.id]);
+    });
   }
 
   saveCamera() {
