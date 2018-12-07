@@ -24,7 +24,11 @@ export class AuthRequiredService implements CanActivate {
     return of(this.isLoggedIn(username));
   }
 
-  isLoggedIn(username) {
+  canActivateChild(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): Observable<boolean> {
+    return this.canActivate(route, state);
+  }
+
+  isLoggedIn(username: string) {
     return !!username;
   }
 }
