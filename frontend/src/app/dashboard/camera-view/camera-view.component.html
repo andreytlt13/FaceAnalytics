@@ -4,7 +4,7 @@
     mode="indeterminate"
     [diameter]="60">
   </mat-progress-spinner>
-  <mat-grid-list cols="1" *ngIf="selected$ | async; let selected">
+  <mat-grid-list cols="1" rowHeight="600" *ngIf="selected$ | async; let selected">
     <mat-grid-tile [colspan]="1" [rowspan]="1">
       <mat-card class="dashboard-card mat-elevation-z6">
         <mat-card-header>
@@ -17,8 +17,8 @@
             <source src="{{selected?.url}}" type="application/dash+xml">
           </video>
           <img *ngIf="selected.type === 'image'" [src]="selected.url">
-          <plotly-plot [config]="{locale: 'ru'}" [data]="graph.data" [layout]="layout"
-          [useResizeHandler]="true"></plotly-plot>
+          <!--<plotly-plot [config]="{locale: 'ru'}" [data]="graph.data" [layout]="layout"-->
+          <!--[useResizeHandler]="true"></plotly-plot>-->
         </mat-card-content>
       </mat-card>
     </mat-grid-tile>
