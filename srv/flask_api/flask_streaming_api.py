@@ -45,9 +45,11 @@ def stream(camera_url):
     vs = VideoStream(src=camera_url).start()  # src=camera_url
     time.sleep(2.0)
 
+
+
     #create db connection
     connection = EventDBLogger()
-
+    table = connection.create_table(camera_url)
 
     #create folder for image
     image_camera_dir = '../image_for_processing/{}'.format(camera_url.replace('/', '_'))
@@ -58,7 +60,7 @@ def stream(camera_url):
     if not os.path.exists(image_camera_dir):
         os.makedirs(image_camera_dir)
 
-    frame_processor = FrameProcessor(path_for_image=image_camera_dir)
+    frame_processor = FrameProcessor(path_for_image=image_camera_dir, table=table)
 
     fps = None
     (H, W) = (None, None)
@@ -72,7 +74,7 @@ def stream(camera_url):
     while True:
         fps = FPS().start()
 
-        frame, _, info = frame_processor.process_next_frame(vs, totalFrames, totalDown, totalUp)
+        frame, _, info = frame_processor.process_next_frame(vs, totalFrames, totalDown, totalUp, connection, camera_url)
         totalFrames += 1
 
         fps.update()
