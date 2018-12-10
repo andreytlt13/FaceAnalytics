@@ -1,10 +1,11 @@
 from sqlalchemy import *#create_engine, MetaData, Table, Column
 from sqlalchemy.orm import sessionmaker
 from common import config_parser
+import json
 
 CONFIG = config_parser.parse()
 DEFAULT_PATH = 'sqlite:///surveillance.db'
-Session = sessionmaker()
+#Session = sessionmaker()
 
 
 class EventDBLogger:
@@ -42,3 +43,10 @@ class EventDBLogger:
             x=dict['x']
         )
         self.conn.execute(ins)
+
+    def select(self, table, start_date, end_date):
+        select_st = table.select().where(and_(
+            table.c.event_time > start_date,
+            table.c.event_time < end_date))
+        res = self.conn.execute(select_st).fetchall()
+        return res

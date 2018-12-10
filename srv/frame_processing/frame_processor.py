@@ -6,7 +6,7 @@ import os
 import cv2
 import imutils
 import numpy as np
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 
 from datetime import datetime
 from common import config_parser
@@ -178,3 +178,18 @@ class FrameProcessor:
         ]
 
         return frame,  self.H, info
+
+
+# Debugging middleware caught exception in streamed response at a point where response headers were already sent.
+# Traceback (most recent call last):
+#   File "/Users/andrey/anaconda3/envs/py37/lib/python3.7/site-packages/werkzeug/wsgi.py", line 870, in __next__
+#     return self._next()
+#   File "/Users/andrey/anaconda3/envs/py37/lib/python3.7/site-packages/werkzeug/wrappers.py", line 82, in _iter_encoded
+#     for item in iterable:
+#   File "/Users/andrey/PycharmProjects/FaceAnalytics/srv/flask_api/flask_streaming_api.py", line 77, in stream
+#     frame, _, info = frame_processor.process_next_frame(vs, totalFrames, totalDown, totalUp, connection, camera_url)
+#   File "/Users/andrey/PycharmProjects/FaceAnalytics/srv/frame_processing/frame_processor.py", line 121, in process_next_frame
+#     objects = self.ct.update(rects)
+#   File "/Users/andrey/PycharmProjects/FaceAnalytics/srv/frame_processing/object_tracker.py", line 46, in update
+#     for objectID in self.disappeared.keys():
+# RuntimeError: OrderedDict mutated during iteration

@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import cv2, os, flask, time
+import cv2, os, flask, time, pandas as pd
 from imutils.video import FPS
 from imutils.video import VideoStream
 from datetime import datetime
@@ -7,12 +7,13 @@ from common import config_parser
 #from frame_processing.frame_processor2 import FrameProcessor
 from frame_processing.frame_processor import FrameProcessor
 from db.event_db_logger import EventDBLogger
+global connection
 
 CONFIG = config_parser.parse()
 
 app = flask.Flask(
     __name__,
-    instance_path='/home/andrey/PycharmProjects/FaceAnalytics/srv/config'
+    instance_path='/Users/andrey/PycharmProjects/FaceAnalytics/srv/config'
 )
 
 
@@ -95,6 +96,27 @@ def stream(camera_url):
         yield (b'--frame\r\n'
                b'Content-Type: image/jpeg\r\n\r\n' + img_encoded.tobytes() + b'\r\n')
 
+@app.route('/db_select', methods=['GET'])
+def db_select():
+
+    try:
+        start_date = str(flask.request.args.get('start_date'))
+    except:
+        start_date = flask.request.args.get('start_date')
+
+    try:
+        end_date = str(flask.request.args.get('end_date'))
+    except:
+        end_date = flask.request.args.get('end_date')
+
+    connection = EventDBLogger()
+    table = connection.create_table('rtsp://admin:0ZKaxVFi@10.101.106.4:554/live/main')
+
+    result = connection.select(table, start_date, end_date)
+    df = pd.DataFrame(result)
+    df.columns = result[0].keys()
+    j = df.to_json(orient='records')
+    return j
 
 def run():
     app.run(host='0.0.0.0', port=9090, debug=True, threaded=True)
