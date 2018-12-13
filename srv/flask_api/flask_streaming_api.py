@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 import cv2, os, flask
+from flask import Response
+from flask_cors import cross_origin
 from imutils.video import FPS
 from imutils.video import VideoStream
 from datetime import datetime
@@ -13,6 +15,7 @@ app = flask.Flask(
     __name__,
     instance_path='/Users/andrey/PycharmProjects/FaceAnalytics/srv/config'
 )
+
 
 @app.route('/video_stream', methods=['GET'])
 def video_stream():
@@ -77,6 +80,7 @@ def stream(camera_url):
 
 
 @app.route('/db_select', methods=['GET'])
+@cross_origin()
 def db_select():
     start_date = flask.request.args.get('start_date')
     end_date = flask.request.args.get('end_date')
@@ -84,7 +88,7 @@ def db_select():
     connection = EventDBLogger()
     table = connection.create_table(table)
     result = connection.select(table, start_date, end_date)
-    return result
+    return Response(result, mimetype='application/json')
 
 
 def run():
