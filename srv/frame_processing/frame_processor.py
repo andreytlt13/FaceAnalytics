@@ -30,7 +30,7 @@ class FrameProcessor:
     def __init__(self, confidence=CONFIG['confidence'], descriptions_dir=CONFIG['descriptions_dir'],
                  detected_faces_dir=CONFIG['detected_faces_dir'], model=CONFIG['caffe_model'],
                  prototxt=CONFIG['prototxt'],
-                 prototxt2=CONFIG['prototxt2'], model2=CONFIG['caffe_model2'], classes=CLASSES, trackableObjects={},
+                 prototxt2=CONFIG['prototxt_person_detection'], model2=CONFIG['caffe_model_person_detection'], classes=CLASSES, trackableObjects={},
                  trackers=[], path_for_image=None, table=None) -> None:
 
         self.confidence = float(confidence)
@@ -49,7 +49,8 @@ class FrameProcessor:
         self.path_for_image = path_for_image
         self.table = table
 
-    def process_next_frame(self, vs, totalFrames=0, totalDown=0, totalUp=0, connection=None, camera_url=None):
+    #def process_next_frame(self, vs, totalFrames=0, totalDown=0, totalUp=0, connection=None, camera_url=None):
+    def process_next_frame(self, vs, info, connection=None, camera_url=None):
         frame = vs.read()
 
         frame = imutils.resize(frame, width=500)
@@ -57,11 +58,11 @@ class FrameProcessor:
         if self.W is None or self.H is None:
             (self.H, self.W) = frame.shape[:2]
 
-        status = "Waiting"
+        info['status'] = "Waiting"
         rects = []
 
-        if totalFrames % int(CONFIG['skip_frames']) == 0:
-            status = 'Detecting'
+        if info['TotalFrames'] % int(CONFIG['skip_frames']) == 0:
+            info['status'] = 'Detecting'
             self.trackers =[]
 
             blob = cv2.dnn.blobFromImage(frame, 0.007843, (self.W, self.H), 127.5)
@@ -91,7 +92,7 @@ class FrameProcessor:
 
             for tracker in self.trackers:
 
-                status = 'Tracking'
+                info['status'] = 'Tracking'
                 tracker.update(rgb)
                 pos = tracker.get_position()
                 startX = int(pos.left())
@@ -103,11 +104,13 @@ class FrameProcessor:
                 cv2.imwrite('{0}/{1}_{2}.png'.format(self.path_for_image,
                                                      self.trackableObjects.__len__(),
                                                      datetime.now().strftime("%H:%M:%S")), cropped)
+
+                #!!!!!need to rewrite this for correct write enter and exit events
                 event = {
                     'event_time': datetime.now(),
                     'object_id': self.trackableObjects.__len__(),
-                    'enter': totalUp,
-                    'exit': totalDown,
+                    'enter': info['Enter'],
+                    'exit': info['Exit'],
                     'y': round((startY+endY)/2, 0),
                     'x': round((startX+endX)/2, 0)
                 }
@@ -147,14 +150,14 @@ class FrameProcessor:
                     # is moving up) AND the centroid is above the center
                     # line, count the object
                     if direction < 0 and centroid[1] < self.H // 2:
-                        totalUp += 1
+                        info['Enter'] += 1
                         to.counted = True
 
                     # if the direction is positive (indicating the object
                     # is moving down) AND the centroid is below the
                     # center line, count the object
                     elif direction > 0 and centroid[1] > self.H // 2:
-                        totalDown += 1
+                        info['Exit'] += 1
                         to.counted = True
 
             # store the trackable object in our dictionary
@@ -167,15 +170,8 @@ class FrameProcessor:
                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
             cv2.circle(frame, (centroid[0], centroid[1]), 4, (0, 255, 0), -1)
 
-        totalFrames += 1
-
-        info = [
-            ('Enter', totalUp),
-            ('Exit', totalDown),
-            ('TotalFrames', totalFrames),
-            ('Status', status),
-            ('Count People',  self.trackableObjects.__len__())
-        ]
+        info['TotalFrames'] += 1
+        info['Count People'] = self.trackableObjects.__len__()
 
         return frame,  self.H, info
 

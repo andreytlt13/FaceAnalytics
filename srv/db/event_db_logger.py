@@ -1,11 +1,9 @@
-from sqlalchemy import *#create_engine, MetaData, Table, Column
-from sqlalchemy.orm import sessionmaker
+import pandas as pd
+from sqlalchemy import *
 from common import config_parser
-import json
 
 CONFIG = config_parser.parse()
-DEFAULT_PATH = 'sqlite:///surveillance.db'
-#Session = sessionmaker()
+DEFAULT_PATH = CONFIG['sqlite_db']
 
 
 class EventDBLogger:
@@ -49,4 +47,8 @@ class EventDBLogger:
             table.c.event_time > start_date,
             table.c.event_time < end_date))
         res = self.conn.execute(select_st).fetchall()
-        return res
+        df = pd.DataFrame(res)
+        df.columns = res[0].keys()
+        j = df.to_json(orient='records')
+        return j
+
