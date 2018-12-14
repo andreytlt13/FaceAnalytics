@@ -14,11 +14,10 @@ const routes: Routes = [
     children: [
       {path: ':id', component: CameraViewComponent, data: {title: 'Camera View'}},
       {path: 'camera/create', component: CameraEditComponent, data: {title: 'Camera Edit'}},
+      {path: 'camera/update/:id', component: CameraEditComponent, data: {title: 'Camera Edit'}},
     ]
   },
   {path: '**', redirectTo: '/dashboard'}
-  // { path: 'dashboard/camera/create', component: CameraEditComponent, canActivate: [AuthRequiredService],  },
-  // { path: 'dashboard/:id', component: DashboardComponent, canActivate: [AuthRequiredService],  }
 ];
 
 @NgModule({

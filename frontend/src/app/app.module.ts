@@ -12,6 +12,7 @@ import {DashboardModule} from './dashboard/dashboard.module';
 import {LoginModule} from './login/login.module';
 import {BrowserAnimationsModule} from '@angular/platform-browser/animations';
 import {SharedModule} from './shared/shared.module';
+import {environment} from '../environments/environment';
 
 @NgModule({
   declarations: [
@@ -29,7 +30,7 @@ import {SharedModule} from './shared/shared.module';
       key: 'auth.username'
     }),
     NgxsLoggerPluginModule.forRoot(),
-    NgxsModule.forRoot([AuthState]),
+    NgxsModule.forRoot([AuthState], { developmentMode: !environment.production }),
 
     SharedModule
   ],

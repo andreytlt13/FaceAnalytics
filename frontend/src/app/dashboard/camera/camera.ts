@@ -1,20 +1,16 @@
 export class Camera {
-  constructor(public id: string = '', public name = '', private _url = '', public type = 'image') {}
+  constructor(public id: string = '', public name = '', public url = '', public type = 'image') {}
 
-  get url() {
-    if (this._url.includes('rtsp://')) {
-      return `http://10.101.1.18:9090/video_stream?camera_url=${this._url}`;
+  get videoStreamUrl() {
+    if (this.url.includes('rtsp://')) {
+      return `http://10.101.1.18:9090/video_stream?camera_url=${this.url}`;
     } else {
-      return this._url;
+      return this.url;
     }
   }
 
-  set url(url) {
-    this._url = url;
-  }
-
   static parse({ id, name, url, type }) {
-    return new Camera(id, name, url, type);
+    return new Camera(id.toString(), name, url, type);
   }
 
   static isValid(camera: Camera) {

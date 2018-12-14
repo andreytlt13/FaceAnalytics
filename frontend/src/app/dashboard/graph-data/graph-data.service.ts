@@ -1,10 +1,10 @@
 import {Injectable} from '@angular/core';
 import {HttpClient} from '@angular/common/http';
-import {map} from 'rxjs/operators';
+import {tap} from 'rxjs/operators';
 import {Graph} from './graph';
-import {forkJoin, Observable} from 'rxjs';
+import {Observable} from 'rxjs';
 
-const dataURLs = [];
+const DATA_URL = 'http://10.101.1.18:9090/db_select';
 
 @Injectable({
   providedIn: 'root'
@@ -14,21 +14,22 @@ export class GraphDataService {
   constructor(private http: HttpClient) {
   }
 
-  loadAll(): Observable<Array<Graph>> {
-    return forkJoin(
-        dataURLs.map(({name}) => this.load(name))
-      ).pipe(
-        map(graphs => [...graphs])
-      );
-  }
+  load(cameraUrl): any {
+    let url = DATA_URL;
+    const queryParams = {
+      start_date: '2018-12-10 10:14:32',
+      end_date: '2018-12-13 21:20:32'
+    };
+    const queryParamsString = Object.keys(queryParams).map(key => `${key}=${queryParams[key]}`).join('&');
 
-  load(graphName): Observable<Graph> {
-    const {url} = dataURLs.find(({name}) => graphName === name);
+    url += `?table=${cameraUrl}&${queryParamsString}`;
 
     return this.http.get(url)
       .pipe(
-        map(data => {
-          return Graph.parse(graphName, data);
+        tap(data => {
+          console.log('=======', data);
+          return data;
+          // return Graph.parse(graphName, data);
         })
       );
   }
