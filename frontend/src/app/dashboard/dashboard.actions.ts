@@ -27,3 +27,8 @@ export class GraphLoadedSuccess {
 export class ResetGraphs {
   static readonly type = '[Dashboard] Removing all graphs';
 }
+
+export class DeleteCamera {
+  static readonly type = '[Dashboard] Delete camera';
+  constructor(public payload: { camera: Camera }) {};
+}

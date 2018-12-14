@@ -1,5 +1,5 @@
 import {Action, Selector, State, StateContext} from '@ngxs/store';
-import {CreateCamera, GraphLoadedSuccess, LoadCameras, LoadGraphData, ResetGraphs, SelectCamera} from './dashboard.actions';
+import {CreateCamera, DeleteCamera, GraphLoadedSuccess, LoadCameras, LoadGraphData, ResetGraphs, SelectCamera} from './dashboard.actions';
 import {GraphDataService} from './graph-data/graph-data.service';
 import {Graph} from './graph-data/graph';
 import {tap} from 'rxjs/operators';
@@ -43,11 +43,10 @@ export class DashboardState {
   }
 
   @Action(LoadGraphData)
-  loadGraphData({dispatch}: StateContext<DashboardStateModel>) {
-    return this.graphDataService.loadAll()
-      .pipe(
-        tap(graphs => graphs.forEach(graph => dispatch(new GraphLoadedSuccess({graph}))))
-      );
+  loadGraphData({getState}: StateContext<DashboardStateModel>) {
+    const ctx = getState().selectedCamera;
+
+    return this.graphDataService.load(ctx.url);
   }
 
   @Action(GraphLoadedSuccess)
@@ -100,6 +99,21 @@ export class DashboardState {
           });
 
           dispatch(new SelectCamera({camera}));
+        })
+      );
+  }
+
+  @Action(DeleteCamera)
+  deleteCamera({getState, patchState}: StateContext<DashboardStateModel>, {payload}: CreateCamera) {
+    return this.cameraService.delete(payload.camera)
+      .pipe(
+        tap((camera: Camera) => {
+          const ctx = getState();
+          patchState({
+            cameras: [
+              ...ctx.cameras.filter(cmr => cmr.id !== camera.id)
+            ]
+          });
         })
       );
   }

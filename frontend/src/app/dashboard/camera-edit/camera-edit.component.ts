@@ -31,9 +31,9 @@ export class CameraEditComponent implements OnInit {
       }
     });
 
-    this.actions.pipe(ofActionDispatched(SelectCamera)).subscribe(({payload: {camera}}) => {
-      this.router.navigate(['dashboard', camera.id]);
-    });
+    // this.actions.pipe(ofActionDispatched(SelectCamera)).subscribe(({payload: {camera}}) => {
+    //   this.router.navigate(['dashboard', camera.id]);
+    // });
   }
 
   saveCamera() {

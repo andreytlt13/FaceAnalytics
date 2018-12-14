@@ -1,7 +1,20 @@
-.dashboard-card {
-  position: absolute !important;
-  top: 15px;
-  left: 15px;
-  right: 15px;
-  bottom: 15px;
+.dashboard-card {}
+
+#heatmap {
+  position: absolute;
+}
+
+.camera-video {
+  width: 0;
+  height: 0;
+}
+
+#heatmap,
+.camera-video--full {
+  width: 640px;
+  height: 480px;
+}
+
+mat-progress-spinner {
+  margin: 5% auto;
 }
