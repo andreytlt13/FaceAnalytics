@@ -2,12 +2,12 @@ import datetime
 import dlib
 import json
 import os
-
+import numpy as np
 import cv2
 import imutils
 import numpy as np
 #import matplotlib.pyplot as plt
-
+import cv2
 from datetime import datetime
 from common import config_parser
 from common.on_frame_drawer import draw_label
@@ -26,12 +26,13 @@ CLASSES = ["background", "aeroplane", "bicycle", "bird", "boat",
            "sofa", "train", "tvmonitor"]
 
 
+
 class FrameProcessor:
     def __init__(self, confidence=CONFIG['confidence'], descriptions_dir=CONFIG['descriptions_dir'],
                  detected_faces_dir=CONFIG['detected_faces_dir'], model=CONFIG['caffe_model'],
                  prototxt=CONFIG['prototxt'],
                  prototxt2=CONFIG['prototxt_person_detection'], model2=CONFIG['caffe_model_person_detection'], classes=CLASSES, trackableObjects={},
-                 trackers=[], path_for_image=None, table=None) -> None:
+                 trackers=[], path_for_image=None, table=None, contours=None) -> None:
 
         self.confidence = float(confidence)
         self.ct = CentroidTracker()
@@ -48,6 +49,12 @@ class FrameProcessor:
         self.classes = classes
         self.path_for_image = path_for_image
         self.table = table
+        self.contours = np.array(contours)
+
+    def fill(self, img, points):
+        filter = cv2.convexHull(points)
+        cv2.fillConvexPoly(img, filter, 255)
+        return img
 
     #def process_next_frame(self, vs, totalFrames=0, totalDown=0, totalUp=0, connection=None, camera_url=None):
     def process_next_frame(self, vs, info, connection=None, camera_url=None):
@@ -78,7 +85,7 @@ class FrameProcessor:
                     if self.classes[idx] != 'person':
                         continue
 
-                    box = detections[0, 0, i, 3:7]  * np.array([self.W, self.H, self.W, self.H])
+                    box = detections[0, 0, i, 3:7] * np.array([self.W, self.H, self.W, self.H])
                     (startX, startY, endX, endY) = box.astype('int')
 
                     tracker = dlib.correlation_tracker()
@@ -173,19 +180,19 @@ class FrameProcessor:
         info['TotalFrames'] += 1
         info['Count People'] = self.trackableObjects.__len__()
 
+        overlay = frame.copy()
+        #output = frame.copy()
+        alpha = 0.3
+        cv2.fillPoly(overlay, pts=[self.contours], color=(0, 0, 255))
+        cv2.addWeighted(overlay, alpha, frame, 1 - alpha, 0, frame)
+
+        #frame = cv2.fillPoly(frame, pts=[self.contours], color=(255, 255, 255))
+        #frame = self.fill(frame, self.contours)
+
         return frame,  self.H, info
 
 
-# Debugging middleware caught exception in streamed response at a point where response headers were already sent.
-# Traceback (most recent call last):
-#   File "/Users/andrey/anaconda3/envs/py37/lib/python3.7/site-packages/werkzeug/wsgi.py", line 870, in __next__
-#     return self._next()
-#   File "/Users/andrey/anaconda3/envs/py37/lib/python3.7/site-packages/werkzeug/wrappers.py", line 82, in _iter_encoded
-#     for item in iterable:
-#   File "/Users/andrey/PycharmProjects/FaceAnalytics/srv/flask_api/flask_streaming_api.py", line 77, in stream
-#     frame, _, info = frame_processor.process_next_frame(vs, totalFrames, totalDown, totalUp, connection, camera_url)
-#   File "/Users/andrey/PycharmProjects/FaceAnalytics/srv/frame_processing/frame_processor.py", line 121, in process_next_frame
-#     objects = self.ct.update(rects)
-#   File "/Users/andrey/PycharmProjects/FaceAnalytics/srv/frame_processing/object_tracker.py", line 46, in update
-#     for objectID in self.disappeared.keys():
-# RuntimeError: OrderedDict mutated during iteration
+
+
+
+

@@ -329,9 +329,3 @@ class TrackableObject:
         # initialize a boolean used to indicate if the object has
         # already been counted or not
         self.counted = False
-
-
-list_to_clear = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-indexes_to_delete = [3, 5, 8, 9]
-
-print([list_to_clear[i] for i in range(0, len(list_to_clear)) if i not in indexes_to_delete])
