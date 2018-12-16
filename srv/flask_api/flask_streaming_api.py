@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 import cv2, os, flask
-from flask import Response
+import codecs, json
+#from flask import request
+import numpy as np
+from flask import Response, jsonify
 from flask_cors import cross_origin
 from imutils.video import FPS
 from imutils.video import VideoStream
@@ -15,6 +18,36 @@ app = flask.Flask(
     __name__,
     instance_path='/Users/andrey/PycharmProjects/FaceAnalytics/srv/config'
 )
+
+tasks = [
+    {
+        'table': 'rtsp://admin:0ZKaxVFi@10.101.106.4:554/live/main',
+        'contours':[[50, 50], [50, 150], [150, 150], [150, 50]]
+    },
+    {
+        'table': 'rtsp://admin:0ZKaxVFi@10.101.106.6:554/live/main',
+        'contours':[[50, 50], [50, 150], [150, 150], [150, 50]]
+    }
+]
+
+@app.route('/add_aim_region', methods=['POST'])
+def add_aim_region():
+    print(tasks)
+    if flask.request.is_json:
+        flask.abort(400)
+
+    task = flask.request.get_json()
+    if not flask.request.json or not 'table' in flask.request.json:
+        flask.abort(400)
+    for i, v in enumerate(tasks):
+       if v['table'] == task['table']:
+           tasks[i]['contours'] = task['contours']
+       else:
+           tasks.append(task)
+    print(tasks)
+    return jsonify({'task': task}), 201
+
+
 
 
 @app.route('/video_stream', methods=['GET'])
@@ -46,7 +79,11 @@ def stream(camera_url):
     if not os.path.exists(image_camera_dir):
         os.makedirs(image_camera_dir)
 
-    frame_processor = FrameProcessor(path_for_image=image_camera_dir, table=table)
+    for i, v in enumerate(tasks):
+       if v['table'] == camera_url:
+           contours = tasks[i]['contours']
+
+    frame_processor = FrameProcessor(path_for_image=image_camera_dir, table=table, contours=contours)
 
     (H, W) = (None, None)
 
