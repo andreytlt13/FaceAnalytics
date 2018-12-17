@@ -19,8 +19,8 @@ import {of} from 'rxjs';
 
 export interface DashboardStateModel {
   heatmapData: Heatmap;
-  graphData: Array<Graph>;
-  cameras: Array<Camera>;
+  graphData: Graph[];
+  cameras: Camera[];
   selectedCamera: Camera;
 }
 
@@ -87,7 +87,8 @@ export class DashboardState {
 
   @Action(LoadCameras)
   loadCameras({getState, patchState}: StateContext<DashboardStateModel>) {
-    const {cameras} = getState();
+    let {cameras} = getState();
+    cameras = cameras.map(cmr => Camera.parse({...cmr}));
     const observable = cameras.length ? of(cameras) : this.cameraService.load();
 
     return observable.subscribe((cmrs: Camera[]) => {

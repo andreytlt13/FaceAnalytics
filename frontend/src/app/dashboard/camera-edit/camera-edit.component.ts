@@ -13,7 +13,6 @@ import {Router} from '@angular/router';
   styleUrls: ['./camera-edit.component.scss']
 })
 export class CameraEditComponent implements OnInit {
-  public selected$: Observable<Camera> = this.store.select(DashboardState.selectedCamera);
   public camera = new Camera();
 
   constructor(
@@ -25,12 +24,6 @@ export class CameraEditComponent implements OnInit {
   }
 
   ngOnInit() {
-    this.selected$.subscribe((camera: Camera) => {
-      if (camera) {
-        this.camera = camera;
-      }
-    });
-
     // this.actions.pipe(ofActionDispatched(SelectCamera)).subscribe(({payload: {camera}}) => {
     //   this.router.navigate(['dashboard', camera.id]);
     // });

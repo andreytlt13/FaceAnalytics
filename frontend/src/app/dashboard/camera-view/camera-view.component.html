@@ -1,5 +1,4 @@
 <div class="grid-container">
-  <div id="heatmap"></div>
   <mat-card class="dashboard-card mat-elevation-z6" *ngIf="selected$ | async; let selected">
     <mat-card-header>
       <mat-card-title>
@@ -15,10 +14,11 @@
         mode="indeterminate"
         [diameter]="60">
       </mat-progress-spinner>
+      <div #heatmap id="heatmap" [style.display]="streamLoading ? 'none' : 'block'"></div>
       <img class="camera-video"
            [class.camera-video--full]="!streamLoading"
-           *ngIf="selected.type === 'image'"
-           [src]="selected.videoStreamUrl"
+           *ngIf="selected?.type === 'image'"
+           [src]="selected?.videoStreamUrl"
            (load)="streamLoading = false">
       <plotly-plot
         [config]="{locale: 'en'}"

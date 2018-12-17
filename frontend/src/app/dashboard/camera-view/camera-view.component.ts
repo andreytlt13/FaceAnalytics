@@ -1,4 +1,4 @@
-import {AfterViewInit, Component, OnDestroy, OnInit} from '@angular/core';
+import {AfterViewInit, Component, ElementRef, OnDestroy, OnInit, ViewChild} from '@angular/core';
 import {Camera} from '../camera/camera';
 import {Observable} from 'rxjs';
 import {DashboardState} from '../dashboard.state';
@@ -20,6 +20,7 @@ export class CameraViewComponent implements OnInit, OnDestroy {
 
   public selected$: Observable<Camera> = this.store.select(DashboardState.selectedCamera);
   public heatmapData$: Observable<Heatmap> = this.store.select(DashboardState.heatmapData);
+  @ViewChild('heatmap') private heatmapElement: ElementRef;
 
   public graph: Graph;
   public layout = {
@@ -46,7 +47,6 @@ export class CameraViewComponent implements OnInit, OnDestroy {
     private store: Store,
     private route: ActivatedRoute,
     private actions: Actions,
-    private cameraService: CameraService
   ) {
   }
 
@@ -56,7 +56,7 @@ export class CameraViewComponent implements OnInit, OnDestroy {
     this.route.paramMap.subscribe((params) => {
       const cameraId = params.get('id');
 
-      this.cameraService.load().subscribe((cameras: Camera[]) => {
+      this.store.select(DashboardState.cameras).subscribe((cameras: Camera[]) => {
         const camera = cameras.find(cmr => cmr.id === cameraId);
 
         this.store.dispatch(new SelectCamera({camera})).subscribe(() => {
@@ -118,8 +118,12 @@ export class CameraViewComponent implements OnInit, OnDestroy {
   }
 
   renderHeatmap(heatmapData: Heatmap) {
+    const heatmap = this.heatmapElement.nativeElement;
+
+    heatmap.innerHTML = '';
+
     const config = {
-      container: document.getElementById('heatmap'),
+      container: heatmap,
       radius: 10,
       maxOpacity: .5,
       minOpacity: 0,
