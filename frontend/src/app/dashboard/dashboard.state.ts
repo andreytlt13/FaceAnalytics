@@ -15,6 +15,7 @@ import {tap} from 'rxjs/operators';
 import {Camera} from './camera/camera';
 import {CameraService} from './camera/camera.service';
 import Heatmap from './event-data/heatmap';
+import {of} from 'rxjs';
 
 export interface DashboardStateModel {
   heatmapData: Heatmap;
@@ -85,10 +86,13 @@ export class DashboardState {
   }
 
   @Action(LoadCameras)
-  loadCameras({patchState}: StateContext<DashboardStateModel>) {
-    return this.cameraService.load().subscribe((cameras: Camera[]) => {
+  loadCameras({getState, patchState}: StateContext<DashboardStateModel>) {
+    const {cameras} = getState();
+    const observable = cameras.length ? of(cameras) : this.cameraService.load();
+
+    return observable.subscribe((cmrs: Camera[]) => {
       patchState({
-        cameras: cameras
+        cameras: cmrs
       });
     });
   }
