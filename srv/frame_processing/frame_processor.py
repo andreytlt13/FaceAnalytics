@@ -26,6 +26,13 @@ CLASSES = ["background", "aeroplane", "bicycle", "bird", "boat",
            "sofa", "train", "tvmonitor"]
 
 
+def in_polygon(x, y, xp, yp):
+    c = 0
+    for i in range(len(xp)):
+        if (((yp[i] <= y and y < yp[i - 1]) or (yp[i - 1] <= y and y < yp[i])) and \
+                (x > (xp[i - 1] - xp[i]) * (y - yp[i]) / (yp[i - 1] - yp[i]) + xp[i])): c = 1 - c
+    return c
+
 
 class FrameProcessor:
     def __init__(self, confidence=CONFIG['confidence'], descriptions_dir=CONFIG['descriptions_dir'],
@@ -50,14 +57,14 @@ class FrameProcessor:
         self.path_for_image = path_for_image
         self.table = table
         self.contours = np.array(contours)
-        self.contours2 = np.array([[0, 185], [0, 0], [500, 0], [500, 185]])
+        self.x = [item[0] for item in self.contours]
+        self.y = [item[1] for item in self.contours]
 
     def fill(self, img, points):
         filter = cv2.convexHull(points)
         cv2.fillConvexPoly(img, filter, 255)
         return img
 
-    #def process_next_frame(self, vs, totalFrames=0, totalDown=0, totalUp=0, connection=None, camera_url=None):
     def process_next_frame(self, vs, info, connection=None, camera_url=None):
         frame = vs.read()
 
@@ -157,17 +164,16 @@ class FrameProcessor:
                     # if the direction is negative (indicating the object
                     # is moving up) AND the centroid is above the center
                     # line, count the object
-                    #if direction < 0 and centroid[1] < self.H // 2:
-                    #[[0, 185], [0, 375], [500, 375], [500, 185]]
-                    if direction < 0 and self.contours[0][1] <= centroid[1] <= self.contours[1][1] and self.contours[0][0] <= centroid[0] <= self.contours[2][0]:
+                    include_centroid = bool(in_polygon(centroid[0], centroid[1], self.x, self.y))
+                    exclude_centroid = bool(in_polygon(centroid[0], centroid[1], self.x, self.y)) == False
+                    if direction < 0 and include_centroid:
                         info['Enter'] += 1
                         to.counted = True
 
                     # if the direction is positive (indicating the object
                     # is moving down) AND the centroid is below the
                     # center line, count the object
-                    #elif direction > 0 and centroid[1] > self.H // 2:
-                    elif direction > 0 and self.contours2[0][1] <= centroid[1] <= self.contours2[1][1] and self.contours2[0][0] <= centroid[0] <= self.contours2[2][0]:
+                    elif direction > 0 and exclude_centroid:
                         info['Exit'] += 1
                         to.counted = True
 
