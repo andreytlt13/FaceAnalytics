@@ -22,10 +22,14 @@ app = flask.Flask(
 tasks = [
     {
         'table': 'rtsp://admin:0ZKaxVFi@10.101.106.4:554/live/main',
-        'contours':[[50, 50], [50, 150], [150, 150], [150, 50]]
+        'contours':[[0, 185], [0, 375], [500, 375], [500, 185]]
     },
     {
         'table': 'rtsp://admin:0ZKaxVFi@10.101.106.6:554/live/main',
+        'contours':[[50, 50], [50, 150], [150, 150], [150, 50]]
+    },
+    {
+        'table': 'rtsp://admin:0ZKaxVFi@10.101.106.8:554/live/main',
         'contours':[[50, 50], [50, 150], [150, 150], [150, 50]]
     }
 ]

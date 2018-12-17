@@ -50,6 +50,7 @@ class FrameProcessor:
         self.path_for_image = path_for_image
         self.table = table
         self.contours = np.array(contours)
+        self.contours2 = np.array([[0, 185], [0, 0], [500, 0], [500, 185]])
 
     def fill(self, img, points):
         filter = cv2.convexHull(points)
@@ -126,7 +127,7 @@ class FrameProcessor:
 
                 rects.append((startX, startY, endX, endY))
 
-        cv2.line(frame, (0, self.H // 2), (self.W, self.H // 2), (0, 255, 255), 2)
+        #cv2.line(frame, (0, self.H // 2), (self.W, self.H // 2), (0, 255, 255), 2)
 
         objects = self.ct.update(rects)
 
@@ -156,14 +157,17 @@ class FrameProcessor:
                     # if the direction is negative (indicating the object
                     # is moving up) AND the centroid is above the center
                     # line, count the object
-                    if direction < 0 and centroid[1] < self.H // 2:
+                    #if direction < 0 and centroid[1] < self.H // 2:
+                    #[[0, 185], [0, 375], [500, 375], [500, 185]]
+                    if direction < 0 and self.contours[0][1] <= centroid[1] <= self.contours[1][1] and self.contours[0][0] <= centroid[0] <= self.contours[2][0]:
                         info['Enter'] += 1
                         to.counted = True
 
                     # if the direction is positive (indicating the object
                     # is moving down) AND the centroid is below the
                     # center line, count the object
-                    elif direction > 0 and centroid[1] > self.H // 2:
+                    #elif direction > 0 and centroid[1] > self.H // 2:
+                    elif direction > 0 and self.contours2[0][1] <= centroid[1] <= self.contours2[1][1] and self.contours2[0][0] <= centroid[0] <= self.contours2[2][0]:
                         info['Exit'] += 1
                         to.counted = True
 
