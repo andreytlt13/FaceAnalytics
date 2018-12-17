@@ -27,7 +27,10 @@ import {environment} from '../environments/environment';
     LoginModule,
 
     NgxsStoragePluginModule.forRoot({
-      key: 'auth.username'
+      key: [
+        'auth.username',
+        'dashboard.cameras'
+      ]
     }),
     NgxsLoggerPluginModule.forRoot(),
     NgxsModule.forRoot([AuthState], { developmentMode: !environment.production }),
