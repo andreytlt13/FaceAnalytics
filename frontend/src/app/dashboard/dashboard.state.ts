@@ -1,12 +1,23 @@
 import {Action, Selector, State, StateContext} from '@ngxs/store';
-import {CreateCamera, DeleteCamera, GraphLoadedSuccess, LoadCameras, LoadGraphData, ResetGraphs, SelectCamera} from './dashboard.actions';
-import {GraphDataService} from './graph-data/graph-data.service';
-import {Graph} from './graph-data/graph';
+import {
+  CreateCamera,
+  DeleteCamera,
+  GraphLoadedSuccess,
+  LoadCameras,
+  LoadGraphData,
+  LoadHeatmap,
+  ResetGraphs,
+  SelectCamera
+} from './dashboard.actions';
+import {EventDataService} from './event-data/event-data.service';
+import {Graph} from './event-data/graph';
 import {tap} from 'rxjs/operators';
 import {Camera} from './camera/camera';
 import {CameraService} from './camera/camera.service';
+import Heatmap from './event-data/heatmap';
 
 export interface DashboardStateModel {
+  heatmapData: Heatmap;
   graphData: Array<Graph>;
   cameras: Array<Camera>;
   selectedCamera: Camera;
@@ -16,6 +27,7 @@ export interface DashboardStateModel {
   name: 'dashboard',
   defaults: {
     graphData: [],
+    heatmapData: null,
     cameras: [],
     selectedCamera: null
   }
@@ -24,6 +36,11 @@ export class DashboardState {
   @Selector()
   static graphData(state: DashboardStateModel) {
     return state.graphData;
+  }
+
+  @Selector()
+  static heatmapData(state: DashboardStateModel) {
+    return state.heatmapData;
   }
 
   @Selector()
@@ -38,7 +55,7 @@ export class DashboardState {
 
   constructor(
     private cameraService: CameraService,
-    private graphDataService: GraphDataService
+    private eventDataService: EventDataService
   ) {
   }
 
@@ -46,7 +63,7 @@ export class DashboardState {
   loadGraphData({getState}: StateContext<DashboardStateModel>) {
     const ctx = getState().selectedCamera;
 
-    return this.graphDataService.load(ctx.url);
+    return this.eventDataService.load(ctx.url);
   }
 
   @Action(GraphLoadedSuccess)
@@ -113,6 +130,18 @@ export class DashboardState {
             cameras: [
               ...ctx.cameras.filter(cmr => cmr.id !== camera.id)
             ]
+          });
+        })
+      );
+  }
+
+  @Action(LoadHeatmap)
+  loadHeatmap({patchState}: StateContext<DashboardStateModel>, {payload}: LoadHeatmap) {
+    return this.eventDataService.load(payload.camera.url)
+      .pipe(
+        tap((heatmapData: Heatmap) => {
+          patchState({
+            heatmapData
           });
         })
       );

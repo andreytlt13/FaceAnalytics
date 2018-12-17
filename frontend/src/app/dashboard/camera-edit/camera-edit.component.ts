@@ -37,7 +37,6 @@ export class CameraEditComponent implements OnInit {
   }
 
   saveCamera() {
-    console.log(this.camera);
     if (Camera.isValid(this.camera)) {
       this.store.dispatch(new CreateCamera({camera: this.camera}));
     }

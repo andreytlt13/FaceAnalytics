@@ -1,12 +1,12 @@
 import { TestBed } from '@angular/core/testing';
 
-import { GraphDataService } from './graph-data.service';
+import { EventDataService } from './event-data.service';
 
-describe('GraphDataService', () => {
+describe('EventDataService', () => {
   beforeEach(() => TestBed.configureTestingModule({}));
 
   it('should be created', () => {
-    const service: GraphDataService = TestBed.get(GraphDataService);
+    const service: EventDataService = TestBed.get(EventDataService);
     expect(service).toBeTruthy();
   });
 });
