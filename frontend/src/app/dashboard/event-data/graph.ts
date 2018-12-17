@@ -1,4 +1,5 @@
 import {formatDate} from '@angular/common';
+import {CameraEvent} from './event-data.service';
 
 const today = new Date();
 
@@ -12,9 +13,21 @@ export class Graph {
     return this.traces;
   }
 
+  // static parse(name: string, events: CameraEvent[]): Graph {
   static parse(name: string, {rows}: any): Graph {
     const traces = [];
 
+    // events.forEach(({}) => {
+    //   let trace = traces[0];
+    //
+    //   if (!trace) {
+    //     trace = new Trace('default');
+    //     traces.push(trace);
+    //   }
+    //
+    //   trace.x.push(date);
+    //   trace.y.push(value);
+    // });
     rows.forEach(({date, value, org}) => {
       let trace = org ? traces.find(t => org === t.name) : traces[0];
 
