@@ -34,6 +34,10 @@ tasks = [
     }
 ]
 
+camera = {
+    'camera_url': 'rtsp://admin:0ZKaxVFi@10.101.106.4:554/live/main'
+}
+
 @app.route('/add_aim_region', methods=['POST'])
 def add_aim_region():
     print(tasks)
@@ -69,8 +73,12 @@ def video_stream():
 
 
 def stream(camera_url):
-
     print('[INFO] starting video stream...')
+
+    if camera_url == None:
+        camera_url = camera['camera_url']
+
+
     vs = VideoStream(src=camera_url).start()
     connection = EventDBLogger()
     table = connection.create_table(camera_url)
