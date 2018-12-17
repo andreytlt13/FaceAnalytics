@@ -1,4 +1,5 @@
 <div class="grid-container">
+  <div id="heatmap"></div>
   <mat-card class="dashboard-card mat-elevation-z6" *ngIf="selected$ | async; let selected">
     <mat-card-header>
       <mat-card-title>
@@ -6,7 +7,6 @@
       </mat-card-title>
     </mat-card-header>
     <mat-card-content class="dashboard-card-content" style="width: 100%; min-height: 500px;">
-      <div id="heatmap"></div>
       <!--<video *ngIf="selected.type === 'video'">-->
         <!--<source (src)="selected.videoStreamUrl" type="application/dash+xml">-->
       <!--</video>-->

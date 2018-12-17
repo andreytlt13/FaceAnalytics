@@ -1,14 +1,15 @@
-import {Component, OnDestroy, OnInit} from '@angular/core';
+import {AfterViewInit, Component, OnDestroy, OnInit} from '@angular/core';
 import {Camera} from '../camera/camera';
 import {Observable} from 'rxjs';
 import {DashboardState} from '../dashboard.state';
 import {Actions, ofActionDispatched, Store} from '@ngxs/store';
-import {Graph} from '../graph-data/graph';
-import {LoadGraphData, SelectCamera} from '../dashboard.actions';
+import {Graph} from '../event-data/graph';
+import {LoadGraphData, LoadHeatmap, SelectCamera} from '../dashboard.actions';
 
 import h337 from 'heatmap.js';
 import {ActivatedRoute} from '@angular/router';
 import {CameraService} from '../camera/camera.service';
+import Heatmap from '../event-data/heatmap';
 
 @Component({
   selector: 'app-camera-view',
@@ -18,6 +19,7 @@ import {CameraService} from '../camera/camera.service';
 export class CameraViewComponent implements OnInit, OnDestroy {
 
   public selected$: Observable<Camera> = this.store.select(DashboardState.selectedCamera);
+  public heatmapData$: Observable<Heatmap> = this.store.select(DashboardState.heatmapData);
 
   public graph: Graph;
   public layout = {
@@ -57,11 +59,13 @@ export class CameraViewComponent implements OnInit, OnDestroy {
       this.cameraService.load().subscribe((cameras: Camera[]) => {
         const camera = cameras.find(cmr => cmr.id === cameraId);
 
-        this.store.dispatch(new SelectCamera({camera}));
+        this.store.dispatch(new SelectCamera({camera})).subscribe(() => {
+          this.streamLoading = true;
+          this.store.dispatch(new LoadGraphData);
+          this.store.dispatch(new LoadHeatmap({camera}));
+        });
       });
     });
-
-    this.actions.pipe(ofActionDispatched(SelectCamera)).subscribe(() => this.streamLoading = true);
 
     // this.store.dispatch(new LoadGraphData);
 
@@ -72,6 +76,13 @@ export class CameraViewComponent implements OnInit, OnDestroy {
     this.generateRandomGraph();
 
     // this.renderHeatmap();
+
+    this.heatmapData$.subscribe((heatmapData: Heatmap) => {
+      if (heatmapData) {
+        this.heatmapInstance = null;
+        this.renderHeatmap(heatmapData);
+      }
+    });
   }
 
   ngOnDestroy(): void {
@@ -106,7 +117,7 @@ export class CameraViewComponent implements OnInit, OnDestroy {
     }
   }
 
-  renderHeatmap() {
+  renderHeatmap(heatmapData: Heatmap) {
     const config = {
       container: document.getElementById('heatmap'),
       radius: 10,
@@ -117,12 +128,7 @@ export class CameraViewComponent implements OnInit, OnDestroy {
     // create heatmap with configuration
     this.heatmapInstance = h337.create(config);
 
-    const dataPoint = {
-      x: 5, // x coordinate of the datapoint, a number
-      y: 5, // y coordinate of the datapoint, a number
-      value: 100 // the value at datapoint(x, y)
-    };
-    this.heatmapInstance.addData([dataPoint, dataPoint, dataPoint, dataPoint]);
+    this.heatmapInstance.addData(heatmapData.dataPoints);
   }
 
 }

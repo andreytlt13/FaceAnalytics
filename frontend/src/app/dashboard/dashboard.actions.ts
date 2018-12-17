@@ -1,4 +1,4 @@
-import {Graph} from './graph-data/graph';
+import {Graph} from './event-data/graph';
 import {Camera} from './camera/camera';
 
 export class LoadCameras {
@@ -31,4 +31,10 @@ export class ResetGraphs {
 export class DeleteCamera {
   static readonly type = '[Dashboard] Delete camera';
   constructor(public payload: { camera: Camera }) {};
+}
+
+export class LoadHeatmap {
+  static readonly type = '[Dashboard] Load heatmap';
+
+  constructor(public payload: { camera: Camera }) {}
 }
