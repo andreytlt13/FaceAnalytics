@@ -7,7 +7,7 @@ import {
   LoadGraphData,
   LoadHeatmap,
   ResetGraphs,
-  SelectCamera
+  SelectCamera, UpdateCamera
 } from './dashboard.actions';
 import {EventDataService} from './event-data/event-data.service';
 import {Graph} from './event-data/graph';
@@ -16,6 +16,7 @@ import {Camera} from './camera/camera';
 import {CameraService} from './camera/camera.service';
 import Heatmap from './event-data/heatmap';
 import {of} from 'rxjs';
+import CAMERAS from './camera/mockCameras';
 
 export interface DashboardStateModel {
   heatmapData: Heatmap;
@@ -109,35 +110,72 @@ export class DashboardState {
 
   @Action(CreateCamera)
   createCamera({getState, patchState, dispatch}: StateContext<DashboardStateModel>, {payload}: CreateCamera) {
-    return this.cameraService.create(payload.camera)
-      .pipe(
-        tap((camera: Camera) => {
-          const ctx = getState();
-          patchState({
-            cameras: [
-              ...ctx.cameras,
-              camera
-            ]
-          });
+    // TODO: uncomment when backend supports camera API
+    // return this.cameraService.create(payload.camera)
+    //   .pipe(
+    //     tap((camera: Camera) => {
+    //       const {cameras} = getState();
+    //       patchState({
+    //         cameras: [
+    //           ...cameras,
+    //           camera
+    //         ]
+    //       });
+    //
+    //       dispatch(new SelectCamera({camera}));
+    //     })
+    //   );
 
-          dispatch(new SelectCamera({camera}));
-        })
-      );
+    const {cameras} = getState();
+
+    payload.camera.id = (cameras.reduce((memo, cmr) => +cmr.id > memo ? +cmr.id : memo, 0) + 1).toString();
+
+    patchState({
+      cameras: [
+        ...cameras,
+        payload.camera
+      ]
+    });
+
+    return payload.camera;
   }
 
   @Action(DeleteCamera)
   deleteCamera({getState, patchState}: StateContext<DashboardStateModel>, {payload}: CreateCamera) {
-    return this.cameraService.delete(payload.camera)
-      .pipe(
-        tap((camera: Camera) => {
-          const ctx = getState();
-          patchState({
-            cameras: [
-              ...ctx.cameras.filter(cmr => cmr.id !== camera.id)
-            ]
-          });
-        })
-      );
+    // TODO: uncomment when backend supports camera API
+    // return this.cameraService.delete(payload.camera)
+    //   .pipe(
+    //     tap((camera: Camera) => {
+    //       const ctx = getState();
+    //       patchState({
+    //         cameras: [
+    //           ...ctx.cameras.filter(cmr => cmr.id !== camera.id)
+    //         ]
+    //       });
+    //     })
+    //   );
+
+    const {cameras} = getState();
+
+    patchState({
+      cameras: [
+        ...cameras.filter(cmr => cmr.id !== payload.camera.id)
+      ]
+    });
+  }
+
+  @Action(UpdateCamera)
+  updateCamera({getState, patchState}: StateContext<DashboardStateModel>, {payload}: UpdateCamera) {
+    const {cameras} = getState();
+    const index = cameras.findIndex(cmr => cmr.id === payload.camera.id);
+
+    if (index >= 0) {
+      patchState({
+        cameras: [
+          ...cameras.map((v, i) => i === index ? payload.camera : v )
+        ]
+      });
+    }
   }
 
   @Action(LoadHeatmap)

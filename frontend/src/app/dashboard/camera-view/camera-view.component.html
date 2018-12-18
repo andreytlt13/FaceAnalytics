@@ -4,10 +4,19 @@
       <mat-card-title>
         <h3 class="mat-h3">{{selected.name}}</h3>
       </mat-card-title>
+      <span class="spacer"></span>
+      <mat-button-toggle-group name="camera-actions" aria-label="Camera Actions">
+        <mat-button-toggle value="edit" (click)="editCamera(selected)">
+          <mat-icon>edit</mat-icon>
+        </mat-button-toggle>
+        <mat-button-toggle value="delete" (click)="deleteCamera(selected)">
+          <mat-icon>delete</mat-icon>
+        </mat-button-toggle>
+      </mat-button-toggle-group>
     </mat-card-header>
     <mat-card-content class="dashboard-card-content" style="width: 100%; min-height: 500px;">
       <!--<video *ngIf="selected.type === 'video'">-->
-        <!--<source (src)="selected.videoStreamUrl" type="application/dash+xml">-->
+      <!--<source (src)="selected.videoStreamUrl" type="application/dash+xml">-->
       <!--</video>-->
       <mat-progress-spinner
         *ngIf="streamLoading"

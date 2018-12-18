@@ -36,21 +36,21 @@ export class CameraService {
     return of(Camera.parse(newCamera));
   }
 
-  update(camera: Camera): Observable<Camera> {
-    const id = +camera.id;
-    let existing = CAMERAS.find(cmr => cmr.id === id);
-
-    if (!existing) {
-      throw new Error('Camera hasn\'t been created yet');
-    }
-
-    existing = {
-      ...camera.toJSON(),
-      id
-    };
-
-    return of(Camera.parse(existing));
-  }
+  // update(camera: Camera): Observable<Camera> {
+  //   const id = +camera.id;
+  //   let existing = CAMERAS.find(cmr => cmr.id === id);
+  //
+  //   if (!existing) {
+  //     throw new Error('Camera hasn\'t been created yet');
+  //   }
+  //
+  //   existing = {
+  //     ...camera.toJSON(),
+  //     id
+  //   };
+  //
+  //   return of(Camera.parse(existing));
+  // }
 
   delete(camera: Camera): Observable<{id: string}> {
     const id = +camera.id;
