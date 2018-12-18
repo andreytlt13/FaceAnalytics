@@ -4,10 +4,10 @@ import {Observable} from 'rxjs';
 import {DashboardState} from '../dashboard.state';
 import {Actions, ofActionDispatched, Store} from '@ngxs/store';
 import {Graph} from '../event-data/graph';
-import {LoadGraphData, LoadHeatmap, SelectCamera} from '../dashboard.actions';
+import {DeleteCamera, LoadGraphData, LoadHeatmap, SelectCamera} from '../dashboard.actions';
 
 import h337 from 'heatmap.js';
-import {ActivatedRoute} from '@angular/router';
+import {ActivatedRoute, Router} from '@angular/router';
 import {CameraService} from '../camera/camera.service';
 import Heatmap from '../event-data/heatmap';
 
@@ -45,8 +45,8 @@ export class CameraViewComponent implements OnInit, OnDestroy {
 
   constructor(
     private store: Store,
+    private router: Router,
     private route: ActivatedRoute,
-    private actions: Actions,
   ) {
   }
 
@@ -133,6 +133,14 @@ export class CameraViewComponent implements OnInit, OnDestroy {
     this.heatmapInstance = h337.create(config);
 
     this.heatmapInstance.addData(heatmapData.dataPoints);
+  }
+
+  editCamera(camera: Camera) {
+    this.router.navigate(['/dashboard', 'camera', 'update', camera.id]);
+  }
+
+  deleteCamera(camera: Camera) {
+    this.store.dispatch(new DeleteCamera({camera}));
   }
 
 }
