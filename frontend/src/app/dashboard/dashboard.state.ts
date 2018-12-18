@@ -2,12 +2,11 @@ import {Action, Selector, State, StateContext} from '@ngxs/store';
 import {
   CreateCamera,
   DeleteCamera,
-  GraphLoadedSuccess,
   LoadCameras,
   LoadGraphData,
   LoadHeatmap,
-  ResetGraphs,
-  SelectCamera, UpdateCamera
+  SelectCamera,
+  UpdateCamera
 } from './dashboard.actions';
 import {EventDataService} from './event-data/event-data.service';
 import {Graph} from './event-data/graph';
@@ -16,11 +15,10 @@ import {Camera} from './camera/camera';
 import {CameraService} from './camera/camera.service';
 import Heatmap from './event-data/heatmap';
 import {of} from 'rxjs';
-import CAMERAS from './camera/mockCameras';
 
 export interface DashboardStateModel {
   heatmapData: Heatmap;
-  graphData: Graph[];
+  graphData: Graph;
   cameras: Camera[];
   selectedCamera: Camera;
 }
@@ -28,7 +26,7 @@ export interface DashboardStateModel {
 @State<DashboardStateModel>({
   name: 'dashboard',
   defaults: {
-    graphData: [],
+    graphData: null,
     heatmapData: null,
     cameras: [],
     selectedCamera: null
@@ -62,28 +60,15 @@ export class DashboardState {
   }
 
   @Action(LoadGraphData)
-  loadGraphData({getState}: StateContext<DashboardStateModel>) {
-    const ctx = getState().selectedCamera;
-
-    return this.eventDataService.load(ctx.url);
-  }
-
-  @Action(GraphLoadedSuccess)
-  graphDataLoaded({getState, patchState}: StateContext<DashboardStateModel>, {payload}: GraphLoadedSuccess) {
-    const {graphData} = getState();
-    patchState({
-      graphData: [
-        ...graphData,
-        payload.graph
-      ]
-    });
-  }
-
-  @Action(ResetGraphs)
-  resetGraphs({patchState}: StateContext<DashboardStateModel>) {
-    patchState({
-      graphData: []
-    });
+  loadGraphData({patchState}: StateContext<DashboardStateModel>, {payload}: LoadGraphData) {
+    return this.eventDataService.loadGraph(payload.camera.url)
+      .pipe(
+        tap((graphData: Graph) => {
+          patchState({
+            graphData
+          });
+        })
+      );
   }
 
   @Action(LoadCameras)
@@ -180,7 +165,7 @@ export class DashboardState {
 
   @Action(LoadHeatmap)
   loadHeatmap({patchState}: StateContext<DashboardStateModel>, {payload}: LoadHeatmap) {
-    return this.eventDataService.load(payload.camera.url)
+    return this.eventDataService.loadHeatmap(payload.camera.url)
       .pipe(
         tap((heatmapData: Heatmap) => {
           patchState({

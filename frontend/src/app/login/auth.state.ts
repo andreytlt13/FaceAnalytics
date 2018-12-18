@@ -2,7 +2,6 @@ import {Action, Selector, State, StateContext} from '@ngxs/store';
 import {Login, LoginFailed, LoginSuccess, Logout} from './auth.actions';
 import {AuthService} from './auth/auth.service';
 import {delay, tap} from 'rxjs/operators';
-import {ResetGraphs} from '../dashboard/dashboard.actions';
 
 export interface AuthStateModel {
   username: string;
@@ -31,8 +30,6 @@ export class AuthState {
 
   @Action(Logout)
   logout({ patchState, dispatch }: StateContext<AuthStateModel>) {
-    dispatch(new ResetGraphs());
-
     patchState({username: ''});
   }
 

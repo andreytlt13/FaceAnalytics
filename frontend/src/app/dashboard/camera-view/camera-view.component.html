@@ -29,9 +29,9 @@
            *ngIf="selected?.type === 'image'"
            [src]="selected?.videoStreamUrl"
            (load)="streamLoading = false">
-      <plotly-plot
+      <plotly-plot *ngIf="graphData$ | async; let graph"
         [config]="{locale: 'en'}"
-        [data]="graph.data"
+        [data]="graph?.data"
         [layout]="layout"
         [useResizeHandler]="true"></plotly-plot>
     </mat-card-content>
