@@ -8,7 +8,6 @@ import {DeleteCamera, LoadGraphData, LoadHeatmap, SelectCamera} from '../dashboa
 
 import h337 from 'heatmap.js';
 import {ActivatedRoute, Router} from '@angular/router';
-import {CameraService} from '../camera/camera.service';
 import Heatmap from '../event-data/heatmap';
 
 @Component({
@@ -20,9 +19,9 @@ export class CameraViewComponent implements OnInit, OnDestroy {
 
   public selected$: Observable<Camera> = this.store.select(DashboardState.selectedCamera);
   public heatmapData$: Observable<Heatmap> = this.store.select(DashboardState.heatmapData);
+  public graphData$: Observable<Graph> = this.store.select(DashboardState.graphData);
   @ViewChild('heatmap') private heatmapElement: ElementRef;
 
-  public graph: Graph;
   public layout = {
     autosize: true,
     barmode: 'group',
@@ -61,21 +60,11 @@ export class CameraViewComponent implements OnInit, OnDestroy {
 
         this.store.dispatch(new SelectCamera({camera})).subscribe(() => {
           this.streamLoading = true;
-          this.store.dispatch(new LoadGraphData);
+          this.store.dispatch(new LoadGraphData({camera}));
           this.store.dispatch(new LoadHeatmap({camera}));
         });
       });
     });
-
-    // this.store.dispatch(new LoadGraphData);
-
-    // this.actions.pipe(ofActionDispatched(GraphLoadedSuccess)).subscribe(() => {
-    //   this.graphs = this.store.selectSnapshot(DashboardState.graphData);
-    // });
-
-    this.generateRandomGraph();
-
-    // this.renderHeatmap();
 
     this.heatmapData$.subscribe((heatmapData: Heatmap) => {
       if (heatmapData) {
@@ -87,34 +76,6 @@ export class CameraViewComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.heatmapInstance = null;
-  }
-
-  generateRandomGraph() {
-    const data = {
-      rows: []
-    };
-
-    for (let i = 0; i < 60; i++) {
-      const date = new Date();
-
-      date.setDate(date.getDate() - i);
-
-      const curr_date = date.getDate();
-      const curr_month = date.getMonth() + 1;
-      const curr_year = date.getFullYear();
-
-
-      data.rows.push({
-        date: curr_year + '-' + curr_month + '-' + curr_date,
-        value: getRandomInt(0, 100)
-      });
-    }
-
-    this.graph = Graph.parse('Objects statistics', data);
-
-    function getRandomInt(min, max) {
-      return Math.floor(Math.random() * (max - min)) + min;
-    }
   }
 
   renderHeatmap(heatmapData: Heatmap) {
