@@ -15,6 +15,7 @@ export class Graph {
 
   static parse(name: string, events: CameraEvent[]): Graph {
     const traces = [];
+    let object: number;
 
     events.forEach(({event_time, object_id}) => {
       let trace = traces[0];
@@ -24,8 +25,11 @@ export class Graph {
         traces.push(trace);
       }
 
-      trace.x.push(event_time);
-      trace.y.push(object_id);
+      if (object_id !== object) {
+        trace.x.push(event_time);
+        trace.y.push(object_id);
+        object = object_id;
+      }
     });
 
     // filling the graph with zeros up to now
@@ -45,6 +49,8 @@ export class Graph {
 }
 
 class Trace {
-  public type = 'histogram';
+  public readonly type = 'histogram';
+  public readonly histnorm = 'count';
+  public readonly histfunc = 'count';
   constructor(public name: string|undefined, public x = [], public y = []) {}
 }
