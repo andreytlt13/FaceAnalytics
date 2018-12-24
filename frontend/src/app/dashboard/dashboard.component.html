@@ -7,7 +7,7 @@
     <mat-nav-list>
       <a *ngFor="let camera of cameras$ | async" mat-list-item [routerLink]="[camera.id]">{{camera.name}}</a>
       <a mat-list-item (click)="editCamera()" disableRipple>
-        <a routerLink="camera/create" mat-button mat-raised-button color="primary">Create</a>
+        <a routerLink="camera/create" mat-raised-button color="primary">Create</a>
       </a>
     </mat-nav-list>
   </mat-sidenav>

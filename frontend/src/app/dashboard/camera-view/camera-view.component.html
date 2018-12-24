@@ -40,9 +40,9 @@
           <mat-datepicker-toggle matSuffix [for]="enddate"></mat-datepicker-toggle>
           <mat-datepicker #enddate></mat-datepicker>
         </mat-form-field>
-        <button type="button" mat-button mat-raised-button color="primary" (click)="reloadGraph(selected)">Apply</button>
-        <button type="button" mat-button mat-raised-button color="primary" (click)="playHeatmap(selected)" [disabled]="streamLoading">Play Heatmap</button>
-        <button type="button" mat-button mat-raised-button color="primary" (click)="resetHeatmap()" [disabled]="streamLoading">Reset Heatmap</button>
+        <button type="button" mat-raised-button color="primary" (click)="reloadGraph(selected)">Apply</button>
+        <button type="button" mat-raised-button color="primary" (click)="playHeatmap(selected)" [disabled]="streamLoading">{{play ? 'Stop' : 'Play'}} Heatmap</button>
+        <button type="button" mat-raised-button color="primary" (click)="resetHeatmap()" [disabled]="streamLoading">Reset Heatmap</button>
       </div>
       <mat-progress-spinner
         *ngIf="graphLoading"
