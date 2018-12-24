@@ -5,6 +5,7 @@
   margin-left: -250px;
   top: 0;
   left: 50%;
+  z-index: 999999;
 }
 
 .camera-video {
@@ -28,4 +29,8 @@ mat-progress-spinner {
 
 .spacer {
   flex: 1 1 auto;
+}
+
+.filters {
+  margin-top: 20px;
 }

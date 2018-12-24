@@ -1,7 +1,7 @@
 import {CameraEvent} from './event-data.service';
 
 export default class Heatmap {
-  constructor(public dataPoints: HeatmapPoint[]) {
+  constructor(public dataPoints: HeatmapPoint[] = []) {
   }
 
   static parse(events: CameraEvent[]) {

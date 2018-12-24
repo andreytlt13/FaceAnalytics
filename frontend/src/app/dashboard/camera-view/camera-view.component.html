@@ -29,7 +29,7 @@
            *ngIf="selected?.type === 'image'"
            [src]="selected?.videoStreamUrl"
            (load)="streamLoading = false">
-      <div class="filters" fxLayout="row" fxLayoutGap="10px" fxLayoutAlign="start center">
+      <div class="filters" fxLayout="row" fxLayoutGap="10px" fxLayoutAlign="end center">
         <mat-form-field>
           <input matInput [matDatepicker]="startdate" placeholder="Start date" [(ngModel)]="startDate" [max]="endDate">
           <mat-datepicker-toggle matSuffix [for]="startdate"></mat-datepicker-toggle>
@@ -42,6 +42,7 @@
         </mat-form-field>
         <button type="button" mat-button mat-raised-button color="primary" (click)="reloadGraph(selected)">Apply</button>
         <button type="button" mat-button mat-raised-button color="primary" (click)="playHeatmap(selected)">Play Heatmap</button>
+        <button type="button" mat-button mat-raised-button color="primary" (click)="resetHeatmap()">Reset Heatmap</button>
       </div>
       <mat-progress-spinner
         *ngIf="graphLoading"
