@@ -115,6 +115,8 @@ export class CameraViewComponent implements OnInit, OnDestroy {
   }
 
   resetHeatmap(): void {
+    this.play = false;
+
     const heatmapElement = this.heatmapElement.nativeElement;
     heatmapElement.innerHTML = '';
 
@@ -142,15 +144,16 @@ export class CameraViewComponent implements OnInit, OnDestroy {
   }
 
   async playHeatmap(camera: Camera) {
+    if (this.streamLoading) {
+      return;
+    }
+
     this.resetHeatmap();
     this.play = true;
 
     const start = this.startDate.clone();
 
     while (start < this.endDate.endOf('day')) {
-      if (!this.play) {
-        break;
-      }
       const heatmap = await this.eventDataService
         .load(camera.url, start.format('YYYY-MM-DD HH:mm:ss'), start.add(30, 'minute').format('YYYY-MM-DD HH:mm:ss'))
         .pipe(
@@ -159,6 +162,10 @@ export class CameraViewComponent implements OnInit, OnDestroy {
           map((events: CameraEvent[]) => Heatmap.parse(events)),
         )
         .toPromise();
+
+      if (!this.play) {
+        break;
+      }
 
       this.renderHeatmap(heatmap);
 
