@@ -1,6 +1,6 @@
 import {AfterViewInit, Component, ElementRef, OnDestroy, OnInit, ViewChild} from '@angular/core';
 import {Camera} from '../camera/camera';
-import {Observable} from 'rxjs';
+import {Observable, of} from 'rxjs';
 import {DashboardState} from '../dashboard.state';
 import {Actions, ofActionDispatched, Store} from '@ngxs/store';
 import {Graph} from '../event-data/graph';
@@ -10,7 +10,7 @@ import h337 from 'heatmap.js';
 import {ActivatedRoute, Router} from '@angular/router';
 import Heatmap from '../event-data/heatmap';
 import {CameraEvent, EventDataService} from '../event-data/event-data.service';
-import {delay, map, tap} from 'rxjs/operators';
+import {catchError, delay, map, tap} from 'rxjs/operators';
 import {DateAdapter, MAT_DATE_FORMATS, MAT_DATE_LOCALE} from '@angular/material';
 import {MomentDateAdapter} from '@angular/material-moment-adapter';
 import {Moment} from 'moment';
@@ -48,7 +48,6 @@ export class CameraViewComponent implements OnInit, OnDestroy {
 
   public graphLoading = false;
 
-  public graphData: Graph;
   @ViewChild('heatmap') private heatmapElement: ElementRef;
 
   public layout = {
@@ -67,6 +66,7 @@ export class CameraViewComponent implements OnInit, OnDestroy {
     }
   };
 
+  public play = false;
   public streamLoading = false;
 
   private heatmapInstance;
@@ -83,18 +83,21 @@ export class CameraViewComponent implements OnInit, OnDestroy {
     this.streamLoading = true;
 
     this.route.paramMap.subscribe((params) => {
+      this.play = false;
       const cameraId = params.get('id');
 
       this.store.select(DashboardState.cameras).subscribe((cameras: Camera[]) => {
         const camera = cameras.find(cmr => cmr.id === cameraId);
 
-        this.store.dispatch(new SelectCamera({camera})).subscribe(() => {
-          this.streamLoading = true;
-          // this.store.dispatch(new LoadGraphData({camera}));
-          // this.store.dispatch(new LoadHeatmap({camera}));
+        if (camera) {
+          this.store.dispatch(new SelectCamera({camera})).subscribe(() => {
+            this.streamLoading = true;
+            // this.store.dispatch(new LoadGraphData({camera}));
+            // this.store.dispatch(new LoadHeatmap({camera}));
 
-          this.reloadGraph(camera);
-        });
+            this.reloadGraph(camera);
+          });
+        }
       });
     });
 
@@ -108,39 +111,14 @@ export class CameraViewComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.heatmapInstance = null;
+    this.heatmapElement.nativeElement.innerHTML = '';
   }
 
-  reloadGraph(camera: Camera) {
-    this.graphLoading = true;
-    this.graphData$ = this.eventDataService
-      .load(camera.url, this.startDate.format('YYYY-MM-DD HH:mm:ss'), this.endDate.endOf('day').format('YYYY-MM-DD HH:mm:ss'))
-      .pipe(
-        map((events: CameraEvent[]) => Graph.parse('Unique objects per date', events))
-      );
-  }
+  resetHeatmap(): void {
+    const heatmapElement = this.heatmapElement.nativeElement;
+    heatmapElement.innerHTML = '';
 
-  async playHeatmap(camera: Camera) {
-    const start = this.startDate;
-
-    while (start < this.endDate.endOf('day')) {
-      const heatmap = await this.eventDataService
-        .load(camera.url, this.startDate.format('YYYY-MM-DD HH:mm:ss'), this.endDate.endOf('day').format('YYYY-MM-DD HH:mm:ss'))
-        .pipe(
-          map((events: CameraEvent[]) => Heatmap.parse(events)),
-          delay(2000)
-        )
-        .toPromise();
-
-      this.renderHeatmap(heatmap);
-
-      start.add(1, 'hour');
-    }
-}
-
-  renderHeatmap(heatmapData: Heatmap, cumulative: boolean = true) {
     const heatmap = this.heatmapElement.nativeElement;
-
-    heatmap.innerHTML = '';
 
     const config = {
       container: heatmap,
@@ -150,8 +128,45 @@ export class CameraViewComponent implements OnInit, OnDestroy {
       blur: .75
     };
 
-    this.heatmapInstance = this.heatmapInstance ? this.heatmapInstance : h337.create(config);
+    this.heatmapInstance = h337.create(config);
+  }
 
+  reloadGraph(camera: Camera): void {
+    this.graphLoading = true;
+    this.graphData$ = this.eventDataService
+      .load(camera.url, this.startDate.format('YYYY-MM-DD HH:mm:ss'), this.endDate.endOf('day').format('YYYY-MM-DD HH:mm:ss'))
+      .pipe(
+        tap(() => this.graphLoading = false),
+        map((events: CameraEvent[]) => Graph.parse('Unique objects per date', events))
+      );
+  }
+
+  async playHeatmap(camera: Camera) {
+    this.resetHeatmap();
+    this.play = true;
+
+    const start = this.startDate.clone();
+
+    while (start < this.endDate.endOf('day')) {
+      if (!this.play) {
+        break;
+      }
+      const heatmap = await this.eventDataService
+        .load(camera.url, start.format('YYYY-MM-DD HH:mm:ss'), start.add(30, 'minute').format('YYYY-MM-DD HH:mm:ss'))
+        .pipe(
+          // delay(100),
+          catchError(() => of([])),
+          map((events: CameraEvent[]) => Heatmap.parse(events)),
+        )
+        .toPromise();
+
+      this.renderHeatmap(heatmap);
+
+      start.add(30, 'minute');
+    }
+  }
+
+  renderHeatmap(heatmapData: Heatmap, cumulative: boolean = true) {
     // create heatmap with configuration
     if (cumulative) {
       this.heatmapInstance.addData(heatmapData.dataPoints);

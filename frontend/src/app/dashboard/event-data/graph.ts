@@ -33,16 +33,16 @@ export class Graph {
     });
 
     // filling the graph with zeros up to now
-    traces.forEach(({x, y}) => {
-      const lastValue = x.pop();
-
-      x.push(lastValue);
-
-      if (formatDate(today, 'yyyy-MM-dd', 'en-US') !== lastValue) {
-        x.push(formatDate(today, 'yyyy-MM-dd', 'en-US'));
-        y.push(0);
-      }
-    });
+    // traces.forEach(({x, y}) => {
+    //   const lastValue = x.pop();
+    //
+    //   x.push(lastValue);
+    //
+    //   if (formatDate(today, 'yyyy-MM-dd', 'en-US') !== lastValue) {
+    //     x.push(formatDate(today, 'yyyy-MM-dd', 'en-US'));
+    //     y.push(0);
+    //   }
+    // });
 
     return new Graph(name, traces);
   }

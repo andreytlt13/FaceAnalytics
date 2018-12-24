@@ -160,6 +160,8 @@ export class DashboardState {
           ...cameras.map((v, i) => i === index ? payload.camera : v )
         ]
       });
+
+      return payload.camera;
     }
   }
 

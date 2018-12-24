@@ -23,7 +23,7 @@ export class CameraEditComponent implements OnInit {
       return this.store.select(DashboardState.cameras)
         .pipe(
           mergeMap((cameras: Camera[]) => from(cameras)),
-          first( (camera: Camera) => camera.id === cameraId, new Camera()),
+          first((camera: Camera) => camera.id === cameraId, new Camera()),
           map((camera: Camera) => Camera.parse({...camera.toJSON()}))
         );
     }),
@@ -32,6 +32,7 @@ export class CameraEditComponent implements OnInit {
 
   constructor(
     private store: Store,
+    private router: Router,
     private route: ActivatedRoute,
     private actions: Actions,
     private location: Location
@@ -42,10 +43,14 @@ export class CameraEditComponent implements OnInit {
   }
 
 
-
   saveCamera(camera) {
     if (Camera.isValid(camera)) {
-      return camera.id ? this.store.dispatch(new UpdateCamera({camera: camera})) : this.store.dispatch(new CreateCamera({camera: camera}));
+      const observable = camera.id ? this.store.dispatch(new UpdateCamera({camera: camera})) : this.store.dispatch(new CreateCamera({camera: camera}));
+
+      return observable
+        .subscribe(() => {
+          this.router.navigate(['/dashboard', camera.id]);
+        });
     } else {
       console.log('=== camera is not valid');
     }
