@@ -15,11 +15,11 @@ export class EventDataService {
   constructor(private http: HttpClient) {
   }
 
-  load(cameraUrl): Observable<Object> {
+  load(cameraUrl, startDate, endDate): Observable<Object> {
     let url = DATA_URL;
     const queryParams = {
-      start_date: '2018-12-01 00:00:00',
-      end_date: '2019-12-31 23:59:59'
+      start_date: startDate,
+      end_date: endDate
     };
     const queryParamsString = Object.keys(queryParams).map(key => `${key}=${queryParams[key]}`).join('&');
 
@@ -28,23 +28,23 @@ export class EventDataService {
     return this.http.get(url);
   }
 
-  loadHeatmap(cameraUrl): Observable<Heatmap> {
-    return this.load(cameraUrl)
-      .pipe(
-        map((data: CameraEvent[]) => {
-          return Heatmap.parse(data);
-        })
-      );
-  }
-
-  loadGraph(cameraUrl): Observable<Graph> {
-    return this.load(cameraUrl)
-      .pipe(
-        map((data: CameraEvent[]) => {
-          return Graph.parse('Unique Objects', data);
-        })
-      );
-  }
+  // loadHeatmap(cameraUrl): Observable<Heatmap> {
+  //   return this.load(cameraUrl)
+  //     .pipe(
+  //       map((data: CameraEvent[]) => {
+  //         return Heatmap.parse(data);
+  //       })
+  //     );
+  // }
+  //
+  // loadGraph(cameraUrl): Observable<Graph> {
+  //   return this.load(cameraUrl)
+  //     .pipe(
+  //       map((data: CameraEvent[]) => {
+  //         return Graph.parse('Unique Objects', data);
+  //       })
+  //     );
+  // }
 }
 
 export interface CameraEvent {

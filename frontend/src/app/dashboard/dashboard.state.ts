@@ -59,17 +59,17 @@ export class DashboardState {
   ) {
   }
 
-  @Action(LoadGraphData)
-  loadGraphData({patchState}: StateContext<DashboardStateModel>, {payload}: LoadGraphData) {
-    return this.eventDataService.loadGraph(payload.camera.url)
-      .pipe(
-        tap((graphData: Graph) => {
-          patchState({
-            graphData
-          });
-        })
-      );
-  }
+  // @Action(LoadGraphData)
+  // loadGraphData({patchState}: StateContext<DashboardStateModel>, {payload}: LoadGraphData) {
+  //   return this.eventDataService.loadGraph(payload.camera.url)
+  //     .pipe(
+  //       tap((graphData: Graph) => {
+  //         patchState({
+  //           graphData
+  //         });
+  //       })
+  //     );
+  // }
 
   @Action(LoadCameras)
   loadCameras({getState, patchState}: StateContext<DashboardStateModel>) {
@@ -163,16 +163,16 @@ export class DashboardState {
     }
   }
 
-  @Action(LoadHeatmap)
-  loadHeatmap({patchState}: StateContext<DashboardStateModel>, {payload}: LoadHeatmap) {
-    return this.eventDataService.loadHeatmap(payload.camera.url)
-      .pipe(
-        tap((heatmapData: Heatmap) => {
-          patchState({
-            heatmapData
-          });
-        })
-      );
-  }
+  // @Action(LoadHeatmap)
+  // loadHeatmap({patchState}: StateContext<DashboardStateModel>, {payload}: LoadHeatmap) {
+  //   return this.eventDataService.loadHeatmap(payload.camera.url)
+  //     .pipe(
+  //       tap((heatmapData: Heatmap) => {
+  //         patchState({
+  //           heatmapData
+  //         });
+  //       })
+  //     );
+  // }
 
 }
