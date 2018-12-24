@@ -29,6 +29,25 @@
            *ngIf="selected?.type === 'image'"
            [src]="selected?.videoStreamUrl"
            (load)="streamLoading = false">
+      <div class="filters" fxLayout="row" fxLayoutGap="10px" fxLayoutAlign="start center">
+        <mat-form-field>
+          <input matInput [matDatepicker]="startdate" placeholder="Start date" [(ngModel)]="startDate" [max]="endDate">
+          <mat-datepicker-toggle matSuffix [for]="startdate"></mat-datepicker-toggle>
+          <mat-datepicker #startdate></mat-datepicker>
+        </mat-form-field>
+        <mat-form-field>
+          <input matInput [matDatepicker]="enddate" placeholder="End date" [(ngModel)]="endDate" [min]="startDate">
+          <mat-datepicker-toggle matSuffix [for]="enddate"></mat-datepicker-toggle>
+          <mat-datepicker #enddate></mat-datepicker>
+        </mat-form-field>
+        <button type="button" mat-button mat-raised-button color="primary" (click)="reloadGraph(selected)">Apply</button>
+        <button type="button" mat-button mat-raised-button color="primary" (click)="playHeatmap(selected)">Play Heatmap</button>
+      </div>
+      <mat-progress-spinner
+        *ngIf="graphLoading"
+        mode="indeterminate"
+        [diameter]="60">
+      </mat-progress-spinner>
       <plotly-plot *ngIf="graphData$ | async; let graph"
         [config]="{locale: 'en'}"
         [data]="graph?.data"
