@@ -148,6 +148,11 @@ export class CameraViewComponent implements OnInit, OnDestroy {
       return;
     }
 
+    if (this.play) {
+      this.play = false;
+      return;
+    }
+
     this.resetHeatmap();
     this.play = true;
 
