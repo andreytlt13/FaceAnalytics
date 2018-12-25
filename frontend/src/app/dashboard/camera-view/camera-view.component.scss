@@ -1,7 +1,36 @@
-.dashboard-card {
+.dashboard-card {}
+
+#heatmap {
   position: absolute !important;
-  top: 15px;
-  left: 15px;
-  right: 15px;
-  bottom: 15px;
+  margin-left: -250px;
+  top: 0;
+  left: 50%;
+  z-index: 999999;
+}
+
+.camera-video {
+  width: 0;
+  height: 0;
+}
+
+#heatmap,
+.camera-video--full {
+  width: 500px;
+  height: 375px;
+}
+
+mat-progress-spinner {
+  margin: 5% auto;
+}
+
+.dashboard-card-content {
+  position:relative;
+}
+
+.spacer {
+  flex: 1 1 auto;
+}
+
+.filters {
+  margin-top: 20px;
 }

@@ -2,13 +2,13 @@ import glob
 
 import tensorflow as tf
 
-from config import config_parser
+from common import config_parser
 from face_description import dlib_api
 from face_description.models import inception_resnet_v1
 
 COLOR_DEPTH = 3
 FACE_WIDTH = 160
-CONFIG = config_parser.parse_default()
+CONFIG = config_parser.parse()
 
 
 def load_network(model_path):

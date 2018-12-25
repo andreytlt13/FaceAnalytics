@@ -5,7 +5,7 @@ import cv2
 from imutils.video import VideoStream
 
 from common.on_frame_drawer import draw_label
-from frame_processing.frame_processor import FrameProcessor
+from frame_processing.frame_processor2 import FrameProcessor
 
 RED_COLOR = (0, 0, 255)
 
@@ -23,7 +23,7 @@ ap.add_argument('-d', '--descriptions_dir', required=False, default='/tmp/descri
 args = vars(ap.parse_args())
 
 processor = FrameProcessor(confidence=args['confidence'], descriptions_dir=args['descriptions_dir'],
-                           detected_faces_dir=args['output'], model=args['model'],
+                           detected_faces_dir=args['output'], model=args['caffe_model'],
                            prototxt=args['prototxt'])
 
 # initialize the video stream and allow the camera sensor to warmup

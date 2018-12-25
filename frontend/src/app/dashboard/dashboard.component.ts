@@ -42,14 +42,8 @@ export class DashboardComponent implements OnInit {
     }
   }
 
-  selectCamera(camera: Camera) {
-    this.title = 'Camera View';
-    this.store.dispatch(new SelectCamera({camera}));
-  }
-
   editCamera() {
     this.title = 'Camera Edit';
-    this.store.dispatch(new SelectCamera({camera: new Camera()}));
-    this.router.navigate(['camera/create'], {relativeTo: this.route});
+    this.router.navigate(['camera', 'create'], {relativeTo: this.route});
   }
 }
