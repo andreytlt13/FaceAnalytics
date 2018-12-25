@@ -5,6 +5,7 @@ const today = new Date();
 
 export class Graph {
   public type = 'histogram';
+  // public autobinx = false;
 
   constructor(public name: string, private traces: Trace[]) {
   }
@@ -13,7 +14,7 @@ export class Graph {
     return this.traces;
   }
 
-  static parse(name: string, events: CameraEvent[]): Graph {
+  static parse(name: string, events: CameraEvent[], binOptions): Graph {
     const traces = [];
     let object: number;
 
@@ -21,7 +22,7 @@ export class Graph {
       let trace = traces[0];
 
       if (!trace) {
-        trace = new Trace('default');
+        trace = new Trace('default', [], [], binOptions);
         traces.push(trace);
       }
 
@@ -52,5 +53,32 @@ class Trace {
   public readonly type = 'histogram';
   public readonly histnorm = 'count';
   public readonly histfunc = 'count';
-  constructor(public name: string|undefined, public x = [], public y = []) {}
+
+  // public autobinx = false;
+  public nbinsx = 0;
+  public xbins: {
+    start: number;
+    end: number;
+    size: number;
+  };
+
+  constructor(
+    public name: string | undefined,
+    public x = [],
+    public y = [],
+    binOptions: {
+      start: number;
+      end: number;
+      size: number;
+      count: number;
+    }
+  ) {
+    this.xbins = {
+      start: binOptions.start,
+      end: binOptions.end,
+      size: binOptions.size
+    };
+
+    this.nbinsx = binOptions.count;
+  }
 }

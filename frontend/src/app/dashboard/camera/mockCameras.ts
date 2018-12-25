@@ -11,16 +11,16 @@ export default [
   //   type: 'image',
   //   url: 'http://88.53.197.250/axis-cgi/mjpg/video.cgi?resolution=320x240'
   // },
-  {
-    id: 1,
-    name: 'Camera Office 1',
-    type: 'image',
-    url: 'rtsp://admin:0ZKaxVFi@10.101.106.4:554/live/main'
-  },
-  {
-    id: 2,
-    name: 'Camera Office 2',
-    type: 'image',
-    url: 'rtsp://admin:0ZKaxVFi@10.101.106.8:554/live/main'
-  }
+  // {
+  //   id: 1,
+  //   name: 'Camera Office 4',
+  //   type: 'image',
+  //   url: 'rtsp://admin:0ZKaxVFi@10.101.106.4:554/live/main'
+  // },
+  // {
+  //   id: 2,
+  //   name: 'Camera Office 8',
+  //   type: 'image',
+  //   url: 'rtsp://admin:0ZKaxVFi@10.101.106.8:554/live/main'
+  // }
 ];

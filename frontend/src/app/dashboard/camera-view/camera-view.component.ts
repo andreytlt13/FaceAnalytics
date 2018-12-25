@@ -134,12 +134,30 @@ export class CameraViewComponent implements OnInit, OnDestroy {
   }
 
   reloadGraph(camera: Camera): void {
+    const duration = moment.duration(this.endDate.endOf('day').diff(this.startDate));
+    let bucketCount = 1;
+    let bucketSize: number;
+
+    if (duration.days() + 1 > 5) {
+      bucketCount = duration.days() + 1;
+      bucketSize = moment.duration(1, 'hour').milliseconds();
+    } else {
+      bucketCount = duration.hours() + 1;
+      bucketSize = moment.duration(1, 'day').milliseconds();
+    }
+
+
     this.graphLoading = true;
     this.graphData$ = this.eventDataService
       .load(camera.url, this.startDate.format('YYYY-MM-DD HH:mm:ss'), this.endDate.endOf('day').format('YYYY-MM-DD HH:mm:ss'))
       .pipe(
         tap(() => this.graphLoading = false),
-        map((events: CameraEvent[]) => Graph.parse('Unique objects per date', events))
+        map((events: CameraEvent[]) => Graph.parse('Unique objects per date', events, {
+          start: this.startDate.valueOf(),
+          end: this.endDate.endOf('day').valueOf(),
+          size: bucketSize,
+          count: bucketCount
+        }))
       );
   }
 
@@ -156,7 +174,7 @@ export class CameraViewComponent implements OnInit, OnDestroy {
     this.resetHeatmap();
     this.play = true;
 
-    const start = this.startDate.clone();
+    const start = this.startDate.clone().add(6, 'hours' );
 
     while (start < this.endDate.endOf('day')) {
       const heatmap = await this.eventDataService
@@ -176,6 +194,8 @@ export class CameraViewComponent implements OnInit, OnDestroy {
 
       start.add(30, 'minute');
     }
+
+    this.play = false;
   }
 
   renderHeatmap(heatmapData: Heatmap, cumulative: boolean = true) {
@@ -192,7 +212,9 @@ export class CameraViewComponent implements OnInit, OnDestroy {
   }
 
   deleteCamera(camera: Camera) {
-    this.store.dispatch(new DeleteCamera({camera}));
+    this.store.dispatch(new DeleteCamera({camera})).subscribe(() => {
+      this.router.navigate(['/dashboard']);
+    });
   }
 
 }
