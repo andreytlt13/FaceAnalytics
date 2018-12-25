@@ -192,8 +192,8 @@ class FrameProcessor:
 
         overlay = frame.copy()
         #output = frame.copy()
-        alpha = 0.3
-        cv2.fillPoly(overlay, pts=[self.contours], color=(0, 0, 255))
+        alpha = 0.1
+        cv2.fillPoly(overlay, pts=[self.contours], color=(255, 255, 0))
         cv2.addWeighted(overlay, alpha, frame, 1 - alpha, 0, frame)
 
         #frame = cv2.fillPoly(frame, pts=[self.contours], color=(255, 255, 255))
