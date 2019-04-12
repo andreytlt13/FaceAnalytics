@@ -39,11 +39,13 @@ You need download this [models](https://drive.google.com/drive/folders/1PO1zneie
 
 ## Instructions
 ```
-FaceAnalytics$ export FLASK_APP=srv/webapp/run.py
+FaceAnalytics$ export FLASK_APP=srv/flask_api/run_flask.py
 FaceAnalytics$ flask run
- 
 ```
-
+##For webcam streaming
+```
+http://0.0.0.0:9090/video_stream?0
+```
 
 ####*
 If you don't have a support CUDA on your mashine, install dlib without support cuda
