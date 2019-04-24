@@ -44,6 +44,11 @@ FaceAnalytics$ flask run
  
 ```
 
+### In config file:
+```
+webcam_mode : stream #test
+detection_mode : face #person
+```
 
 ####*
 If you don't have a support CUDA on your mashine, install dlib without support cuda
