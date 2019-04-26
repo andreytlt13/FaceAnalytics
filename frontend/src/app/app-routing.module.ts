@@ -1,17 +1,17 @@
-import { NgModule } from '@angular/core';
-import { Routes, RouterModule } from '@angular/router';
-import { LoginComponent } from './login/login.component';
+import {NgModule} from '@angular/core';
+import {Routes, RouterModule} from '@angular/router';
 
 const routes: Routes = [
-  { path: '', redirectTo: '/dashboard', pathMatch: 'full' },
-  { path: 'login', component: LoginComponent },
+  {path: '', redirectTo: '/cameras', pathMatch: 'full'},
+  {path: '**', redirectTo: '/cameras'}
 ];
 
 @NgModule({
   imports: [RouterModule.forRoot(
     routes,
-    // { enableTracing: true }
+    // {enableTracing: true}
   )],
   exports: [RouterModule]
 })
-export class AppRoutingModule { }
+export class AppRoutingModule {
+}

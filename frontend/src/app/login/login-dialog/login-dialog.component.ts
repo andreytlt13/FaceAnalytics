@@ -27,7 +27,7 @@ export class LoginDialogComponent implements OnInit {
   ngOnInit() {
     this.actions.pipe(ofActionDispatched(LoginSuccess)).subscribe(() => {
       this.dialogRef.close();
-      this.router.navigate(['/dashboard']);
+      this.router.navigate(['/cameras']);
     });
 
     this.actions.pipe(ofActionDispatched(LoginFailed)).subscribe(() => {

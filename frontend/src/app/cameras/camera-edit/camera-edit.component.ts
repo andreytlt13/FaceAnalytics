@@ -2,9 +2,9 @@ import {Component, OnInit} from '@angular/core';
 import {Location} from '@angular/common';
 import {Camera} from '../camera/camera';
 import {from, Observable, of} from 'rxjs';
-import {DashboardState} from '../dashboard.state';
+import {CamerasState} from '../cameras.state';
 import {Actions, ofActionDispatched, Store} from '@ngxs/store';
-import {CreateCamera, LoadGraphData, LoadHeatmap, SelectCamera, UpdateCamera} from '../dashboard.actions';
+import {CreateCamera, LoadGraphData, LoadHeatmap, SelectCamera, UpdateCamera} from '../cameras.actions';
 import {ActivatedRoute, Router} from '@angular/router';
 import {filter, first, map, mergeMap, tap} from 'rxjs/operators';
 
@@ -17,10 +17,10 @@ export class CameraEditComponent implements OnInit {
   public camera$: Observable<Camera> = this.route.paramMap.pipe(
     map(params => params.get('id')),
     mergeMap(cameraId => {
-      if (!cameraId) {
+      if (!cameraId || cameraId === 'create') {
         return of(new Camera());
       }
-      return this.store.select(DashboardState.cameras)
+      return this.store.select(CamerasState.cameras)
         .pipe(
           mergeMap((cameras: Camera[]) => from(cameras)),
           first((camera: Camera) => camera.id === cameraId, new Camera()),
@@ -45,11 +45,13 @@ export class CameraEditComponent implements OnInit {
 
   saveCamera(camera) {
     if (Camera.isValid(camera)) {
-      const observable = camera.id ? this.store.dispatch(new UpdateCamera({camera: camera})) : this.store.dispatch(new CreateCamera({camera: camera}));
+      const observable = camera.id ?
+        this.store.dispatch(new UpdateCamera({camera: camera})) :
+        this.store.dispatch(new CreateCamera({camera: camera}));
 
       return observable
         .subscribe(() => {
-          this.router.navigate(['/dashboard', camera.id]);
+          this.router.navigate(['/cameras', camera.id]);
         });
     } else {
       console.log('=== camera is not valid');

@@ -1,10 +1,10 @@
 import {AfterViewInit, Component, ElementRef, OnDestroy, OnInit, ViewChild} from '@angular/core';
 import {Camera} from '../camera/camera';
 import {Observable, of} from 'rxjs';
-import {DashboardState} from '../dashboard.state';
+import {CamerasState} from '../cameras.state';
 import {Actions, ofActionDispatched, Store} from '@ngxs/store';
 import {Graph} from '../event-data/graph';
-import {DeleteCamera, LoadGraphData, LoadHeatmap, SelectCamera} from '../dashboard.actions';
+import {DeleteCamera, LoadGraphData, LoadHeatmap, SelectCamera} from '../cameras.actions';
 
 import h337 from 'heatmap.js';
 import {ActivatedRoute, Router} from '@angular/router';
@@ -39,7 +39,7 @@ export const MY_FORMATS = {
 })
 export class CameraViewComponent implements OnInit, OnDestroy {
 
-  public selected$: Observable<Camera> = this.store.select(DashboardState.selectedCamera);
+  public selected$: Observable<Camera> = this.store.select(CamerasState.selectedCamera);
   // public heatmapData$: Observable<Heatmap> = this.store.select(DashboardState.heatmapData);
   public graphData$: Observable<Graph>; // = this.store.select(DashboardState.graphData);
 
@@ -86,7 +86,7 @@ export class CameraViewComponent implements OnInit, OnDestroy {
       this.play = false;
       const cameraId = params.get('id');
 
-      this.store.select(DashboardState.cameras).subscribe((cameras: Camera[]) => {
+      this.store.select(CamerasState.cameras).subscribe((cameras: Camera[]) => {
         const camera = cameras.find(cmr => cmr.id === cameraId);
 
         if (camera) {
@@ -111,7 +111,10 @@ export class CameraViewComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.heatmapInstance = null;
-    this.heatmapElement.nativeElement.innerHTML = '';
+
+    if (this.heatmapElement && this.heatmapElement.nativeElement) {
+      this.heatmapElement.nativeElement.innerHTML = '';
+    }
   }
 
   resetHeatmap(): void {
@@ -208,12 +211,12 @@ export class CameraViewComponent implements OnInit, OnDestroy {
   }
 
   editCamera(camera: Camera) {
-    this.router.navigate(['/dashboard', 'camera', 'update', camera.id]);
+    this.router.navigate(['/cameras/update', camera.id]);
   }
 
   deleteCamera(camera: Camera) {
     this.store.dispatch(new DeleteCamera({camera})).subscribe(() => {
-      this.router.navigate(['/dashboard']);
+      this.router.navigate(['/cameras']);
     });
   }
 

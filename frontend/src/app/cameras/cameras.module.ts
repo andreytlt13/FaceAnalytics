@@ -6,17 +6,17 @@ import {PlotlyModule} from 'angular-plotly.js';
 
 import {SharedModule} from '../shared/shared.module';
 
-import {DashboardComponent} from './dashboard.component';
-import {DashboardState} from './dashboard.state';
+import {CamerasComponent} from './cameras.component';
+import {CamerasState} from './cameras.state';
 import {EventDataService} from './event-data/event-data.service';
 import {HttpClientModule} from '@angular/common/http';
 import {CameraService} from './camera/camera.service';
-import {DashboardRoutingModule} from './dashboard-routing.module';
+import {CamerasRoutingModule} from './cameras-routing.module';
 import {CameraEditComponent} from './camera-edit/camera-edit.component';
 import {CameraViewComponent} from './camera-view/camera-view.component';
 
 @NgModule({
-  declarations: [DashboardComponent, CameraEditComponent, CameraViewComponent],
+  declarations: [CamerasComponent, CameraEditComponent, CameraViewComponent],
   imports: [
     CommonModule,
     FormsModule,
@@ -24,11 +24,11 @@ import {CameraViewComponent} from './camera-view/camera-view.component';
     SharedModule,
     PlotlyModule,
 
-    NgxsModule.forFeature([DashboardState]),
+    NgxsModule.forFeature([CamerasState]),
 
-    DashboardRoutingModule
+    CamerasRoutingModule
   ],
   providers: [EventDataService, CameraService]
 })
-export class DashboardModule {
+export class CamerasModule {
 }

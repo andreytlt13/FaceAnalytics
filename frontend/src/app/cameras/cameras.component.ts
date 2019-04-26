@@ -1,7 +1,7 @@
 import {Component, OnInit, ViewEncapsulation} from '@angular/core';
 import {Store} from '@ngxs/store';
-import {LoadCameras, SelectCamera} from './dashboard.actions';
-import {DashboardState} from './dashboard.state';
+import {LoadCameras, SelectCamera} from './cameras.actions';
+import {CamerasState} from './cameras.state';
 import {Observable} from 'rxjs';
 import {BreakpointObserver, Breakpoints} from '@angular/cdk/layout';
 import {map} from 'rxjs/operators';
@@ -9,18 +9,18 @@ import {Camera} from './camera/camera';
 import {ActivatedRoute, Router} from '@angular/router';
 
 @Component({
-  selector: 'app-dashboard',
-  templateUrl: './dashboard.component.html',
-  styleUrls: ['./dashboard.component.scss'],
+  selector: 'app-cameras',
+  templateUrl: './cameras.component.html',
+  styleUrls: ['./cameras.component.scss'],
   encapsulation: ViewEncapsulation.None
 })
-export class DashboardComponent implements OnInit {
+export class CamerasComponent implements OnInit {
   isHandset$: Observable<boolean> = this.breakpointObserver.observe(Breakpoints.Handset)
     .pipe(
       map(result => result.matches)
     );
 
-  public cameras$: Observable<Camera[]> = this.store.select(DashboardState.cameras);
+  public cameras$: Observable<Camera[]> = this.store.select(CamerasState.cameras);
 
   public title = '';
 
@@ -44,6 +44,6 @@ export class DashboardComponent implements OnInit {
 
   editCamera() {
     this.title = 'Camera Edit';
-    this.router.navigate(['camera', 'create'], {relativeTo: this.route});
+    this.router.navigate(['create'], {relativeTo: this.route});
   }
 }

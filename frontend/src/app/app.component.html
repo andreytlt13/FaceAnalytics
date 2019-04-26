@@ -1,8 +1,12 @@
 <header class="header mat-elevation-z6">
   <mat-toolbar color="primary">
-    <a mat-button routerLink="/dashboard">
+    <a mat-button routerLink="/cameras">
+      <mat-icon class="icon">center_focus_weak</mat-icon>
+      <span>Cameras</span>
+    </a>
+    <a mat-button routerLink="/recognition">
       <mat-icon class="icon">dashboard</mat-icon>
-      <span>Dashboard</span>
+      <span>Recognition</span>
     </a>
     <span class="spacer"></span>
     <button *ngIf="loggedIn" (click)="onSignOut()" mat-button>Sign Out</button>

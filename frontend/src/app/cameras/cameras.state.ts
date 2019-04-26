@@ -7,7 +7,7 @@ import {
   LoadHeatmap,
   SelectCamera,
   UpdateCamera
-} from './dashboard.actions';
+} from './cameras.actions';
 import {EventDataService} from './event-data/event-data.service';
 import {Graph} from './event-data/graph';
 import {tap} from 'rxjs/operators';
@@ -16,15 +16,15 @@ import {CameraService} from './camera/camera.service';
 import Heatmap from './event-data/heatmap';
 import {of} from 'rxjs';
 
-export interface DashboardStateModel {
+export interface CamerasStateModel {
   heatmapData: Heatmap;
   graphData: Graph;
   cameras: Camera[];
   selectedCamera: Camera;
 }
 
-@State<DashboardStateModel>({
-  name: 'dashboard',
+@State<CamerasStateModel>({
+  name: 'cameras',
   defaults: {
     graphData: null,
     heatmapData: null,
@@ -32,24 +32,24 @@ export interface DashboardStateModel {
     selectedCamera: null
   }
 })
-export class DashboardState {
+export class CamerasState {
   @Selector()
-  static graphData(state: DashboardStateModel) {
+  static graphData(state: CamerasStateModel) {
     return state.graphData;
   }
 
   @Selector()
-  static heatmapData(state: DashboardStateModel) {
+  static heatmapData(state: CamerasStateModel) {
     return state.heatmapData;
   }
 
   @Selector()
-  static cameras(state: DashboardStateModel) {
+  static cameras(state: CamerasStateModel) {
     return state.cameras;
   }
 
   @Selector()
-  static selectedCamera(state: DashboardStateModel) {
+  static selectedCamera(state: CamerasStateModel) {
     return state.selectedCamera;
   }
 
@@ -60,7 +60,7 @@ export class DashboardState {
   }
 
   // @Action(LoadGraphData)
-  // loadGraphData({patchState}: StateContext<DashboardStateModel>, {payload}: LoadGraphData) {
+  // loadGraphData({patchState}: StateContext<CamerasStateModel>, {payload}: LoadGraphData) {
   //   return this.eventDataService.loadGraph(payload.camera.url)
   //     .pipe(
   //       tap((graphData: Graph) => {
@@ -72,7 +72,7 @@ export class DashboardState {
   // }
 
   @Action(LoadCameras)
-  loadCameras({getState, patchState}: StateContext<DashboardStateModel>) {
+  loadCameras({getState, patchState}: StateContext<CamerasStateModel>) {
     let {cameras} = getState();
     cameras = cameras.map(cmr => Camera.parse({...cmr}));
     const observable = cameras.length ? of(cameras) : this.cameraService.load();
@@ -85,7 +85,7 @@ export class DashboardState {
   }
 
   @Action(SelectCamera)
-  selectCamera({patchState}: StateContext<DashboardStateModel>, {payload}: SelectCamera) {
+  selectCamera({patchState}: StateContext<CamerasStateModel>, {payload}: SelectCamera) {
     patchState({
       selectedCamera: payload.camera
     });
@@ -94,7 +94,7 @@ export class DashboardState {
   }
 
   @Action(CreateCamera)
-  createCamera({getState, patchState, dispatch}: StateContext<DashboardStateModel>, {payload}: CreateCamera) {
+  createCamera({getState, patchState, dispatch}: StateContext<CamerasStateModel>, {payload}: CreateCamera) {
     // TODO: uncomment when backend supports camera API
     // return this.cameraService.create(payload.camera)
     //   .pipe(
@@ -126,7 +126,7 @@ export class DashboardState {
   }
 
   @Action(DeleteCamera)
-  deleteCamera({getState, patchState}: StateContext<DashboardStateModel>, {payload}: CreateCamera) {
+  deleteCamera({getState, patchState}: StateContext<CamerasStateModel>, {payload}: CreateCamera) {
     // TODO: uncomment when backend supports camera API
     // return this.cameraService.delete(payload.camera)
     //   .pipe(
@@ -150,7 +150,7 @@ export class DashboardState {
   }
 
   @Action(UpdateCamera)
-  updateCamera({getState, patchState}: StateContext<DashboardStateModel>, {payload}: UpdateCamera) {
+  updateCamera({getState, patchState}: StateContext<CamerasStateModel>, {payload}: UpdateCamera) {
     const {cameras} = getState();
     const index = cameras.findIndex(cmr => cmr.id === payload.camera.id);
 
@@ -166,7 +166,7 @@ export class DashboardState {
   }
 
   // @Action(LoadHeatmap)
-  // loadHeatmap({patchState}: StateContext<DashboardStateModel>, {payload}: LoadHeatmap) {
+  // loadHeatmap({patchState}: StateContext<CamerasStateModel>, {payload}: LoadHeatmap) {
   //   return this.eventDataService.loadHeatmap(payload.camera.url)
   //     .pipe(
   //       tap((heatmapData: Heatmap) => {
