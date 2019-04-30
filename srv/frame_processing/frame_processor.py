@@ -37,7 +37,6 @@ class FrameProcessor:
         self.contours = np.array(contours)
         self.table = table
 
-
     def process_next_frame(self, vs, faces_sequence,
                                             known_face_encodings, known_face_names,
                                             info, connection=None
@@ -100,14 +99,6 @@ class FrameProcessor:
                 endX = int(pos.right())
                 endY = int(pos.bottom())
 
-                cropped = frame[startY:endY, startX:endX]
-                # if all(cropped.shape) > 0:
-                #     cv2.imwrite('{0}/{1}_{2}.png'.format(self.path_for_image,
-                #                                      self.trackableObjects.__len__(),
-                #                                      datetime.now().strftime("%H:%M:%S")), cropped)
-                # else:
-                #     print('(!!!) Invalid image size:', cropped.shape)
-
                 #!!!!!need to rewrite this for correct write enter and exit events
                 event = {
                     'event_time': datetime.now(),
@@ -146,23 +137,6 @@ class FrameProcessor:
                 direction = centroid[1] - np.mean(y)
                 to.centroids.append(centroid)
 
-                # check to see if the object has been counted or not
-                # if not to.counted:
-                #     # if the direction is negative (indicating the object
-                #     # is moving up) AND the centroid is above the center
-                #     # line, count the object
-                #     include_centroid = bool(in_polygon(centroid[0], centroid[1], self.x, self.y))
-                #     exclude_centroid = bool(in_polygon(centroid[0], centroid[1], self.x, self.y)) == False
-                #     if direction < 0 and include_centroid:
-                #         info['Enter'] += 1
-                #         to.counted = True
-                #
-                #     # if the direction is positive (indicating the object
-                #     # is moving down) AND the centroid is below the
-                #     # center line, count the object
-                #     elif direction > 0 and exclude_centroid:
-                #         info['Exit'] += 1
-                #         to.counted = True
 
             # store the trackable object in our dictionary
             self.trackableObjects[objectID] = to
@@ -201,8 +175,5 @@ class FrameProcessor:
         alpha = 0.1
         cv2.fillPoly(overlay, pts=[self.contours], color=(255, 255, 0))
         cv2.addWeighted(overlay, alpha, frame, 1 - alpha, 0, frame)
-
-        #frame = cv2.fillPoly(frame, pts=[self.contours], color=(255, 255, 255))
-        #frame = self.fill(frame, self.contours)
 
         return frame,  self.H, info, faces_sequence
