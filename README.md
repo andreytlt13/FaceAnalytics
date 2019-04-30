@@ -61,4 +61,26 @@ Build and install the Python extensions:
 ```
 cd ..
 python3 setup.py install --yes USE_AVX_INSTRUCTIONS --no DLIB_USE_CUDA
+
 ```
+
+1 - create_camera (class)
+      in:
+      -url
+            --check exist table in db
+      state:
+      -read_stream (def with while true)
+          -object detection (coffe model mobile ssd)
+                -tracking objects (def)
+                    -filtered (def)
+                    -face_recognize (def)
+                        --insert event to db (def)
+                    
+           
+          
+      
+                
+                
+                
+2 - flask api 
+            

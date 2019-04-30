@@ -5,7 +5,7 @@ import {Graph} from './graph';
 import {Observable} from 'rxjs';
 import Heatmap from './heatmap';
 
-const DATA_URL = 'http://10.101.1.18:9090/db_select';
+const DATA_URL = 'http://0.0.0.0:9090/db_select';
 
 @Injectable({
   providedIn: 'root'

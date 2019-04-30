@@ -1,8 +1,5 @@
 #!/usr/bin/env python
 import cv2, os, flask
-import codecs, json
-#from flask import request
-import numpy as np
 from flask import Response, jsonify
 from flask_cors import cross_origin
 from imutils.video import FPS
@@ -11,6 +8,8 @@ from datetime import datetime
 from common import config_parser
 from frame_processing.frame_processor import FrameProcessor
 from db.event_db_logger import EventDBLogger
+import collections
+from face_description.network_loader import load_network, load_known_face_encodings
 
 CONFIG = config_parser.parse()
 
@@ -56,8 +55,6 @@ def add_aim_region():
     return jsonify({'task': task}), 201
 
 
-
-
 @app.route('/video_stream', methods=['GET'])
 def video_stream():
     """
@@ -78,24 +75,15 @@ def stream(camera_url):
     if camera_url == None:
         camera_url = camera['camera_url']
 
-
-    vs = VideoStream(src=camera_url).start()
+    vs = VideoStream(src=0).start()  #camera_url
     connection = EventDBLogger()
     table = connection.create_table(camera_url)
-
-    image_camera_dir = '../image_for_processing/{}'.format(camera_url.replace('/', '_'))
-    if not os.path.exists(image_camera_dir):
-        os.makedirs(image_camera_dir)
-
-    image_camera_dir = '{0}/{1}'.format(image_camera_dir, datetime.now().strftime("%Y-%m-%d"))
-    if not os.path.exists(image_camera_dir):
-        os.makedirs(image_camera_dir)
 
     for i, v in enumerate(tasks):
        if v['table'] == camera_url:
            contours = tasks[i]['contours']
 
-    frame_processor = FrameProcessor(path_for_image=image_camera_dir, table=table, contours=contours)
+    frame_processor = FrameProcessor(contours=contours, table=table)
 
     (H, W) = (None, None)
 
@@ -108,10 +96,22 @@ def stream(camera_url):
         'Count People': 0
     }
 
+    DB_PATH = '../face_description/known_faces'
+    known_face_encodings, known_face_names = load_known_face_encodings(DB_PATH)
+    print('known_face_names: ', known_face_names)
+
+    faces_sequence = collections.defaultdict()
+
+
     while True:
 
         fps = FPS().start()
-        frame, _, info = frame_processor.process_next_frame(vs, info, connection, camera_url)
+        frame, _, info, faces_sequence = frame_processor.process_next_frame(vs,faces_sequence,
+                                                                            known_face_encodings,
+                                                                            known_face_names,
+                                                                            info,
+                                                                            connection
+                                                                            )
         if W is None or H is None:
             (H, W) = frame.shape[:2]
         fps.update()

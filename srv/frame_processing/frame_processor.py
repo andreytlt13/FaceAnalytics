@@ -1,29 +1,20 @@
 import datetime
 import dlib
-import json
-import os
-import numpy as np
-import cv2
 import imutils
 import numpy as np
-#import matplotlib.pyplot as plt
 import cv2
 from datetime import datetime
 from common import config_parser
 from common.on_frame_drawer import draw_label
-from frame_processing.object_tracker import CentroidTracker, TrackableObject, CentroidTracker2
+from face_description.best_face_selector import select_best_face_cascades
+from face_description.face_recognition import face_recognizer
+from frame_processing.object_tracker import CentroidTracker, TrackableObject
+import collections
 
 FRAME_WIDTH = 400
 SCALE_FACTOR = 1.0
 
 CONFIG = config_parser.parse()
-
-# initialize the list of class labels MobileNet SSD was trained to
-# detect
-CLASSES = ["background", "aeroplane", "bicycle", "bird", "boat",
-           "bottle", "bus", "car", "cat", "chair", "cow", "diningtable",
-           "dog", "horse", "motorbike", "person", "pottedplant", "sheep",
-           "sofa", "train", "tvmonitor"]
 
 
 def in_polygon(x, y, xp, yp):
@@ -35,39 +26,24 @@ def in_polygon(x, y, xp, yp):
 
 
 class FrameProcessor:
-    def __init__(self, confidence=CONFIG['confidence'], descriptions_dir=CONFIG['descriptions_dir'],
-                 detected_faces_dir=CONFIG['detected_faces_dir'], model=CONFIG['caffe_model'],
+    def __init__(self, confidence=CONFIG['confidence'],
                  prototxt=CONFIG['prototxt'],
-                 prototxt2=CONFIG['prototxt_person_detection'], model2=CONFIG['caffe_model_person_detection'], classes=CLASSES, trackableObjects={},
-                 trackers=[], path_for_image=None, table=None, contours=None) -> None:
-
+                 model=CONFIG['caffe_model'], contours=None, table=None):
         self.confidence = float(confidence)
-        self.ct = CentroidTracker()
-        self.description_pattern = descriptions_dir + '/id_{}.json'
-        self.detected_face_img_pattern = detected_faces_dir + '/id_{}.png'
+        self.net = cv2.dnn.readNetFromCaffe(prototxt, model)
         (self.H, self.W) = (None, None)
-        self.trackableObjects = trackableObjects
-        self.trackers = trackers
-        # load our serialized model from disk
-        #print('[INFO] loading model 1...')
-        #self.net = cv2.dnn.readNetFromCaffe(prototxt, model)
-        print('[INFO] loading model for person detection...')
-        self.net = cv2.dnn.readNetFromCaffe(prototxt2, model2)
-        self.classes = classes
-        self.path_for_image = path_for_image
-        self.table = table
+        self.ct = CentroidTracker()
+        self.trackableObjects = {}
         self.contours = np.array(contours)
-        self.x = [item[0] for item in self.contours]
-        self.y = [item[1] for item in self.contours]
+        self.table = table
 
-    def fill(self, img, points):
-        filter = cv2.convexHull(points)
-        cv2.fillConvexPoly(img, filter, 255)
-        return img
 
-    def process_next_frame(self, vs, info, connection=None, camera_url=None):
+    def process_next_frame(self, vs, faces_sequence,
+                                            known_face_encodings, known_face_names,
+                                            info, connection=None
+                           ):
+
         frame = vs.read()
-
         frame = imutils.resize(frame, width=500)
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         if self.W is None or self.H is None:
@@ -80,7 +56,11 @@ class FrameProcessor:
             info['status'] = 'Detecting'
             self.trackers =[]
 
-            blob = cv2.dnn.blobFromImage(frame, 0.007843, (self.W, self.H), 127.5)
+            if CONFIG['detection_mode'] == 'person':
+                blob = cv2.dnn.blobFromImage(frame, 0.007843, (self.W, self.H), 127.5)
+            else:
+                blob = cv2.dnn.blobFromImage(cv2.resize(frame, (300, 300)), 1.0, (300, 300), (104.0, 177.0, 123.0))
+
             self.net.setInput(blob)
             detections = self.net.forward()
 
@@ -90,11 +70,15 @@ class FrameProcessor:
                 if confidence > self.confidence:
                     idx = int(detections[0, 0, i, 1])
 
-                    if self.classes[idx] != 'person':
-                        continue
+                    # if CONFIG['detection_mode'] == 'person':
+                    #     if self.classes[idx] != 'person':
+                    #         continue
 
                     box = detections[0, 0, i, 3:7] * np.array([self.W, self.H, self.W, self.H])
                     (startX, startY, endX, endY) = box.astype('int')
+
+                    # --- person box visualization
+                    cv2.rectangle(frame, (startX, startY), (endX, endY), (0,255,0), 2)
 
                     tracker = dlib.correlation_tracker()
                     rect = dlib.rectangle(startX, startY, endX, endY)
@@ -103,6 +87,7 @@ class FrameProcessor:
                     # add the tracker to our list of trackers so we can
                     # utilize it during skip frames
                     self.trackers.append(tracker)
+
         else:
 
             for tracker in self.trackers:
@@ -116,9 +101,12 @@ class FrameProcessor:
                 endY = int(pos.bottom())
 
                 cropped = frame[startY:endY, startX:endX]
-                cv2.imwrite('{0}/{1}_{2}.png'.format(self.path_for_image,
-                                                     self.trackableObjects.__len__(),
-                                                     datetime.now().strftime("%H:%M:%S")), cropped)
+                # if all(cropped.shape) > 0:
+                #     cv2.imwrite('{0}/{1}_{2}.png'.format(self.path_for_image,
+                #                                      self.trackableObjects.__len__(),
+                #                                      datetime.now().strftime("%H:%M:%S")), cropped)
+                # else:
+                #     print('(!!!) Invalid image size:', cropped.shape)
 
                 #!!!!!need to rewrite this for correct write enter and exit events
                 event = {
@@ -130,7 +118,7 @@ class FrameProcessor:
                     'x': round((startX+endX)/2, 0)
                 }
 
-                connection.insert(self.table, event)#self.trackableObjects.__len__())
+                connection.insert(self.table, event) #self.trackableObjects.__len__())
 
                 rects.append((startX, startY, endX, endY))
 
@@ -138,7 +126,7 @@ class FrameProcessor:
 
         objects = self.ct.update(rects)
 
-        for (objectID, centroid) in objects.items():
+        for (objectID, centroid), (x_,y_,w_,h_) in zip(objects.items(), rects):
             # check to see if a trackable object exists for the current
             # object ID
             to = self.trackableObjects.get(objectID, None)
@@ -146,7 +134,6 @@ class FrameProcessor:
             # if there is no existing trackable object, create one
             if to is None:
                 to = TrackableObject(objectID, centroid)
-
 
             # otherwise, there is a trackable object so we can utilize it
             # to determine direction
@@ -160,22 +147,22 @@ class FrameProcessor:
                 to.centroids.append(centroid)
 
                 # check to see if the object has been counted or not
-                if not to.counted:
-                    # if the direction is negative (indicating the object
-                    # is moving up) AND the centroid is above the center
-                    # line, count the object
-                    include_centroid = bool(in_polygon(centroid[0], centroid[1], self.x, self.y))
-                    exclude_centroid = bool(in_polygon(centroid[0], centroid[1], self.x, self.y)) == False
-                    if direction < 0 and include_centroid:
-                        info['Enter'] += 1
-                        to.counted = True
-
-                    # if the direction is positive (indicating the object
-                    # is moving down) AND the centroid is below the
-                    # center line, count the object
-                    elif direction > 0 and exclude_centroid:
-                        info['Exit'] += 1
-                        to.counted = True
+                # if not to.counted:
+                #     # if the direction is negative (indicating the object
+                #     # is moving up) AND the centroid is above the center
+                #     # line, count the object
+                #     include_centroid = bool(in_polygon(centroid[0], centroid[1], self.x, self.y))
+                #     exclude_centroid = bool(in_polygon(centroid[0], centroid[1], self.x, self.y)) == False
+                #     if direction < 0 and include_centroid:
+                #         info['Enter'] += 1
+                #         to.counted = True
+                #
+                #     # if the direction is positive (indicating the object
+                #     # is moving down) AND the centroid is below the
+                #     # center line, count the object
+                #     elif direction > 0 and exclude_centroid:
+                #         info['Exit'] += 1
+                #         to.counted = True
 
             # store the trackable object in our dictionary
             self.trackableObjects[objectID] = to
@@ -183,6 +170,26 @@ class FrameProcessor:
             # draw both the ID of the object and the centroid of the
             # object on the output frame
             text = "ID {}".format(objectID)
+
+            if objectID not in faces_sequence:
+                faces_sequence[objectID] = collections.deque(maxlen=int(CONFIG['analyze_frames']))
+
+            pad_x, pad_y = 30, 30
+            imgCrop = frame[y_ - pad_y : h_ + pad_y, x_ - pad_x : w_ + pad_x]
+
+            if all(imgCrop.shape) > 0:
+                faces_sequence[objectID].append(imgCrop)
+
+            if (len(faces_sequence[objectID]) > 0) and (info['TotalFrames'] % int(CONFIG['analyze_frames']) == 0):
+                info['status'] = 'Recognizing'
+                best_detected_face = select_best_face_cascades(faces_sequence[objectID], info['TotalFrames'], objectID)
+
+                # analyzing the best face from stream and return a match with db faces
+                recognized_face_label = face_recognizer(best_detected_face, known_face_encodings, known_face_names)
+
+                cv2.putText(frame, recognized_face_label, (centroid[0], centroid[1] + 20),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 2)
+
             cv2.putText(frame, text, (centroid[0] - 10, centroid[1] - 10),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
             cv2.circle(frame, (centroid[0], centroid[1]), 4, (0, 255, 0), -1)
@@ -191,7 +198,6 @@ class FrameProcessor:
         info['Count People'] = self.trackableObjects.__len__()
 
         overlay = frame.copy()
-        #output = frame.copy()
         alpha = 0.1
         cv2.fillPoly(overlay, pts=[self.contours], color=(255, 255, 0))
         cv2.addWeighted(overlay, alpha, frame, 1 - alpha, 0, frame)
@@ -199,10 +205,4 @@ class FrameProcessor:
         #frame = cv2.fillPoly(frame, pts=[self.contours], color=(255, 255, 255))
         #frame = self.fill(frame, self.contours)
 
-        return frame,  self.H, info
-
-
-
-
-
-
+        return frame,  self.H, info, faces_sequence

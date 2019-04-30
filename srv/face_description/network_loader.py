@@ -4,7 +4,7 @@ import tensorflow as tf
 
 from common import config_parser
 from face_description import dlib_api
-from face_description.models import inception_resnet_v1
+from models import inception_resnet_v1
 
 COLOR_DEPTH = 3
 FACE_WIDTH = 160
