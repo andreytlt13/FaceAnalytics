@@ -1,8 +1,8 @@
 import cv2
 import numpy as np
 import os
-from .face_utils import FaceAligner
-from .face_utils import rect_to_bb
+from imutils.face_utils import FaceAligner
+from imutils.face_utils import rect_to_bb
 import imutils
 import dlib
 

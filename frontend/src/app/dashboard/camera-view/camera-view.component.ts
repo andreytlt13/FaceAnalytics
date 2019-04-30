@@ -43,8 +43,8 @@ export class CameraViewComponent implements OnInit, OnDestroy {
   // public heatmapData$: Observable<Heatmap> = this.store.select(DashboardState.heatmapData);
   public graphData$: Observable<Graph>; // = this.store.select(DashboardState.graphData);
 
-  public startDate: Moment = moment().startOf('day');
-  public endDate: Moment = moment().endOf('day');
+  public startDate: Moment = moment().add(-1, 'day').startOf('day');
+  public endDate: Moment = moment().add(-1, 'day').endOf('day');
 
   public graphLoading = false;
 

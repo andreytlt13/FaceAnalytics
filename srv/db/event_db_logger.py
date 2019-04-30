@@ -1,6 +1,7 @@
 import pandas as pd
 from sqlalchemy import *
 from common import config_parser
+import json
 
 CONFIG = config_parser.parse()
 DEFAULT_PATH = CONFIG['sqlite_db']
@@ -47,8 +48,11 @@ class EventDBLogger:
             table.c.event_time > start_date,
             table.c.event_time < end_date))
         res = self.conn.execute(select_st).fetchall()
-        df = pd.DataFrame(res)
-        df.columns = res[0].keys()
-        j = df.to_json(orient='records')
-        return j
+        if len(res) == 0:
+            return pd.DataFrame().to_json(orient='records')
+        else:
+            df = pd.DataFrame(res)
+            df.columns = res[0].keys()
+            j = df.to_json(orient='records')
+            return j
 

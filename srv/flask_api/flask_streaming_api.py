@@ -1,8 +1,5 @@
 #!/usr/bin/env python
 import cv2, os, flask
-import codecs, json
-#from flask import request
-import numpy as np
 from flask import Response, jsonify
 from flask_cors import cross_origin
 from imutils.video import FPS
@@ -11,18 +8,15 @@ from datetime import datetime
 from common import config_parser
 from frame_processing.frame_processor import FrameProcessor
 from db.event_db_logger import EventDBLogger
-
 import collections
-import glob
-import face_recognition
+from face_description.network_loader import load_network, load_known_face_encodings
 
 CONFIG = config_parser.parse()
 
 app = flask.Flask(
     __name__,
-    instance_path='/home/ekaterinaderevyanka/PycharmProjects/FaceAnalytics/srv/config'
+    instance_path='/Users/andrey/PycharmProjects/FaceAnalytics/srv/config'
 )
-
 
 tasks = [
     {
@@ -43,7 +37,6 @@ camera = {
     'camera_url': 'rtsp://admin:0ZKaxVFi@10.101.106.4:554/live/main'
 }
 
-
 @app.route('/add_aim_region', methods=['POST'])
 def add_aim_region():
     print(tasks)
@@ -62,8 +55,6 @@ def add_aim_region():
     return jsonify({'task': task}), 201
 
 
-
-
 @app.route('/video_stream', methods=['GET'])
 def video_stream():
     """
@@ -78,61 +69,21 @@ def video_stream():
     )
 
 
-def load_known_face_encodings(path):
-    photos = glob.glob(path + '/*.jpg')
-    known_face_encodings = []
-    known_face_names = []
-    for photo in photos:
-        image = face_recognition.load_image_file(photo)
-        title = photo.split('/')[-1].split('.')[0]
-        face_encoding = face_recognition.face_encodings(image)[0]
-        known_face_encodings.append(face_encoding)
-        known_face_names.append(title)
-    return known_face_encodings, known_face_names
-
-
 def stream(camera_url):
     print('[INFO] starting video stream...')
 
     if camera_url == None:
         camera_url = camera['camera_url']
 
-    # hack_cam = camera_url
-    # hack_cam = 0
-    # test_vid_path = '/home/ekaterinaderevyanka/TESTS/FaceAnalytics/foscam_cctv/processed_videos/144555_6_persons.mp4'
-    # test_vid_path = '/home/ekaterinaderevyanka/TESTS/FaceAnalytics/foscam_cctv/processed_videos/133747_8_persons.mp4'
-    # test_vid_path = '/home/ekaterinaderevyanka/TESTS/FaceAnalytics/foscam_cctv/processed_videos/154522_3_persons.mp4'
-    # test_vid_path = '/home/ekaterinaderevyanka/TESTS/FaceAnalytics/foscam_cctv/processed_videos/132636_4_persons.mp4'
-    # test_vid_path = '/home/ekaterinaderevyanka/TESTS/FaceAnalytics/G20 leaders pose for family photo.mp4'
-    test_vid_path = '/home/ekaterinaderevyanka/TESTS/FaceAnalytics/foscam_cctv/gyroscooter/144848.ts'
-
-    TEST_SAVE_PATH = '/home/ekaterinaderevyanka/TESTS/FaceAnalytics/results'
-
-    if CONFIG['webcam_mode'] == 'stream':
-        vs = VideoStream(src=0).start() # hack with webcam --- instead it put the camera_url variable
-
-    if CONFIG['webcam_mode'] == 'test':
-        vs = cv2.VideoCapture(test_vid_path)
-        out_vid_path = os.path.join(TEST_SAVE_PATH, 'res_{}_{}'.format(CONFIG['detection_mode'], test_vid_path.split('/')[-1]))
-        fourcc = cv2.VideoWriter_fourcc(*'XVID')
-        out_video = cv2.VideoWriter(out_vid_path, fourcc, 15, (500, 281))
-
+    vs = VideoStream(src=0).start()  #camera_url
     connection = EventDBLogger()
     table = connection.create_table(camera_url)
-
-    image_camera_dir = '../image_for_processing/{}'.format(camera_url.replace('/', '_'))
-    if not os.path.exists(image_camera_dir):
-        os.makedirs(image_camera_dir)
-
-    image_camera_dir = '{0}/{1}'.format(image_camera_dir, datetime.now().strftime("%Y-%m-%d"))
-    if not os.path.exists(image_camera_dir):
-        os.makedirs(image_camera_dir)
 
     for i, v in enumerate(tasks):
        if v['table'] == camera_url:
            contours = tasks[i]['contours']
 
-    frame_processor = FrameProcessor(path_for_image=image_camera_dir, table=table, contours=contours)
+    frame_processor = FrameProcessor(contours=contours, table=table)
 
     (H, W) = (None, None)
 
@@ -145,32 +96,22 @@ def stream(camera_url):
         'Count People': 0
     }
 
-    # ======
     DB_PATH = '../face_description/known_faces'
     known_face_encodings, known_face_names = load_known_face_encodings(DB_PATH)
     print('known_face_names: ', known_face_names)
 
     faces_sequence = collections.defaultdict()
-    # ======
+
 
     while True:
 
         fps = FPS().start()
-
-        if CONFIG['webcam_mode'] == 'stream':
-            vs_frame = vs.read()
-
-        if CONFIG['webcam_mode'] == 'test':
-            ret, vs_frame = vs.read()
-            if not ret:
-                break
-
-        # frame, _, info = frame_processor.process_next_frame(vs_frame, info, connection, camera_url)
-
-        frame, _, info, faces_sequence = frame_processor.process_next_frame_WITH_RECOGNITION(vs_frame, faces_sequence,
-                                                                                             known_face_encodings, known_face_names,
-                                                                                             info, connection, camera_url)
-
+        frame, _, info, faces_sequence = frame_processor.process_next_frame(vs,faces_sequence,
+                                                                            known_face_encodings,
+                                                                            known_face_names,
+                                                                            info,
+                                                                            connection
+                                                                            )
         if W is None or H is None:
             (H, W) = frame.shape[:2]
         fps.update()
@@ -186,14 +127,6 @@ def stream(camera_url):
         yield (b'--frame\r\n'
                b'Content-Type: image/jpeg\r\n\r\n' + img_encoded.tobytes() + b'\r\n')
 
-        # save video into file
-        if CONFIG['webcam_mode'] == 'test':
-            out_video.write(frame)
-
-    if CONFIG['webcam_mode'] == 'test':
-        vs.release()
-        out_video.release()
-
 
 @app.route('/db_select', methods=['GET'])
 @cross_origin()
@@ -206,6 +139,6 @@ def db_select():
     result = connection.select(table, start_date, end_date)
     return Response(result, mimetype='application/json')
 
-# if __name__ == '__main__':
+
 def run():
     app.run(host='0.0.0.0', port=9090, debug=True, threaded=True)

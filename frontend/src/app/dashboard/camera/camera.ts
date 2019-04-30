@@ -3,7 +3,7 @@ export class Camera {
 
   get videoStreamUrl() {
     if (this.url.includes('rtsp://')) {
-      return `http://10.101.1.18:9090/video_stream?camera_url=${this.url}`;
+      return `http://0.0.0.0:9090/video_stream?camera_url=${this.url}`;
     } else {
       return this.url;
     }
