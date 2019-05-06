@@ -9,7 +9,7 @@ import {
   MatSidenavModule,
   MatButtonToggleModule,
   MatDatepickerModule,
-  MatNativeDateModule
+  MatNativeDateModule, MatTableModule
 } from '@angular/material';
 import {MatIconModule} from '@angular/material/icon';
 import {MatToolbarModule} from '@angular/material/toolbar';
@@ -44,7 +44,9 @@ import {LayoutModule} from '@angular/cdk/layout';
     MatSidenavModule,
     MatButtonToggleModule,
     MatDatepickerModule,
-    MatNativeDateModule
+    MatNativeDateModule,
+
+    MatTableModule,
   ],
   exports: [
     CommonModule,
@@ -72,7 +74,10 @@ import {LayoutModule} from '@angular/cdk/layout';
     MatSidenavModule,
     MatButtonToggleModule,
     MatDatepickerModule,
-    MatNativeDateModule
+    MatNativeDateModule,
+
+
+    MatTableModule,
   ]
 })
 export class SharedModule {
