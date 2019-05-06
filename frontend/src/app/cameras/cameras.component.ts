@@ -42,8 +42,8 @@ export class CamerasComponent implements OnInit {
     }
   }
 
-  editCamera() {
-    this.title = 'Camera Edit';
+  createCamera() {
+    this.title = 'Camera Create';
     this.router.navigate(['create'], {relativeTo: this.route});
   }
 }
