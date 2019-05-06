@@ -10,6 +10,7 @@ export class RecognitionComponent implements OnInit {
   constructor() { }
 
   ngOnInit() {
+
   }
 
 }
