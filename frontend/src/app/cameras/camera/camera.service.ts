@@ -4,7 +4,7 @@ import {Camera} from './camera';
 import {HttpClient} from '@angular/common/http';
 import {map} from 'rxjs/operators';
 
-import CAMERAS from './mockCameras';
+import CAMERAS from './mock-cameras';
 const CAMERA_URL = '';
 
 @Injectable({
