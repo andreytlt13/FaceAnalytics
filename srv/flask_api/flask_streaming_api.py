@@ -11,11 +11,15 @@ from db.event_db_logger import EventDBLogger
 import collections
 from face_description.network_loader import load_network, load_known_face_encodings
 
+from frame_processing.tools import generate_detections as gdet
+from frame_processing.deep_sort import preprocessing, nn_matching
+from frame_processing.deep_sort.tracker import Tracker
+
 CONFIG = config_parser.parse()
 
 app = flask.Flask(
     __name__,
-    instance_path='/Users/andrey/PycharmProjects/FaceAnalytics/srv/config'
+    instance_path='/home/ekaterinaderevyanka/PycharmProjects/FaceAnalytics/srv/config'
 )
 
 tasks = [
@@ -96,22 +100,43 @@ def stream(camera_url):
         'Count People': 0
     }
 
-    DB_PATH = '../face_description/known_faces'
-    known_face_encodings, known_face_names = load_known_face_encodings(DB_PATH)
+    known_face_encodings, known_face_names = load_known_face_encodings(CONFIG['known_people_dir'])
     print('known_face_names: ', known_face_names)
 
     faces_sequence = collections.defaultdict()
 
+    # deep sort implementation
+    # Definition of the parameters
+    max_cosine_distance = 0.3
+    nn_budget = None
+    encoder = gdet.create_box_encoder('../frame_processing/mars-small128.pb', batch_size=1)
+    metric = nn_matching.NearestNeighborDistanceMetric("cosine", max_cosine_distance, nn_budget)
+    tracker = Tracker(metric)
 
     while True:
 
         fps = FPS().start()
-        frame, _, info, faces_sequence = frame_processor.process_next_frame(vs,faces_sequence,
+
+        # centroid tracker
+        # frame, _, info, faces_sequence = frame_processor.process_next_frame(vs,
+        #                                                                     faces_sequence,
+        #                                                                     known_face_encodings,
+        #                                                                     known_face_names,
+        #                                                                     info,
+        #                                                                     connection
+        #                                                                     )
+
+        # deep sort tracker
+        frame, _, info, faces_sequence = frame_processor.process_next_frame_deepsort_tracker(
+                                                                            vs,
+                                                                            faces_sequence,
+                                                                            tracker, encoder,
                                                                             known_face_encodings,
                                                                             known_face_names,
                                                                             info,
                                                                             connection
                                                                             )
+
         if W is None or H is None:
             (H, W) = frame.shape[:2]
         fps.update()

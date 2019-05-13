@@ -48,7 +48,7 @@ def variance_of_laplacian(image):
 def check_models(list_models):
     for indx, cascade in enumerate(list_models):
         if(cascade.empty()):
-            print(indx, 'file couldnt load, give up!')
+            print(indx, 'file couldnt load')
 
 # --- CASCADES METHOD ---
 def cascade_detection(img):
@@ -75,30 +75,29 @@ def cascade_detection(img):
             cascades_on_face += 1
 
     img = roi_color.copy()
-    # print('found cascades_on_face:', cascades_on_face)
     return img, cascades_on_face
 
-def select_best_face_cascades(faces_sequence_for_person, frame_indx, person_id):
-    # check_models([face_cascade, eye_cascade, mouth_cascade, nose_cascade])
+def select_best_face_cascades(faces_sequence_for_person):
     fm_faces = []
     casc_faces = []
-    for face_indx, face_image in enumerate(faces_sequence_for_person):
 
+    for face_indx, face_image in enumerate(faces_sequence_for_person):
         if all(face_image.shape) > 0:
             image = face_image.copy()
             image = align_face(image)
 
             if image != 'no_face':
-                # --- cascades face detection
+                # cascades face detection
                 cascaded_im, cascades_on_face = cascade_detection(image)
                 casc_faces.append(cascades_on_face)
-
             else:
                 casc_faces.append(0)
+
         else:
             casc_faces.append(0)
 
-    # # if there is more than one face with max detected cascades then select the best one via max of variance_of_laplacian
+    # if there is more than one face with max detected cascades
+    # select the best one via max of variance_of_laplacian
     max_cascaded_faces_indxs = np.argwhere(casc_faces == np.amax(casc_faces))
     max_imgs = [faces_sequence_for_person[int(i)] for i in max_cascaded_faces_indxs]
 
