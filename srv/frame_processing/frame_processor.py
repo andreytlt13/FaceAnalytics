@@ -163,15 +163,22 @@ class FrameProcessor:
             if all(imgCrop.shape) > 0:
                 faces_sequence[objectID].append(imgCrop)
 
-            if (len(faces_sequence[objectID]) > 0) and (info['TotalFrames'] % int(CONFIG['analyze_frames']) == 0):
+            if objectID not in faces_sequence:
                 info['status'] = 'Recognizing'
-                best_detected_face = select_best_face_cascades(faces_sequence[objectID])
-
-                # analyzing the best face from stream and return a match with db faces
-                recognized_face_label = face_recognizer(best_detected_face, known_face_encodings, known_face_names)
-
+                recognized_face_label = face_recognizer(imgCrop, known_face_encodings, known_face_names)
                 cv2.putText(frame, recognized_face_label, (centroid[0], centroid[1] + 20),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 2)
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 0), 2)
+
+            else:
+                if (len(faces_sequence[objectID]) > 0) and (info['TotalFrames'] % int(CONFIG['analyze_frames']) == 0):
+                    info['status'] = 'Recognizing'
+                    best_detected_face = select_best_face_cascades(faces_sequence[objectID])
+
+                    # analyzing the best face from stream and return a match with db faces
+                    recognized_face_label = face_recognizer(best_detected_face, known_face_encodings, known_face_names)
+
+                    cv2.putText(frame, recognized_face_label, (centroid[0], centroid[1] + 20),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 2)
 
             cv2.putText(frame, text, (centroid[0] - 10, centroid[1] - 10),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)

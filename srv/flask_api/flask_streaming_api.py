@@ -117,25 +117,27 @@ def stream(camera_url):
 
         fps = FPS().start()
 
-        # centroid tracker
-        # frame, _, info, faces_sequence = frame_processor.process_next_frame(vs,
-        #                                                                     faces_sequence,
-        #                                                                     known_face_encodings,
-        #                                                                     known_face_names,
-        #                                                                     info,
-        #                                                                     connection
-        #                                                                     )
+        if CONFIG['tracker_type'] == 'centroid':
+            # centroid tracker
+            frame, _, info, faces_sequence = frame_processor.process_next_frame(vs,
+                                                                                faces_sequence,
+                                                                                known_face_encodings,
+                                                                                known_face_names,
+                                                                                info,
+                                                                                connection
+                                                                                )
 
-        # deep sort tracker
-        frame, _, info, faces_sequence = frame_processor.process_next_frame_deepsort_tracker(
-                                                                            vs,
-                                                                            faces_sequence,
-                                                                            tracker, encoder,
-                                                                            known_face_encodings,
-                                                                            known_face_names,
-                                                                            info,
-                                                                            connection
-                                                                            )
+        if CONFIG['tracker_type'] == 'deepsort':
+            # deep sort tracker
+            frame, _, info, faces_sequence = frame_processor.process_next_frame_deepsort_tracker(
+                                                                                vs,
+                                                                                faces_sequence,
+                                                                                tracker, encoder,
+                                                                                known_face_encodings,
+                                                                                known_face_names,
+                                                                                info,
+                                                                                connection
+                                                                                )
 
         if W is None or H is None:
             (H, W) = frame.shape[:2]
