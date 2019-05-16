@@ -5,6 +5,8 @@ import {People} from './mock-clients';
 import {Client} from './client';
 import {map} from 'rxjs/operators';
 
+import {environment} from '../../../environments/environment';
+
 const CLIENTS_PATH = '';
 
 @Injectable({
@@ -12,11 +14,8 @@ const CLIENTS_PATH = '';
 })
 export class ClientsService {
   constructor(private readonly http: HttpClient) {}
-  getAll(): Observable<Client[]> {
-    return of({clients: People})
-      .pipe(
-        map(({clients}) => clients.map(c => Client.parse(c)))
-      );
+  getAll(): Observable<any> {
+    return this.http.get(`${environment.apiUrl}/get_person_id`);
   }
 
   get(id: number): Observable<Client> {
@@ -26,8 +25,11 @@ export class ClientsService {
       );
   }
 
-  map(client1: Client, client2: Client) {
-    return of(true);
+  map(client1: Client, client2: Client): Observable<any> {
+    return this.http.put(`${environment.apiUrl}/select_name`, {
+      object_id: 1,
+      name: 'cococo'
+    });
   }
 
   rate(client: Client) {

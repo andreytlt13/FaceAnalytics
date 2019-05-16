@@ -5,7 +5,8 @@ export class Camera {
 
   get videoStreamUrl() {
     if (this.url.includes('rtsp://')) {
-      return `${environment.apiUrl}/video_stream?camera_url=${this.url}`;
+      // return `${environment.apiUrl}/video_stream?camera_url=${this.url}`;
+      return `${environment.apiUrl}/video_stream?camera_url=0`;
     } else {
       return this.url;
     }

@@ -1,5 +1,6 @@
 import {Component, OnInit} from '@angular/core';
 import * as moment from 'moment';
+import {ClientsService} from './clients/clients.service';
 
 @Component({
   selector: 'app-recognition',
@@ -23,9 +24,19 @@ export class RecognitionComponent implements OnInit {
     return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
   }
 
-  constructor() {}
+  constructor(private readonly clientService: ClientsService) {}
 
   ngOnInit() {
     console.log(this.dataSource);
+
+    this.clientService.getAll()
+      .subscribe((data) => {
+        console.log(data);
+      });
+
+    this.clientService.map(null, null)
+      .subscribe((data) => {
+        console.log(data);
+      });
   }
 }
