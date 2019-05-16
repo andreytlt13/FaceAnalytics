@@ -5,7 +5,9 @@ import {Graph} from './graph';
 import {Observable} from 'rxjs';
 import Heatmap from './heatmap';
 
-const DATA_URL = 'http://0.0.0.0:9090/db_select';
+import {environment} from '../../../environments/environment';
+
+const DATA_URL = `${environment.apiUrl}/db_select`;
 
 @Injectable({
   providedIn: 'root'
