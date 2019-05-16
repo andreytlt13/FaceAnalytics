@@ -24,7 +24,11 @@ class EventDBLogger:
                   Column('enter', Integer),
                   Column('exit', Integer),
                   Column('y', BigInteger),
-                  Column('x', BigInteger)
+                  Column('x', BigInteger),
+                  Column('names', String),
+                  Column('name', String),
+                  Column('stars', String),
+                  Column('description', String)
                   )
             self.metadata.create_all()
         else:
@@ -39,7 +43,11 @@ class EventDBLogger:
             enter=dict['enter'],
             exit=dict['exit'],
             y=dict['y'],
-            x=dict['x']
+            x=dict['x'],
+            names=str(dict['names']),
+            name=dict['name'],
+            stars=dict['stars'],
+            description=dict['description']
         )
         self.conn.execute(ins)
 

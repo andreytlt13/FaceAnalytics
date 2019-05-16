@@ -36,6 +36,7 @@ class FrameProcessor:
         self.trackableObjects = {}
         self.contours = np.array(contours)
         self.table = table
+        self.face_recognized = {}
 
     def process_next_frame(self, vs, faces_sequence,
                                             known_face_encodings, known_face_names,
@@ -100,16 +101,22 @@ class FrameProcessor:
                 endY = int(pos.bottom())
 
                 #!!!!!need to rewrite this for correct write enter and exit events
-                event = {
-                    'event_time': datetime.now(),
-                    'object_id': self.trackableObjects.__len__(),
-                    'enter': info['Enter'],
-                    'exit': info['Exit'],
-                    'y': round((startY+endY)/2, 0),
-                    'x': round((startX+endX)/2, 0)
-                }
 
-                connection.insert(self.table, event) #self.trackableObjects.__len__())
+                if self.trackableObjects.__len__() > 0:
+                    event = {
+                        'event_time': datetime.now(),
+                        'object_id': self.trackableObjects.__len__()-1,
+                        'enter': info['Enter'],
+                        'exit': info['Exit'],
+                        'y': round((startY+endY)/2, 0),
+                        'x': round((startX+endX)/2, 0),
+                        'names': self.trackableObjects[int(self.trackableObjects.__len__()-1)].names,
+                        'name': self.trackableObjects[int(self.trackableObjects.__len__()-1)].name,
+                        'stars': self.trackableObjects[int(self.trackableObjects.__len__()-1)].stars,
+                        'description': self.trackableObjects[int(self.trackableObjects.__len__()-1)].description
+                    }
+
+                    connection.insert(self.table, event) #self.trackableObjects.__len__())
 
                 rects.append((startX, startY, endX, endY))
 
@@ -123,8 +130,30 @@ class FrameProcessor:
             to = self.trackableObjects.get(objectID, None)
 
             # if there is no existing trackable object, create one
-            if to is None:
-                to = TrackableObject(objectID, centroid)
+            if to is None or to.names[0] == 'Unknown':
+                if objectID not in faces_sequence:
+                    faces_sequence[objectID] = collections.deque(maxlen=int(CONFIG['analyze_frames']))
+
+                pad_x, pad_y = 30, 30
+                imgCrop = frame[y_ - pad_y: h_ + pad_y, x_ - pad_x: w_ + pad_x]
+
+                faces_sequence[objectID].append(imgCrop)
+
+                info['status'] = 'Recognizing'
+                best_detected_face = select_best_face_cascades(faces_sequence[objectID], info['TotalFrames'],
+                                                               objectID)
+
+                cv2.imwrite('../face_description/tmp/faces/{}.jpg'.format(objectID), best_detected_face)
+                # analyzing the best face from stream and return a match with db faces
+                recognized_face_label = face_recognizer(best_detected_face, known_face_encodings, known_face_names)
+
+                #cv2.imwrite('../face_description/tmp/faces/{}_{}.jpg'.format(objectID, recognized_face_label), best_detected_face)
+
+
+                cv2.putText(frame, recognized_face_label, (centroid[0], centroid[1] + 20),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 2)
+
+                to = TrackableObject(objectID, centroid,   recognized_face_label)
 
             # otherwise, there is a trackable object so we can utilize it
             # to determine direction
@@ -141,28 +170,33 @@ class FrameProcessor:
             # store the trackable object in our dictionary
             self.trackableObjects[objectID] = to
 
+
             # draw both the ID of the object and the centroid of the
             # object on the output frame
             text = "ID {}".format(objectID)
 
-            if objectID not in faces_sequence:
-                faces_sequence[objectID] = collections.deque(maxlen=int(CONFIG['analyze_frames']))
+            # if objectID not in faces_sequence:
+            #     faces_sequence[objectID] = collections.deque(maxlen=int(CONFIG['analyze_frames']))
+            #
+            # pad_x, pad_y = 30, 30
+            # imgCrop = frame[y_ - pad_y : h_ + pad_y, x_ - pad_x : w_ + pad_x]
+            #
+            #
+            # if all(imgCrop.shape) > 0:
+            #     faces_sequence[objectID].append(imgCrop)
+            #
+            # if (len(faces_sequence[objectID]) > 0) and (info['TotalFrames'] % int(CONFIG['analyze_frames']) == 0):
+            #     info['status'] = 'Recognizing'
+            #     best_detected_face = select_best_face_cascades(faces_sequence[objectID], info['TotalFrames'], objectID)
+            #
+            #     # analyzing the best face from stream and return a match with db faces
+            #     recognized_face_label = face_recognizer(best_detected_face, known_face_encodings, known_face_names)
+            #
+            #     cv2.putText(frame, recognized_face_label, (centroid[0], centroid[1] + 20),
+            #                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 2)
 
-            pad_x, pad_y = 30, 30
-            imgCrop = frame[y_ - pad_y : h_ + pad_y, x_ - pad_x : w_ + pad_x]
-
-            if all(imgCrop.shape) > 0:
-                faces_sequence[objectID].append(imgCrop)
-
-            if (len(faces_sequence[objectID]) > 0) and (info['TotalFrames'] % int(CONFIG['analyze_frames']) == 0):
-                info['status'] = 'Recognizing'
-                best_detected_face = select_best_face_cascades(faces_sequence[objectID], info['TotalFrames'], objectID)
-
-                # analyzing the best face from stream and return a match with db faces
-                recognized_face_label = face_recognizer(best_detected_face, known_face_encodings, known_face_names)
-
-                cv2.putText(frame, recognized_face_label, (centroid[0], centroid[1] + 20),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 2)
+            cv2.putText(frame, to.name, (centroid[0], centroid[1] + 20),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 2)
 
             cv2.putText(frame, text, (centroid[0] - 10, centroid[1] - 10),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
