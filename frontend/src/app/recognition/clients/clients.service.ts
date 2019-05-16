@@ -1,7 +1,7 @@
 import {Injectable} from '@angular/core';
 import {HttpClient} from '@angular/common/http';
 import {Observable, of} from 'rxjs';
-import CLIENTS from './mock-clients';
+import {People} from './mock-clients';
 import {Client} from './client';
 import {map} from 'rxjs/operators';
 
@@ -13,14 +13,14 @@ const CLIENTS_PATH = '';
 export class ClientsService {
   constructor(private readonly http: HttpClient) {}
   getAll(): Observable<Client[]> {
-    return of({clients: CLIENTS})
+    return of({clients: People})
       .pipe(
         map(({clients}) => clients.map(c => Client.parse(c)))
       );
   }
 
-  get(id: string): Observable<Client> {
-    return of({clients: [CLIENTS.find(c => c.id === id)]})
+  get(id: number): Observable<Client> {
+    return of({clients: [People.find(c => c.id === id)]})
       .pipe(
         map(({clients}) => Client.parse(clients[0]))
       );

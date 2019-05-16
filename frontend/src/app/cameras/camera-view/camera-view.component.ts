@@ -1,8 +1,8 @@
-import {AfterViewInit, Component, ElementRef, OnDestroy, OnInit, ViewChild} from '@angular/core';
+import {Component, ElementRef, OnDestroy, OnInit, ViewChild} from '@angular/core';
 import {Camera} from '../camera/camera';
 import {Observable, of} from 'rxjs';
 import {CamerasState} from '../cameras.state';
-import {Actions, ofActionDispatched, Store} from '@ngxs/store';
+import {Store} from '@ngxs/store';
 import {Graph} from '../event-data/graph';
 import {DeleteCamera, LoadGraphData, LoadHeatmap, SelectCamera} from '../cameras.actions';
 

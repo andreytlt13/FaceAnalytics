@@ -1,3 +1,26 @@
-<div class="mat-elevation-z8">
-  <table mat-table></table>
-</div>
+<table *ngIf="dataSource" mat-table [dataSource]="dataSource" class="rec-table mat-elevation-z8">
+  <!-- Time Column -->
+  <ng-container matColumnDef="eventTime">
+    <th mat-header-cell *matHeaderCellDef> Event Time </th>
+    <td mat-cell *matCellDef="let element"> {{element.eventTime}} </td>
+  </ng-container>
+
+  <!-- Photo Column -->
+  <ng-container matColumnDef="photo">
+    <th mat-header-cell *matHeaderCellDef> Photo </th>
+    <td mat-cell *matCellDef="let element">
+      <img [src]="element.photo" />
+    </td>
+  </ng-container>
+
+  <!-- Matches Column -->
+  <ng-container matColumnDef="matches">
+    <th mat-header-cell *matHeaderCellDef> Matches </th>
+    <td mat-cell *matCellDef="let element" class="rec-table__matches">
+      <img *ngFor="let match of element.matches" [src]="match" />
+    </td>
+  </ng-container>
+
+  <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+  <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+</table>

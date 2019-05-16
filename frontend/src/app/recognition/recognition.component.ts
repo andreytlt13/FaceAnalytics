@@ -1,4 +1,5 @@
-import { Component, OnInit } from '@angular/core';
+import {Component, OnInit} from '@angular/core';
+import * as moment from 'moment';
 
 @Component({
   selector: 'app-recognition',
@@ -6,11 +7,25 @@ import { Component, OnInit } from '@angular/core';
   styleUrls: ['./recognition.component.scss']
 })
 export class RecognitionComponent implements OnInit {
+  displayedColumns: string[] = ['eventTime', 'photo', 'matches'];
+  dataSource = Array.from({length: 10}).map((value, index) => {
+    return {
+      eventTime: moment(RecognitionComponent.randomDate(new Date(2019, 0, 1), new Date())).format(),
+      photo: `assets/photos/${index + 1}.jpg`,
+      matches: Array.from({length: 3}).map(() => {
+        return `assets/photos/${Math.floor(Math.random() * 10 + 1)}.jpg`;
+      })
+    };
+  });
 
-  constructor() { }
 
-  ngOnInit() {
-
+  static randomDate(start: Date, end: Date) {
+    return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
   }
 
+  constructor() {}
+
+  ngOnInit() {
+    console.log(this.dataSource);
+  }
 }

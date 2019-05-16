@@ -1,22 +1,11 @@
-export default [
-  {
-    id: '1',
-    photo: '',
-    description: 'special'
-  },
-  {
-    id: '2',
-    photo: '',
-    description: 'very special'
-  },
-  {
-    id: '3',
-    photo: '',
-    description: 'very very special'
-  },
-  {
-    id: '4',
-    photo: '',
-    description: 'super special'
-  }
-];
+const currentDate = new Date();
+const peopleCount = 11;
+
+export const People = (new Array(peopleCount)).map((value, index) => {
+  return {
+    id: index,
+    photo: `assets/photos/${index + 1}.jpg`,
+    rate: Math.floor(Math.random() * 5),
+    description: `Rate ${Math.floor(Math.random() * 5)}`
+  };
+});
