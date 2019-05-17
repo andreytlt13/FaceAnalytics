@@ -40,6 +40,14 @@
                 }
               ]
             },
+            "stage": {
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.stage.ts"
+                }
+              ]
+            },
             "production": {
               "fileReplacements": [
                 {
@@ -73,10 +81,14 @@
           },
           "configurations": {
             "local": {
+              "port": 4200,
+              "browserTarget": "face-analytics:build:local"
+            },
+            "stage": {
               "port": 9091,
               "disableHostCheck": true,
               "host": "0.0.0.0",
-              "browserTarget": "face-analytics:build:local"
+              "browserTarget": "face-analytics:build:stage"
             },
             "production": {
               "browserTarget": "face-analytics:build:production"

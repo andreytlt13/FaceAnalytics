@@ -4,6 +4,7 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve -c=local",
+    "start:stage": "ng serve -c=stage",
     "build": "ng build --optimization=false",
     "test": "ng test",
     "lint": "ng lint",
