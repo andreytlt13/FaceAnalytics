@@ -73,6 +73,9 @@
           },
           "configurations": {
             "local": {
+              "port": 9091,
+              "disableHostCheck": true,
+              "host": "0.0.0.0",
               "browserTarget": "face-analytics:build:local"
             },
             "production": {
