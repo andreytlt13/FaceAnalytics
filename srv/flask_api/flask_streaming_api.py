@@ -43,7 +43,7 @@ tasks = [
 
 #'rtsp://admin:0ZKaxVFi@10.101.106.4:554/live/main'
 camera = {
-    'camera_url': '0'
+    'camera_url': 'rstp://zal:ichehol800@46.0.193.39:8871/videoMain'
 }
 
 @app.route('/add_aim_region', methods=['POST'])
@@ -84,7 +84,7 @@ def stream(camera_url):
     if camera_url == None:
         camera_url = camera['camera_url']
 
-    vs = VideoStream(src=0).start() #camera_url
+    vs = VideoStream(src="rstp://zal:ichehol800@46.0.193.39:8871/videoMain").start() #camera_url
     connection = EventDBLogger()
     table = connection.create_table(camera_url)
 
