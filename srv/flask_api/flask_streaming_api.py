@@ -43,7 +43,7 @@ tasks = [
 
 
 camera = {
-    'camera_url': 'rstp://zal:ichehol800@46.0.193.39:8871/videoMain'
+    'camera_url': 0
 }
 
 
@@ -85,7 +85,7 @@ def stream(camera_url):
     if camera_url == None:
         camera_url = camera['camera_url']
 
-    vs = VideoStream(src="rstp://zal:ichehol800@46.0.193.39:8871/videoMain").start() #camera_url
+    vs = VideoStream(src=camera_url).start()
     connection = EventDBLogger()
     table = connection.create_table(camera_url)
 
