@@ -41,10 +41,11 @@ tasks = [
     }
 ]
 
-#'rtsp://admin:0ZKaxVFi@10.101.106.4:554/live/main'
+
 camera = {
     'camera_url': 'rstp://zal:ichehol800@46.0.193.39:8871/videoMain'
 }
+
 
 @app.route('/add_aim_region', methods=['POST'])
 def add_aim_region():
