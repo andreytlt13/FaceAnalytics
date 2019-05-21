@@ -32,37 +32,25 @@ pip install scipy
 ```
 
 ##Download models
-You need download this [models](https://drive.google.com/drive/folders/1PO1zneiefNjcNdf9PZz-2Y2a7ns8umxe?usp=sharing)
+For detection and recognition you need to download this [models](https://drive.google.com/drive/folders/1PO1zneiefNjcNdf9PZz-2Y2a7ns8umxe?usp=sharing)
 ```
  pip install face_recognition_models
 ```
 
+<b> Person-reid </b>
+
+For person-reid task you need to download weights of pretrained [models](https://drive.google.com/drive/folders/1F09uLEfc_QeAUHkw22BDFsPWjsLyrG6Q?usp=sharing) 
+and put them into <b> tmp_exp/person_reid/model  </b>
+
 ## Instructions
 ```
-FaceAnalytics$ export FLASK_APP=srv/flask_api/run_flask.py
+FaceAnalytics$ export FLASK_APP=srv/webapp/run.py
 FaceAnalytics$ flask run
  
 ```
 
-## For webcam streaming
-```
-http://0.0.0.0:9090/video_stream?0
-```
 
-### Stream and test modes
-You can chose 2 modes into config file:
-- webcam_mode: 
-<b>stream</b> is for web streaming from camera, 
-<b>test</b> is for testing app with video file
-- detection_mode: 
-<b>face</b> uses caffe model for only face detection, 
-<b>person</b> uses MobileNetSSD model for person detection
-```
-webcam_mode : stream #test
-detection_mode : face #person
-```
-####
-
+#### *
 If you don't have a support CUDA on your mashine, install dlib without support cuda
 
 Clone the code from github:
@@ -99,5 +87,4 @@ python3 setup.py install --yes USE_AVX_INSTRUCTIONS --no DLIB_USE_CUDA
                 
                 
                 
-2 - flask api 
-            
+2 - flask api     
