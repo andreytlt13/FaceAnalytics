@@ -6,53 +6,61 @@ from main.common import config_parser
 from main import video_processing
 
 import json
+import os
 
 CONFIG = config_parser.parse()
 
 app = flask.Flask(__name__)
 
+cam_info_json = 'cam_info.json'
+
 @app.route('/get_camera_url', methods=['GET'])
 def get_camera_url():
     camera_url = str(flask.request.args.get('camera_url'))
-    print('--- current camera_url:', camera_url)
+    existed, camera_status, camera_indx = check_camera(camera_url)
 
-    existed, camera_status = check_camera(camera_url)
     if not existed:
         print('cam doesnt exist in file')
         camera_status = "active"
-        add_camera(camera_url, camera_status)
+        add_camera(camera_url, camera_status, camera_indx)
     else:
-        print('{} {}'.format(camera_url, camera_status))
+        print('indx:{} url:{} status:{}'.format(camera_indx, camera_url, camera_status))
 
-    return camera_url, camera_status
+    return jsonify({"camera_url":camera_url, "status":camera_status, "index":camera_indx})
 
 def check_camera(camera_url):
+    if not os.path.isfile(cam_info_json):
+        with open(cam_info_json, 'w') as f:
+            data = []
+            json.dump(data, f, indent=4)
+    else:
+        with open(cam_info_json, 'r') as f:
+            data = json.load(f)
+
     existed = False
     status = "active"
-
-    with open('cam_info.json', 'r') as f:
-        data = json.load(f)
-    print('data', data)
+    camera_indx = len(data)
 
     for d in data:
-        print('---',d, d["camera_url"])
         if d["camera_url"] == camera_url:
             existed = True
             status = d["status"]
+            camera_indx = d["index"]
             break
 
-    return existed, status
+    return existed, status, camera_indx
 
-def add_camera(camera_url, status):
-    cam_info = {
-        "camera_url" : camera_url,
-        "status" : status
-    }
-
-    with open('cam_info.json', 'r') as f:
+def add_camera(camera_url, status, camera_indx):
+    with open(cam_info_json, 'r') as f:
         data = json.load(f)
 
-    with open('cam_info.json', 'w') as f:
+    cam_info = {
+        "camera_url" : camera_url,
+        "status" : status,
+        "index" : camera_indx
+    }
+
+    with open(cam_info_json, 'w') as f:
         if len(data) == 0:
             data = []
         data.append(cam_info)
@@ -77,7 +85,6 @@ def get_stream(camera_url):
     vs = video_processing.VideoStream(camera_url)
 
     while True:
-        # frame = vs.read()
         frame = vs.preocess_next_frame()
         _, img_encoded = cv2.imencode('.jpg', frame)
         yield (b'--frame\r\n'
