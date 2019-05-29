@@ -4,7 +4,7 @@ import numpy as np
 from scipy.spatial import distance as dist
 
 
-class CentroidTracker:
+class CentroidTracker2:
     """
     Calculates and stores center point of each already detected face
     so that we're able to track/identify the same face and not count it twice
@@ -70,7 +70,7 @@ class CentroidTracker:
         # centroids and register each of them
         if len(self.objects) == 0:
             for i in range(0, len(inputCentroids)):
-                self.register(inputCentroids[i])
+                self.register(inputCentroids[i], )
 
         # otherwise, are are currently tracking objects so we need to
         # try to match the input centroids to existing object
@@ -159,7 +159,7 @@ class CentroidTracker:
         return self.objects
 
 
-class CentroidTracker2:
+class CentroidTracker:
     def __init__(self, maxDisappeared=50, maxDistance=50):
         # initialize the next unique object ID along with two ordered
         # dictionaries used to keep track of mapping a given object
@@ -179,10 +179,14 @@ class CentroidTracker2:
         # distance we'll start to mark the object as "disappeared"
         self.maxDistance = maxDistance
 
-    def register(self, centroid):
+    def register(self, centroid, embeding):
         # when registering an object we use the next available object
         # ID to store the centroid
-        self.objects[self.nextObjectID] = centroid
+        self.objects[self.nextObjectID] = {
+                                           "centroid": centroid,
+                                           "embeding": embeding
+                                           }
+
         self.disappeared[self.nextObjectID] = 0
         self.nextObjectID += 1
 
@@ -191,8 +195,9 @@ class CentroidTracker2:
         # both of our respective dictionaries
         del self.objects[objectID]
         del self.disappeared[objectID]
+        print("delete {}".format(objectID))
 
-    def update(self, rects):
+    def update(self, rects, embeding_list, trackable_objects):
         # check to see if the list of input bounding box rectangles
         # is empty
         if len(rects) == 0:
@@ -225,7 +230,7 @@ class CentroidTracker2:
         # centroids and register each of them
         if len(self.objects) == 0:
             for i in range(0, len(inputCentroids)):
-                self.register(inputCentroids[i])
+                self.register(inputCentroids[i], embeding_list[i])
 
         # otherwise, are are currently tracking objects so we need to
         # try to match the input centroids to existing object
@@ -234,7 +239,7 @@ class CentroidTracker2:
             # grab the set of object IDs and corresponding centroids
             objectIDs = list(self.objects.keys())
             objectCentroids = list(self.objects.values())
-
+            objectCentroids = [n['centroid'] for n in objectCentroids]
             # compute the distance between each pair of object
             # centroids and input centroids, respectively -- our
             # goal will be to match an input centroid to an existing
@@ -277,7 +282,11 @@ class CentroidTracker2:
                 # set its new centroid, and reset the disappeared
                 # counter
                 objectID = objectIDs[row]
-                self.objects[objectID] = inputCentroids[col]
+                self.objects[objectID] = {
+                                           "centroid": inputCentroids[col],
+                                           "embeding": embeding_list[col]
+                                           }
+
                 self.disappeared[objectID] = 0
 
                 # indicate that we have examined each of the row and
@@ -300,6 +309,7 @@ class CentroidTracker2:
                     # grab the object ID for the corresponding row
                     # index and increment the disappeared counter
                     objectID = objectIDs[row]
+
                     self.disappeared[objectID] += 1
 
                     # check to see if the number of consecutive
@@ -313,19 +323,60 @@ class CentroidTracker2:
             # register each new input centroid as a trackable object
             else:
                 for col in unusedCols:
-                    self.register(inputCentroids[col])
+                    self.register(inputCentroids[col], embeding_list[col])
 
-        # return the set of trackable objects
+            not_flat = [trackable_objects[x].embeding[0] for x in list(trackable_objects.keys())]
+            flat_list = [item for sublist in not_flat for item in sublist]
+            tmp, name = self.person_recognizer(embeding_list[i],flat_list, list(trackable_objects.keys()))
+
+            if name != None and name != objectID:
+                self.objects[name] = {
+                                               "centroid": inputCentroids[col],
+                                               "embeding": embeding_list[col]
+                                               }
+                self.disappeared[name] = 0
+                self.deregister(objectID)
+
+
+        # return the set of trackable object
         return self.objects
+
+    def person_recognizer(self, new_person_vector, known_person_encodings, known_person_names):
+        #new_person_vector = api.human_vector(new_person_image)[0]
+
+        matches = self.compare_persons(known_person_encodings, new_person_vector, tolerance=20)
+
+        name = 'unknown_person'
+
+        # Or instead, use the known face with the smallest distance to the new face
+        person_distances = self.person_distance(known_person_encodings, new_person_vector)
+        filtered_lst = [(x, y) for x, y in enumerate(list(person_distances)) if y < 20]
+        best_match_index = min(filtered_lst)[0]
+        #best_match_index = np.argmin(person_distances)
+        if matches[best_match_index]:
+            name = known_person_names[best_match_index]
+
+        print('linalg.norm the smallest distance result match:{}'.format(name))
+
+        return known_person_names[best_match_index], name
+
+    def person_distance(self, person_encodings, person_to_compare):
+        if len(person_encodings) == 0:
+            return np.empty((0))
+        return np.linalg.norm(person_encodings - person_to_compare, axis=1)
+
+    def compare_persons(self, known_person_encodings, person_encoding_to_check, tolerance):
+        print(self.person_distance(known_person_encodings, person_encoding_to_check))
+        return list(self.person_distance(known_person_encodings, person_encoding_to_check) <= tolerance)
 
 
 class TrackableObject:
-    def __init__(self, objectID, centroid):
+    def __init__(self, objectID, centroid, embeding):
         # store the object ID, then initialize a list of centroids
         # using the current centroid
         self.objectID = objectID
         self.centroids = [centroid]
-
+        self.embeding = [embeding]
         # initialize a boolean used to indicate if the object has
         # already been counted or not
         self.counted = False

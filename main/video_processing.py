@@ -52,11 +52,10 @@ class VideoStream():
         self.tracker = Tracker(self.metrics)
 
         #for centroid
-        self.trackers = []
         self.ct = CentroidTracker()
         self.trackableObjects = {}
         self.trackers = []
-        self.objects = 0
+        self.embeding_list= []
         self.EmbTrackers = {}
         #self.rects = []
 
@@ -121,7 +120,7 @@ class VideoStream():
     def process_next_frame(self):
 
         ret, frame = self.vs.read()
-        frame = imutils.resize(frame, width=500)
+        frame = imutils.resize(frame, width=600)
         self.H, self.W = frame.shape[:2]
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         rects = []
@@ -131,7 +130,7 @@ class VideoStream():
         else:
             rects = self.tracking(rgb, rects)
 
-        objects = self.ct.update(rects)
+        objects = self.ct.update(rects, self.embeding_list, self.trackableObjects)
         frame = self.draw_labels(frame, objects)
 
         self.info['TotalFrames'] += 1
@@ -199,6 +198,7 @@ class VideoStream():
     def detecting(self, frame):
         self.info['status'] = 'Detecting'
         self.trackers = []
+        self.embeding_list = []
         blob = cv2.dnn.blobFromImage(frame, 0.007843, (self.W, self.H), 127.5)
         self.net.setInput(blob)
         detections = self.net.forward()
@@ -226,16 +226,16 @@ class VideoStream():
                 resize_img = cv2.resize(imgCrop, (128, 256))
                 resize_img = np.expand_dims(resize_img, axis=0)
                 emb = self.imgVectorizer.run(self.endpoints['emb'], feed_dict={self.images: resize_img})
+                self.embeding_list.append(emb)
 
                 name = "unknown_person"
                 for n in list(self.EmbTrackers.keys()):
                     tmp, name = self.person_recognizer(emb[0], self.EmbTrackers[n], [n])
-                    print("kokok")
 
                 if name == "unknown_person" or len(self.EmbTrackers.keys()) == 0 :
                     #objectID = self.objects + 1
 
-                    self.objects = self.objects + 1
+                    #self.objects = self.objects + 1
 
                     tracker = dlib.correlation_tracker()
                     rect = dlib.rectangle(startX, startY, endX, endY)
@@ -244,12 +244,19 @@ class VideoStream():
                     # add the tracker to our list of trackers so we can
                     # utilize it during skip frames
                     self.trackers.append(tracker)
-                    #to = self.trackableObjects.get(objectID, None)
+                    #
 
-                    cv2.imwrite("photo/ID_{}.jpeg".format(self.objects), imgCrop)
+                    cv2.imwrite("photo/ID_{}.jpeg".format(self.EmbTrackers.__len__()), imgCrop)
+                    self.EmbTrackers[self.EmbTrackers.__len__()] = emb
+                else:
+                    tracker = dlib.correlation_tracker()
+                    rect = dlib.rectangle(startX, startY, endX, endY)
+                    tracker.start_track(frame, rect)
+                    self.trackers.append(tracker)
 
-                    self.EmbTrackers[self.objects] = emb
-
+                    cv2.imwrite("photo/ID_{}.jpeg".format(self.EmbTrackers.__len__()), imgCrop)
+                    self.EmbTrackers[self.EmbTrackers.__len__()] = emb
+                    print("kokok")
 
         return frame, detections
 
@@ -297,18 +304,19 @@ class VideoStream():
 
             # if there is no existing trackable object, create one
             if to is None:
-                to = TrackableObject(objectID, centroid)
+                to = TrackableObject(objectID, centroid["centroid"], centroid["embeding"])
             else:
-                y = [c[1] for c in to.centroids]
+                #y = [c[1] for c in to.centroids]
                 #need for next step
-                direction = centroid[1] - np.mean(y)
-                to.centroids.append(centroid)
+                #direction = centroid[1] - np.mean(y)
+                to.centroids.append(centroid["centroid"])
+                to.embeding.append(centroid["embeding"])
 
             self.trackableObjects[objectID] = to
             text = "ID {}".format(objectID)
-            cv2.putText(frame, text, (centroid[0] - 10, centroid[1] - 10),
+            cv2.putText(frame, text, (centroid["centroid"][0] - 10, centroid["centroid"][1] - 10),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-            cv2.circle(frame, (centroid[0], centroid[1]), 4, (0, 255, 0), -1)
+            cv2.circle(frame, (centroid["centroid"][0], centroid["centroid"][1]), 4, (0, 255, 0), -1)
 
         return frame
 
@@ -496,7 +504,6 @@ class VideoStream2():
 
 
 if __name__ == "__main__":
-    url = "rtsp://user:Hneu74k092@10.101.106.104:554/live/main"  #"/Users/andrey/PycharmProjects/multiobject-tracking-dlib/race.mp4" #0
     url = "/Users/andrey/Downloads/Telegram Desktop/vlc_record_2019_05_24_15h29m07s.mp4"
     cam = VideoStream(url)
 
