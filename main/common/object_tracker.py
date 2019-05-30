@@ -327,7 +327,7 @@ class CentroidTracker:
 
             not_flat = [trackable_objects[x].embeding[0] for x in list(trackable_objects.keys())]
             flat_list = [item for sublist in not_flat for item in sublist]
-            tmp, name = self.person_recognizer(embeding_list[i],flat_list, list(trackable_objects.keys()))
+            name = self.person_recognizer(embeding_list[i],flat_list, list(trackable_objects.keys()))
 
             if name != None and name != objectID:
                 self.objects[name] = {
@@ -339,18 +339,23 @@ class CentroidTracker:
 
 
         # return the set of trackable object
-        return self.objects
+        return self.objects, trackable_objects
 
     def person_recognizer(self, new_person_vector, known_person_encodings, known_person_names):
         #new_person_vector = api.human_vector(new_person_image)[0]
 
-        matches = self.compare_persons(known_person_encodings, new_person_vector, tolerance=20)
+        matches = self.compare_persons(known_person_encodings, new_person_vector, tolerance=15)
 
-        name = 'unknown_person'
+        name = None
 
         # Or instead, use the known face with the smallest distance to the new face
         person_distances = self.person_distance(known_person_encodings, new_person_vector)
         filtered_lst = [(x, y) for x, y in enumerate(list(person_distances)) if y < 20]
+
+
+        if len(filtered_lst) < 1:
+            return None, name
+
         best_match_index = min(filtered_lst)[0]
         #best_match_index = np.argmin(person_distances)
         if matches[best_match_index]:
@@ -358,7 +363,7 @@ class CentroidTracker:
 
         print('linalg.norm the smallest distance result match:{}'.format(name))
 
-        return known_person_names[best_match_index], name
+        return name
 
     def person_distance(self, person_encodings, person_to_compare):
         if len(person_encodings) == 0:

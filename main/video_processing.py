@@ -130,8 +130,9 @@ class VideoStream():
         else:
             rects = self.tracking(rgb, rects)
 
-        objects = self.ct.update(rects, self.embeding_list, self.trackableObjects)
-        frame = self.draw_labels(frame, objects)
+        if len(rects) > 0:
+            objects, self.trackableObjects = self.ct.update(rects, self.embeding_list, self.trackableObjects)
+            frame = self.draw_labels(frame, objects)
 
         self.info['TotalFrames'] += 1
         return frame
@@ -504,7 +505,10 @@ class VideoStream2():
 
 
 if __name__ == "__main__":
-    url = "/Users/andrey/Downloads/Telegram Desktop/vlc_record_2019_05_24_15h29m07s.mp4"
+    #url = "rtsp://user:Hneu74k092@10.101.106.104:554/live/main"
+    #url = "/Users/andrey/Downloads/Telegram Desktop/vlc_record_2019_05_24_15h29m07s.mp4"
+    url = "/Users/andrey/Downloads/Telegram Desktop/vlc_record_2019_05_30_12h50m55s.mp4"
+
     cam = VideoStream(url)
 
     while True:
