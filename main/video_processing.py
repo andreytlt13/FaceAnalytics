@@ -2,7 +2,7 @@
 import cv2
 import numpy as np
 import dlib
-import datetime
+from datetime import datetime
 from common.deep_sort import preprocessing, nn_matching
 from common.deep_sort.detection import Detection
 from common.deep_sort.tracker import Tracker
@@ -21,21 +21,23 @@ import imutils
 import dlib
 import cv2
 
+# path to PycharmProjects
+root_path = 'path_to_PycharmProjects/'
 
-PROTOTXT = "/Users/andrey/PycharmProjects/FaceAnalytics/main/model/MobileNetSSD_deploy.prototxt"
-MODEL = "/Users/andrey/PycharmProjects/FaceAnalytics/main/model/MobileNetSSD_deploy.caffemodel"
+PROTOTXT = root_path + "FaceAnalytics/main/model/MobileNetSSD_deploy.prototxt"
+MODEL = root_path + "FaceAnalytics/main/model/MobileNetSSD_deploy.caffemodel"
 
 # deep sort implementation
 # Definition of the parameters
 max_cosine_distance = 0.3
 nn_budget = None
 
-ENCODER_PATH = "/Users/andrey/PycharmProjects/FaceAnalytics/main/model/mars-small128.pb"
+ENCODER_PATH = root_path + "FaceAnalytics/main/model/mars-small128.pb"
 #metric = nn_matching.NearestNeighborDistanceMetric("cosine", max_cosine_distance, nn_budget)
 #tracker = Tracker(metric)
 
 class VideoStream():
-    def __init__(self, camera_url=0):
+    def __init__(self, camera_url=0, table=None, connection=None):
         self.camera_url = camera_url
         self.vs = cv2.VideoCapture(self.camera_url)
         self.W, self.H = int(self.vs.get(3)), int(self.vs.get(4))
@@ -73,6 +75,8 @@ class VideoStream():
             'Count People': 0
         }
         #self.start_video_processing = self.start_video_processing
+        self.table = table
+        self.connection = connection
 
     # def start_video_processing(self):
     #     #vs = VideoStream(src=self.camera_url)
@@ -88,7 +92,7 @@ class VideoStream():
         endpoints, body_prefix = model.endpoints(images, is_training=False)
         with tf.name_scope('head'):
             endpoints = head.head(endpoints, 128, is_training=False)
-        tf.train.Saver().restore(sess, 'model/checkpoint-25000')
+        tf.train.Saver().restore(sess, root_path+'FaceAnalytics/main/model/checkpoint-25000')
         return sess, endpoints, images
 
     def person_distance(self, person_encodings, person_to_compare):
@@ -120,6 +124,7 @@ class VideoStream():
     def process_next_frame(self):
 
         ret, frame = self.vs.read()
+        orig_frame = frame.copy()
         frame = imutils.resize(frame, width=600)
         self.H, self.W = frame.shape[:2]
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -128,7 +133,7 @@ class VideoStream():
         if self.info['TotalFrames'] % 30 == 0:
             frame, detections = self.detecting(frame)
         else:
-            rects = self.tracking(rgb, rects)
+            rects = self.tracking(rgb, rects, frame.shape[:2], orig_frame.shape[:2])
 
         if len(rects) > 0:
             objects, self.trackableObjects = self.ct.update(rects, self.embeding_list, self.trackableObjects)
@@ -261,7 +266,7 @@ class VideoStream():
 
         return frame, detections
 
-    def tracking(self, rgb, rects):
+    def tracking(self, rgb, rects, resized_hw, orig_hw):
 
         self.info['status'] = 'Tracking'
 
@@ -274,23 +279,19 @@ class VideoStream():
             endX = int(pos.right())
             endY = int(pos.bottom())
 
-            # !!!!!need to rewrite this for correct write enter and exit events
+            # normalized centroid coords
+            rel_x, rel_y = 0.5*(startX + endX) / resized_hw[1], 0.5*(startY + endY) / resized_hw[0]
+            # original centroid coords
+            orig_x, orig_y = int(rel_x*orig_hw[1]), int(rel_y*orig_hw[0])
 
             if self.trackableObjects.__len__() > 0:
                 event = {
-                    #'event_time': datetime.now(),
+                    'event_time': datetime.now(),
                     'object_id': self.trackableObjects.__len__() - 1,
-                    'enter': self.info['Enter'],
-                    'exit': self.info['Exit'],
-                    'y': round((startY + endY) / 2, 0),
-                    'x': round((startX + endX) / 2, 0)#,
-                    #'names': self.trackableObjects[int(self.trackableObjects.__len__() - 1)].names,
-                    #'name': self.trackableObjects[int(self.trackableObjects.__len__() - 1)].name,
-                    #'stars': self.trackableObjects[int(self.trackableObjects.__len__() - 1)].stars,
-                    #'description': self.trackableObjects[int(self.trackableObjects.__len__() - 1)].description
+                    'x': orig_x,
+                    'y': orig_y
                 }
-
-                #connection.insert(self.table, event)  # self.trackableObjects.__len__())
+                self.connection.insert(self.table, event)
 
             rects.append((startX, startY, endX, endY))
 
@@ -507,7 +508,7 @@ class VideoStream2():
 if __name__ == "__main__":
     #url = "rtsp://user:Hneu74k092@10.101.106.104:554/live/main"
     #url = "/Users/andrey/Downloads/Telegram Desktop/vlc_record_2019_05_24_15h29m07s.mp4"
-    url = "/Users/andrey/Downloads/Telegram Desktop/vlc_record_2019_05_30_12h50m55s.mp4"
+    url = "vlc_record_2019_05_30_12h50m55s.mp4"
 
     cam = VideoStream(url)
 
