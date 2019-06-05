@@ -3,6 +3,19 @@ from collections import OrderedDict
 import numpy as np
 from scipy.spatial import distance as dist
 
+import cv2
+
+def get_cropped_person(orig_frame, resized_frame, resized_box):
+    startX, startY, endX, endY = resized_box
+
+    # person box in original frame size: need to cut face from it
+    startY_orig = int(startY / resized_frame.shape[1] * orig_frame.shape[1])
+    endY_orig = int(endY / resized_frame.shape[1] * orig_frame.shape[1])
+    startX_orig = int(startX / resized_frame.shape[0] * orig_frame.shape[0])
+    endX_orig = int(endX / resized_frame.shape[0] * orig_frame.shape[0])
+
+    cropped_person = orig_frame[startY_orig: endY_orig, startX_orig: endX_orig]
+    return cropped_person
 
 class CentroidTracker2:
     """
@@ -179,13 +192,14 @@ class CentroidTracker:
         # distance we'll start to mark the object as "disappeared"
         self.maxDistance = maxDistance
 
-    def register(self, centroid, embeding, rect):
+    def register(self, centroid, embeding, rect, img):
         # when registering an object we use the next available object
         # ID to store the centroid
         self.objects[self.nextObjectID] = {
                                            "centroid": centroid,
                                            "embeding": embeding,
-                                           "rect": rect
+                                           "rect": rect,
+                                           "img":img
                                            }
 
         self.disappeared[self.nextObjectID] = 0
@@ -198,7 +212,7 @@ class CentroidTracker:
         del self.disappeared[objectID]
         print("delete {}".format(objectID))
 
-    def update(self, rects, embeding_list, trackable_objects):
+    def update(self, rects, embeding_list, trackable_objects, orig_frame, resized_frame):
         # check to see if the list of input bounding box rectangles
         # is empty
         if len(rects) == 0:
@@ -231,7 +245,10 @@ class CentroidTracker:
         # centroids and register each of them
         if len(self.objects) == 0:
             for i in range(0, len(inputCentroids)):
-                self.register(inputCentroids[i], embeding_list[i], rects[i])
+                img = get_cropped_person(orig_frame, resized_frame, resized_box=rects[i])
+                # cv2.imwrite('{}.jpeg'.format(i), img)
+                # self.register(inputCentroids[i], embeding_list[i], rects[i])
+                self.register(inputCentroids[i], embeding_list[i], rects[i], img)
 
         # otherwise, are are currently tracking objects so we need to
         # try to match the input centroids to existing object
@@ -283,10 +300,14 @@ class CentroidTracker:
                 # set its new centroid, and reset the disappeared
                 # counter
                 objectID = objectIDs[row]
+                ##img crop
+                img = get_cropped_person(orig_frame, resized_frame, resized_box=rects[col])
+                cv2.imwrite('{}_.jpeg'.format(col), img)
                 self.objects[objectID] = {
                                            "centroid": inputCentroids[col],
                                            "embeding": embeding_list[col],
-                                           "rect": rects[col]
+                                           "rect": rects[col],
+                                           "img": img
                                            }
 
                 self.disappeared[objectID] = 0
