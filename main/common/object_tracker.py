@@ -327,19 +327,24 @@ class CentroidTracker:
 
             not_flat = [trackable_objects[x].embeding[0] for x in list(trackable_objects.keys())]
             flat_list = [item for sublist in not_flat for item in sublist]
-            name = self.person_recognizer(embeding_list[i],flat_list, list(trackable_objects.keys()))
+            #name = self.person_recognizer(embeding_list[i],flat_list, list(trackable_objects.keys()))
 
-            if name != None and name != objectID:
-                self.objects[name] = {
-                                               "centroid": inputCentroids[col],
-                                               "embeding": embeding_list[col]
-                                               }
-                self.disappeared[name] = 0
-                self.deregister(objectID)
+            # if name != None or name != objectID:
+            #
+            #     self.objects[name] = {
+            #                                    "centroid": inputCentroids[col],
+            #                                    "embeding": embeding_list[col]
+            #                                    }
+            #     self.disappeared[name] = 0
+            #     self.deregister(objectID)
 
+        M = np.zeros([self.objects.__len__(), trackable_objects.__len__()])
 
-        # return the set of trackable object
-        return self.objects, trackable_objects
+        for k, i in zip(np.arange(0, self.objects.__len__(), 1), self.objects.keys()):
+            for m, j in zip(np.arange(0, trackable_objects.__len__(), 1), trackable_objects.keys()):
+                M[k, m] = self.person_distance(self.objects[i]['embeding'], trackable_objects[j].embeding[0])
+
+        return self.objects, trackable_objects, M
 
     def person_recognizer(self, new_person_vector, known_person_encodings, known_person_names):
         #new_person_vector = api.human_vector(new_person_image)[0]
@@ -382,6 +387,10 @@ class TrackableObject:
         self.objectID = objectID
         self.centroids = [centroid]
         self.embeding = [embeding]
+        self.names = [None]
+        self.name = None,
+        self.face_seq = [None]
+        self.face_emb = [None]
         # initialize a boolean used to indicate if the object has
         # already been counted or not
         self.counted = False

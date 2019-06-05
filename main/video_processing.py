@@ -136,8 +136,13 @@ class VideoStream():
             rects = self.tracking(rgb, rects, frame.shape[:2], orig_frame.shape[:2])
 
         if len(rects) > 0:
-            objects, self.trackableObjects = self.ct.update(rects, self.embeding_list, self.trackableObjects)
-            frame = self.draw_labels(frame, objects)
+            objects, self.trackableObjects, M = self.ct.update(rects, self.embeding_list, self.trackableObjects)
+
+            ###face recognize part
+
+            ####
+
+            frame = self.draw_labels(frame, objects, M)
 
         self.info['TotalFrames'] += 1
         return frame
@@ -177,6 +182,7 @@ class VideoStream():
         return frame, detections
 
     def tracking_by_nn(self, frame, detections):
+
         self.info['status'] = 'Detecting'
         self.tracker.predict()
         self.tracker.update(detections)
@@ -238,7 +244,7 @@ class VideoStream():
                 for n in list(self.EmbTrackers.keys()):
                     tmp, name = self.person_recognizer(emb[0], self.EmbTrackers[n], [n])
 
-                if name == "unknown_person" or len(self.EmbTrackers.keys()) == 0 :
+                if name == "unknown_person" or len(self.EmbTrackers.keys()) == 0:
                     #objectID = self.objects + 1
 
                     #self.objects = self.objects + 1
@@ -298,11 +304,26 @@ class VideoStream():
         return rects
 
 
-    def draw_labels(self, frame, objects):
 
+
+
+
+
+
+
+    def draw_labels(self, frame, objects, M):
         for (objectID, centroid) in objects.items():
 
+            # if M.size == 0:
+            #     objectID = self.trackableObjects.__len__()
+            # elif M[np.argmin(M[list(objects.keys()).index(objectID)])] < 12:
+            #     objectID = np.argmin(M[list(objects.keys()).index(objectID)])
+            # else:
+            #     objectID = self.trackableObjects.__len__()
+
+
             to = self.trackableObjects.get(objectID, None)
+
 
             # if there is no existing trackable object, create one
             if to is None:
@@ -313,6 +334,8 @@ class VideoStream():
                 #direction = centroid[1] - np.mean(y)
                 to.centroids.append(centroid["centroid"])
                 to.embeding.append(centroid["embeding"])
+
+
 
             self.trackableObjects[objectID] = to
             text = "ID {}".format(objectID)

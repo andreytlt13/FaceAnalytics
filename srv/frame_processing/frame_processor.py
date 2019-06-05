@@ -5,10 +5,9 @@ import numpy as np
 import cv2
 from datetime import datetime
 from common import config_parser
-from common.on_frame_drawer import draw_label
 from face_description.best_face_selector import select_best_face_cascades
 from face_description.face_recognition import face_recognizer
-from frame_processing.object_tracker import CentroidTracker, TrackableObject
+from common.object_tracker import CentroidTracker, TrackableObject
 import collections
 
 FRAME_WIDTH = 400

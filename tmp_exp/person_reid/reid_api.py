@@ -20,7 +20,7 @@ net = cv2.dnn.readNetFromCaffe(
 classNames = {0: 'background', 15: 'person'}
 
 def human_vector(img):
-    resize_img = cv2.resize(img, (128,256))
+    resize_img = cv2.resize(img, (128, 256))
     resize_img = np.expand_dims(resize_img, axis=0)
     emb = sess.run(endpoints['emb'], feed_dict={images: resize_img})
     return emb
