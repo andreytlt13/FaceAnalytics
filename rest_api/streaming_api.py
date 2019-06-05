@@ -87,6 +87,8 @@ def get_stream(camera_url):
         camera_url = int(camera_url)
 
     camera_url = 'vlc_record_2019_05_30_12h50m55s.mp4'
+    # camera_url = 'vlc-record-2019-06-03-14h26m32s-rtsp___10.101.106.115_554_live_main-.mp4'
+    # camera_url = 'vlc-record-2019-06-04-14h03m36s-rtsp___10.101.106.115_554_live_main-.mp4'
 
     # fourcc = cv2.VideoWriter_fourcc(*'XVID')
     # out = cv2.VideoWriter('results/output_{}.mp4'.format(datetime.now()), fourcc, 20.0, (640, 360))
@@ -97,8 +99,12 @@ def get_stream(camera_url):
     vs = video_processing.VideoStream(camera_url, table, connection)
 
     while True:
-        frame = vs.process_next_frame()
-        _, img_encoded = cv2.imencode('.jpg', frame)
+        # frame = vs.process_next_frame()
+        # _, img_encoded = cv2.imencode('.jpg', frame)
+
+        frame, frame_vis = vs.process_next_frame()
+        _, img_encoded = cv2.imencode('.jpg', frame_vis)
+
         yield (b'--frame\r\n'
                b'Content-Type: image/jpeg\r\n\r\n' + img_encoded.tobytes() + b'\r\n')
 
