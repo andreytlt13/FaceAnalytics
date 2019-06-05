@@ -22,7 +22,7 @@ import dlib
 import cv2
 
 # path to PycharmProjects
-root_path = 'path_to_PycharmProjects/'
+root_path = '/Users/andrey/PycharmProjects/'
 
 PROTOTXT = root_path + "FaceAnalytics/main/model/MobileNetSSD_deploy.prototxt"
 MODEL = root_path + "FaceAnalytics/main/model/MobileNetSSD_deploy.caffemodel"
@@ -138,9 +138,11 @@ class VideoStream():
         if len(rects) > 0:
             objects, self.trackableObjects, M = self.ct.update(rects, self.embeding_list, self.trackableObjects)
 
+            ### update trackableObjects
+            self.update_trackable_objects(objects, M)
+
             ###face recognize part
 
-            ####
 
             frame = self.draw_labels(frame, objects, M)
 
@@ -297,26 +299,19 @@ class VideoStream():
                     'x': orig_x,
                     'y': orig_y
                 }
-                self.connection.insert(self.table, event)
+                #self.connection.insert(self.table, event)
 
             rects.append((startX, startY, endX, endY))
 
         return rects
 
+    def update_trackable_objects(self, objects, M):
 
-
-
-
-
-
-
-
-    def draw_labels(self, frame, objects, M):
         for (objectID, centroid) in objects.items():
 
             # if M.size == 0:
             #     objectID = self.trackableObjects.__len__()
-            # elif M[np.argmin(M[list(objects.keys()).index(objectID)])] < 12:
+            # elif M[np.argmin(M[list(objects.keys()).index(objectID)])] < 20:
             #     objectID = np.argmin(M[list(objects.keys()).index(objectID)])
             # else:
             #     objectID = self.trackableObjects.__len__()
@@ -327,17 +322,19 @@ class VideoStream():
 
             # if there is no existing trackable object, create one
             if to is None:
-                to = TrackableObject(objectID, centroid["centroid"], centroid["embeding"])
+                to = TrackableObject(objectID, centroid["centroid"], centroid["embeding"], centroid["rect"])
             else:
-                #y = [c[1] for c in to.centroids]
-                #need for next step
-                #direction = centroid[1] - np.mean(y)
                 to.centroids.append(centroid["centroid"])
                 to.embeding.append(centroid["embeding"])
+                to.embeding.append(centroid["rect"])
+
+        self.trackableObjects[objectID] = to
 
 
+    def draw_labels(self, frame, objects):
 
-            self.trackableObjects[objectID] = to
+        for (objectID, centroid) in objects.items():
+
             text = "ID {}".format(objectID)
             cv2.putText(frame, text, (centroid["centroid"][0] - 10, centroid["centroid"][1] - 10),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
@@ -345,11 +342,7 @@ class VideoStream():
 
         return frame
 
-
-
-
     def write_person(self, frame):
-
 
         return "done"
 
@@ -530,8 +523,8 @@ class VideoStream2():
 
 if __name__ == "__main__":
     #url = "rtsp://user:Hneu74k092@10.101.106.104:554/live/main"
-    #url = "/Users/andrey/Downloads/Telegram Desktop/vlc_record_2019_05_24_15h29m07s.mp4"
-    url = "vlc_record_2019_05_30_12h50m55s.mp4"
+    url = "/Users/andrey/Downloads/Telegram Desktop/vlc_record_2019_05_30_12h50m55s.mp4"
+    #url = "vlc_record_2019_05_30_12h50m55s.mp4"
 
     cam = VideoStream(url)
 

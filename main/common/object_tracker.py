@@ -179,12 +179,13 @@ class CentroidTracker:
         # distance we'll start to mark the object as "disappeared"
         self.maxDistance = maxDistance
 
-    def register(self, centroid, embeding):
+    def register(self, centroid, embeding, rect):
         # when registering an object we use the next available object
         # ID to store the centroid
         self.objects[self.nextObjectID] = {
                                            "centroid": centroid,
-                                           "embeding": embeding
+                                           "embeding": embeding,
+                                           "rect": rect
                                            }
 
         self.disappeared[self.nextObjectID] = 0
@@ -230,7 +231,7 @@ class CentroidTracker:
         # centroids and register each of them
         if len(self.objects) == 0:
             for i in range(0, len(inputCentroids)):
-                self.register(inputCentroids[i], embeding_list[i])
+                self.register(inputCentroids[i], embeding_list[i], rects[i])
 
         # otherwise, are are currently tracking objects so we need to
         # try to match the input centroids to existing object
@@ -284,7 +285,8 @@ class CentroidTracker:
                 objectID = objectIDs[row]
                 self.objects[objectID] = {
                                            "centroid": inputCentroids[col],
-                                           "embeding": embeding_list[col]
+                                           "embeding": embeding_list[col],
+                                           "rect": rects[col]
                                            }
 
                 self.disappeared[objectID] = 0
@@ -323,7 +325,7 @@ class CentroidTracker:
             # register each new input centroid as a trackable object
             else:
                 for col in unusedCols:
-                    self.register(inputCentroids[col], embeding_list[col])
+                    self.register(inputCentroids[col], embeding_list[col], rects[col])
 
             not_flat = [trackable_objects[x].embeding[0] for x in list(trackable_objects.keys())]
             flat_list = [item for sublist in not_flat for item in sublist]
@@ -381,7 +383,7 @@ class CentroidTracker:
 
 
 class TrackableObject:
-    def __init__(self, objectID, centroid, embeding):
+    def __init__(self, objectID, centroid, embeding, rect):
         # store the object ID, then initialize a list of centroids
         # using the current centroid
         self.objectID = objectID
@@ -391,6 +393,7 @@ class TrackableObject:
         self.name = None,
         self.face_seq = [None]
         self.face_emb = [None]
+        self.rect = rect
         # initialize a boolean used to indicate if the object has
         # already been counted or not
         self.counted = False
@@ -405,7 +408,7 @@ class TrackableObject2:
         self.names = [names]
         self.name = name
         self.stars = stars
-        self.description = description
+        self.description = description,
         # initialize a boolean used to indicate if the object has
         # already been counted or not
         self.counted = False
