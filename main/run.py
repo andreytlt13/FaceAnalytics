@@ -16,7 +16,6 @@ ap.add_argument("-src", "--source", required=False, help="path to Caffe 'deploy'
 
 args = vars(ap.parse_args())
 
-
 # class RecordingThread(threading.Thread):
 #     def __init__(self, name, camera):
 #         threading.Thread.__init__(self)

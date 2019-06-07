@@ -120,6 +120,26 @@ def object_id():
     return jsonify(object_id_info)
 
 
+@app.route('/camera/get_object_img', methods=['GET'])
+def get_object_img():
+    start_date = flask.request.args.get('start_date')
+    end_date = flask.request.args.get('end_date')
+    table_name = flask.request.args.get('camera_url')
+    connection = EventDBLogger()
+    table = connection.create_table(table_name)
+    result = connection.select(table, start_date, end_date)
+    return Response(result, mimetype='application/json')
+
+@app.route('/camera/get_name_img', methods=['GET'])
+def get_name_img():
+    start_date = flask.request.args.get('start_date')
+    end_date = flask.request.args.get('end_date')
+    table_name = flask.request.args.get('camera_url')
+    connection = EventDBLogger()
+    table = connection.create_table(table_name)
+    result = connection.select(table, start_date, end_date)
+    return Response(result, mimetype='application/json')
+
 def run():
     app.run(host='0.0.0.0', port=9090, debug=True, threaded=True)
 
