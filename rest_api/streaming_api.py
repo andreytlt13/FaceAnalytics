@@ -51,27 +51,24 @@ def add_camera():
 
 @app.route('/camera/del', methods=['PUT'])
 def del_camera():
-
     camera_url = flask.request.values['camera_url']
-    status = "disabled"
+
     with open(cam_info_json, 'r') as f:
         data = json.load(f)
 
-    cam_info = {
-        "camera_url": camera_url,
-        "status": status
-    }
+    for idx, val in enumerate(data):
+        if val['camera_url'] == camera_url:
+            del data[idx]
 
     with open(cam_info_json, 'w') as f:
         if len(data) == 0:
             data = []
-        data.append(cam_info)
         json.dump(data, f, indent=4)
 
-    return jsonify(cam_info)
+    return jsonify(data)
 
 
-@app.route('/db_select', methods=['GET'])
+@app.route('/camera/db_select', methods=['GET'])
 @cross_origin()
 def db_select():
     start_date = flask.request.args.get('start_date')
@@ -83,34 +80,25 @@ def db_select():
     return Response(result, mimetype='application/json')
 
 
-@app.route('/camera/add', methods=['PUT'])
-def add_camera():
-
-    camera_url = flask.request.values['camera_url']
-    status = "disabled"
-    with open(cam_info_json, 'r') as f:
-        data = json.load(f)
-
-    cam_info = {
-        "camera_url": camera_url,
-        "status": status
-    }
-
-    with open(cam_info_json, 'w') as f:
-        if len(data) == 0:
-            data = []
-        data.append(cam_info)
-        json.dump(data, f, indent=4)
-
-    return jsonify(cam_info)
-
-
 @app.route('/camera/start', methods=['PUT'])
 def run_processing():
     camera_url = flask.request.values['camera_url']
     print('[INFO] starting video stream...')
-    script = "{} -src {}".format('main/run.py',camera_url)
-    os.system(script)
+    # script = "{} -src {}".format('main/run.py',camera_url)
+    # os.system(script)
+
+    with open(cam_info_json, 'r') as f:
+        data = json.load(f)
+
+    for idx, val in enumerate(data):
+        if val['camera_url'] == camera_url:
+            data[idx]['camera_url'] == 'active'
+
+    with open(cam_info_json, 'w') as f:
+        if len(data) == 0:
+            data = []
+        json.dump(data, f, indent=4)
+
     return Response({"starting":camera_url}, mimetype='application/json')
 
 

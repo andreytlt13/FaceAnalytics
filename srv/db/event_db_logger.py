@@ -4,7 +4,7 @@ from common import config_parser
 import json
 
 CONFIG = config_parser.parse()
-DEFAULT_PATH = "rest_api/db/surveillance.db" #CONFIG['sqlite_db']
+DEFAULT_PATH = 'sqlite:///rest_api/db/surveillance.db'
 
 
 class EventDBLogger:
