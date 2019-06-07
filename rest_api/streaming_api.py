@@ -1,6 +1,7 @@
 import flask
 import json
 import os
+import cv2
 from flask import Response, jsonify
 from main.common import config_parser
 from flask_cors import cross_origin
@@ -12,6 +13,9 @@ app = flask.Flask(__name__)
 
 cam_info_json = 'rest_api/cam_info.json'
 
+root_path = os.path.dirname(os.getcwd())
+db_faces = root_path + '/main/face_processing/known_faces/'
+db_objects = root_path + '/main/photo/'
 
 @app.route('/camera/list', methods=['GET'])
 def get_camers_list():
@@ -122,23 +126,22 @@ def object_id():
 
 @app.route('/camera/get_object_img', methods=['GET'])
 def get_object_img():
-    start_date = flask.request.args.get('start_date')
-    end_date = flask.request.args.get('end_date')
-    table_name = flask.request.args.get('camera_url')
-    connection = EventDBLogger()
-    table = connection.create_table(table_name)
-    result = connection.select(table, start_date, end_date)
-    return Response(result, mimetype='application/json')
+    object_id = flask.request.args.get('object_id')
+    img_path = os.path.join(db_objects, 'ID_{}.jpeg'.format(object_id))
+    if os.path.exists(img_path):
+        return flask.send_file(img_path, mimetype='image/jpg')
+    else:
+        return 'file doesnt exist'
 
 @app.route('/camera/get_name_img', methods=['GET'])
 def get_name_img():
-    start_date = flask.request.args.get('start_date')
-    end_date = flask.request.args.get('end_date')
-    table_name = flask.request.args.get('camera_url')
-    connection = EventDBLogger()
-    table = connection.create_table(table_name)
-    result = connection.select(table, start_date, end_date)
-    return Response(result, mimetype='application/json')
+    name = flask.request.args.get('name')
+    img_path = os.path.join(db_faces, '{}.jpg'.format(name))
+    if os.path.exists(img_path):
+        return flask.send_file(img_path, mimetype='image/jpg')
+    else:
+        return 'file doesnt exist'
+
 
 def run():
     app.run(host='0.0.0.0', port=9090, debug=True, threaded=True)
