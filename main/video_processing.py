@@ -1,44 +1,38 @@
 #!/usr/bin/env python
 import cv2
-import dlib
-import multiprocessing
 import numpy as np
-import imutils
-from imutils.video import FPS
+import dlib
 from datetime import datetime
-import collections
+from main.common.deep_sort import preprocessing, nn_matching
+from main.common.deep_sort.detection import Detection
+from main.common.deep_sort.tracker import Tracker
+from main.common.tools import generate_detections as gdet
+from main.common.object_tracker import TrackableObject, CentroidTracker
 
-from common.deep_sort import preprocessing, nn_matching
-from common.deep_sort.detection import Detection
-from common.deep_sort.tracker import Tracker
-from common.tools import generate_detections as gdet
-from common.object_tracker import TrackableObject, CentroidTracker
-
+import nets.resnet_v1_50 as model
+import heads.fc1024 as head
 import tensorflow as tf
 
-import person_processing.nets.resnet_v1_50 as model
-import person_processing.heads.fc1024 as head
-from person_processing import person_recognition
-
-from face_processing.best_face_selector import select_best_face
-from face_processing.face_recognition import recognize_face, load_known_face_encodings
-
+from imutils.video import FPS
+import multiprocessing
+import numpy as np
+import argparse
+import imutils
+import dlib
+import cv2
 
 # path to PycharmProjects
-root_path = '/home/ekaterinaderevyanka/PycharmProjects/FaceAnalytics_api/'
+root_path = '/Users/andrey/PycharmProjects/'
 
-PROTOTXT = root_path + "FaceAnalytics/main/person_processing/models/MobileNetSSD_deploy.prototxt"
-MODEL = root_path + "FaceAnalytics/main/person_processing/models/MobileNetSSD_deploy.caffemodel"
-
-PROTOTXT_FACE = root_path + "FaceAnalytics/main/face_processing/models/deploy.prototxt"
-MODEL_FACE = root_path + "FaceAnalytics/main/face_processing/models/res10_300x300_ssd_iter_140000.caffemodel"
+PROTOTXT = root_path + "FaceAnalytics/main/model/MobileNetSSD_deploy.prototxt"
+MODEL = root_path + "FaceAnalytics/main/model/MobileNetSSD_deploy.caffemodel"
 
 # deep sort implementation
 # Definition of the parameters
 max_cosine_distance = 0.3
 nn_budget = None
 
-ENCODER_PATH = root_path + "FaceAnalytics/main/person_processing/models/mars-small128.pb"
+ENCODER_PATH = root_path + "FaceAnalytics/main/model/mars-small128.pb"
 #metric = nn_matching.NearestNeighborDistanceMetric("cosine", max_cosine_distance, nn_budget)
 #tracker = Tracker(metric)
 
@@ -49,7 +43,6 @@ class VideoStream():
         self.W, self.H = int(self.vs.get(3)), int(self.vs.get(4))
         self.fps = self.vs.get(5)
         self.net = cv2.dnn.readNetFromCaffe(PROTOTXT, MODEL)
-        self.net_face = cv2.dnn.readNetFromCaffe(PROTOTXT_FACE, MODEL_FACE)
         self.classes = ["background", "aeroplane", "bicycle", "bird", "boat",
                "bottle", "bus", "car", "cat", "chair", "cow", "diningtable",
                "dog", "horse", "motorbike", "person", "pottedplant", "sheep",
@@ -102,70 +95,59 @@ class VideoStream():
         tf.train.Saver().restore(sess, root_path+'FaceAnalytics/main/model/checkpoint-25000')
         return sess, endpoints, images
 
-    # def person_distance(self, person_encodings, person_to_compare):
-    #     if len(person_encodings) == 0:
-    #         return np.empty((0))
-    #     return np.linalg.norm(person_encodings - person_to_compare, axis=1)
+    def person_distance(self, person_encodings, person_to_compare):
+        if len(person_encodings) == 0:
+            return np.empty((0))
+        return np.linalg.norm(person_encodings - person_to_compare, axis=1)
 
-    # def compare_persons(self, known_person_encodings, person_encoding_to_check, tolerance):
-    #     print(self.person_distance(known_person_encodings, person_encoding_to_check))
-    #     return list(self.person_distance(known_person_encodings, person_encoding_to_check) <= tolerance)
+    def compare_persons(self, known_person_encodings, person_encoding_to_check, tolerance):
+        print(self.person_distance(known_person_encodings, person_encoding_to_check))
+        return list(self.person_distance(known_person_encodings, person_encoding_to_check) <= tolerance)
 
-    # def person_recognizer(self, new_person_vector, known_person_encodings, known_person_names):
-    #     #new_person_vector = api.human_vector(new_person_image)[0]
-    #
-    #     matches = self.compare_persons(known_person_encodings, new_person_vector, tolerance=20)
-    #
-    #     name = 'unknown_person'
-    #
-    #     # Or instead, use the known face with the smallest distance to the new face
-    #     person_distances = self.person_distance(known_person_encodings, new_person_vector)
-    #     best_match_index = np.argmin(person_distances)
-    #     if matches[best_match_index]:
-    #         name = known_person_names[best_match_index]
-    #
-    #     print('linalg.norm the smallest distance result match:{}'.format(name))
-    #
-    #     return known_person_names[best_match_index], name
+    def person_recognizer(self, new_person_vector, known_person_encodings, known_person_names):
+        #new_person_vector = api.human_vector(new_person_image)[0]
+
+        matches = self.compare_persons(known_person_encodings, new_person_vector, tolerance=20)
+
+        name = 'unknown_person'
+
+        # Or instead, use the known face with the smallest distance to the new face
+        person_distances = self.person_distance(known_person_encodings, new_person_vector)
+        best_match_index = np.argmin(person_distances)
+        if matches[best_match_index]:
+            name = known_person_names[best_match_index]
+
+        print('linalg.norm the smallest distance result match:{}'.format(name))
+
+        return known_person_names[best_match_index], name
 
     def process_next_frame(self):
 
         ret, frame = self.vs.read()
-
-        # original frame for cutting persons/faces
         orig_frame = frame.copy()
-
-        # frame for nn processing
         frame = imutils.resize(frame, width=600)
         self.H, self.W = frame.shape[:2]
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         rects = []
 
-        # frame for visualization in app
-        frame_vis = frame.copy()
-
         if self.info['TotalFrames'] % 30 == 0:
-            # frame, detections, frame_vis = self.detecting(frame, orig_frame)
-            frame, detections, frame_vis = self.detecting(frame, orig_frame)
+            frame, detections = self.detecting(frame)
         else:
             rects = self.tracking(rgb, rects, frame.shape[:2], orig_frame.shape[:2])
 
         if len(rects) > 0:
-            objects, self.trackableObjects, M = self.ct.update(rects, self.embeding_list, self.trackableObjects, orig_frame, frame)
+            objects, self.trackableObjects, M = self.ct.update(rects, self.embeding_list, self.trackableObjects)
 
             ### update trackableObjects
             self.update_trackable_objects(objects, M)
 
-            ### face recognize part
-            # 1) get cropped person from original frame via self.objects.img
-            # 2) detect face on cropped person frame - return frame_vis with box in resized frame coords
-            # 3) recognize face from face sequence - return top 3 names
+            ###face recognize part
 
 
-            frame = self.draw_labels(frame_vis, objects)
+            frame = self.draw_labels(frame, objects)
 
         self.info['TotalFrames'] += 1
-        return frame, frame_vis
+        return frame
 
     def detecting_by_nn(self, frame):
 
@@ -227,10 +209,7 @@ class VideoStream():
 
         return frame
 
-    def detecting(self, frame, orig_frame):
-        # frame for visualization
-        frame_vis = frame.copy()
-
+    def detecting(self, frame):
         self.info['status'] = 'Detecting'
         self.trackers = []
         self.embeding_list = []
@@ -250,20 +229,13 @@ class VideoStream():
                 box = detections[0, 0, i, 3:7] * np.array([self.W, self.H, self.W, self.H])
                 (startX, startY, endX, endY) = box.astype('int')
 
-                # person box visualization
-                cv2.rectangle(frame_vis, (startX, startY), (endX, endY), (0, 255, 0), 2)
+                # --- person box visualization
+                cv2.rectangle(frame, (startX, startY), (endX, endY), (0, 255, 0), 2)
 
                 if startY < 0:
                     startY = 0
 
                 imgCrop = frame[startY:endY, startX:endX]
-
-                # person box in original frame size: need to cut face from it
-                startY_orig = int(startY / frame.shape[1] * orig_frame.shape[1])
-                endY_orig = int(endY / frame.shape[1] * orig_frame.shape[1])
-                startX_orig = int(startX / frame.shape[0] * orig_frame.shape[0])
-                endX_orig = int(endX / frame.shape[0] * orig_frame.shape[0])
-                personCrop_orig = orig_frame[startY_orig: endY_orig, startX_orig: endX_orig]
 
                 resize_img = cv2.resize(imgCrop, (128, 256))
                 resize_img = np.expand_dims(resize_img, axis=0)
@@ -272,7 +244,7 @@ class VideoStream():
 
                 name = "unknown_person"
                 for n in list(self.EmbTrackers.keys()):
-                    tmp, name = person_recognition.person_recognizer(emb[0], self.EmbTrackers[n], [n])
+                    tmp, name = self.person_recognizer(emb[0], self.EmbTrackers[n], [n])
 
                 if name == "unknown_person" or len(self.EmbTrackers.keys()) == 0:
                     #objectID = self.objects + 1
@@ -286,9 +258,9 @@ class VideoStream():
                     # add the tracker to our list of trackers so we can
                     # utilize it during skip frames
                     self.trackers.append(tracker)
+                    #
 
-                    # save cropped person from original frame
-                    cv2.imwrite(root_path + "FaceAnalytics/main/photo/ID_{}.jpeg".format(self.EmbTrackers.__len__()), personCrop_orig)
+                    cv2.imwrite("photo/ID_{}.jpeg".format(self.EmbTrackers.__len__()), imgCrop)
                     self.EmbTrackers[self.EmbTrackers.__len__()] = emb
                 else:
                     tracker = dlib.correlation_tracker()
@@ -296,11 +268,11 @@ class VideoStream():
                     tracker.start_track(frame, rect)
                     self.trackers.append(tracker)
 
-                    cv2.imwrite(root_path + "FaceAnalytics/main/photo/ID_{}_kokok.jpeg".format(self.EmbTrackers.__len__()), personCrop_orig)
+                    cv2.imwrite("photo/ID_{}.jpeg".format(self.EmbTrackers.__len__()), imgCrop)
                     self.EmbTrackers[self.EmbTrackers.__len__()] = emb
                     print("kokok")
 
-        return frame, detections, frame_vis
+        return frame, detections
 
     def tracking(self, rgb, rects, resized_hw, orig_hw):
 
@@ -358,55 +330,6 @@ class VideoStream():
 
         self.trackableObjects[objectID] = to
 
-
-    # def face_detector(self, frame_vis, orig_frame):
-    #     # ------ !!! rewrite it according to self objects
-    #     person_im =
-    #     rect =
-    #     objectID =
-    #     # ------
-    #
-    #     self.info['status'] = 'Detecting face'
-    #     H, W = person_im.shape[:2]
-    #     blob = cv2.dnn.blobFromImage(cv2.resize(person_im, (300, 300)), 1.0, (300, 300), (104.0, 177.0, 123.0))
-    #     self.net_face.setInput(blob)
-    #     detections = self.net_face.forward()
-    #
-    #     sY, eY, sX, eX = rect
-    #
-    #     for i in np.arange(0, detections.shape[2]):
-    #         confidence = detections[0, 0, i, 2]
-    #         if confidence > 0.75:
-    #             box = detections[0, 0, i, 3:7] * np.array([W, H, W, H])
-    #             (startX, startY, endX, endY) = box.astype('int')
-    #             print('face', startX, startY, endX, endY)
-    #             pad_y, pad_x = 0, 0
-    #             frameCrop = person_im[startY - pad_y: endY + pad_y, startX - pad_x: endX + pad_x]
-    #
-    #             # ------ !!! rewrite it according to self objects
-    #             if objectID not in FaceSequences:
-    #                 FaceSequences[objectID] = collections.deque(maxlen=5)
-    #
-    #             if all(frameCrop.shape) > 0:
-    #                 FaceSequences[objectID].append(frameCrop)
-    #             # cv2.imwrite('test_face.png', frameCrop)
-    #             # ------ !!! rewrite it according to self objects
-    #
-    #             # face box visualization in resized frame coords
-    #             x_ = int((startX + sX) / orig_frame.shape[0] * frame_vis.shape[0])
-    #             y_ = int((startY + sY) / orig_frame.shape[1] * frame_vis.shape[1])
-    #             w_ = int((endX + sX) / orig_frame.shape[0] * frame_vis.shape[0])
-    #             h_ = int((endY + sY) / orig_frame.shape[1] * frame_vis.shape[1])
-    #
-    #             cv2.rectangle(frame_vis, (x_, y_), (w_, h_), (255, 0, 0), 2)
-    #
-    #         # cv2.imwrite('frame_vis.png', frame_vis)
-    #     return frame_vis
-    #
-    # def face_recognizer(self, face_sequence):
-    #     best_detected_face = select_best_face(face_sequence)
-    #     names = recognize_face(best_detected_face, self.known_face_encodings, self.known_face_names)
-    #     return names
 
     def draw_labels(self, frame, objects):
 
@@ -600,8 +523,8 @@ class VideoStream2():
 
 if __name__ == "__main__":
     #url = "rtsp://user:Hneu74k092@10.101.106.104:554/live/main"
-    #url = "/Users/andrey/Downloads/Telegram Desktop/vlc_record_2019_05_24_15h29m07s.mp4"
-    url = "vlc_record_2019_05_30_12h50m55s.mp4"
+    url = "/Users/andrey/Downloads/Telegram Desktop/vlc_record_2019_05_30_12h50m55s.mp4"
+    #url = "vlc_record_2019_05_30_12h50m55s.mp4"
 
     cam = VideoStream(url)
 
