@@ -1,69 +1,119 @@
 import argparse
-import socket
+import sys
 import cv2
-import imagezmq
-import imutils
-from imutils.video import VideoStream
-import threading
-import os
+from http.server import BaseHTTPRequestHandler, HTTPServer
+from socketserver import ThreadingMixIn
+from threading import Thread
 
 
-__version__ = '0.1.0'
+__version__ = '0.1.1'
 
 parser = argparse.ArgumentParser(description='video url or path')
 ap = argparse.ArgumentParser()
-ap.add_argument("-src", "--source", required=False, help="path to Caffe 'deploy' prototxt file")
+ap.add_argument("-src", "--source", required=False, help="cam url")
 
 args = vars(ap.parse_args())
 
-# class RecordingThread(threading.Thread):
-#     def __init__(self, name, camera):
-#         threading.Thread.__init__(self)
-#         self.name = name
-#         self.isRunning = True
-#
-#         self.cap = camera
-#         fourcc = cv2.VideoWriter_fourcc(*'MJPG')
-#         self.out = cv2.VideoWriter('./static/video.avi', fourcc, 20.0, (640, 480))
-#
-#     def run(self):
-#         while self.isRunning:
-#             ret, frame = self.cap.read()
-#             if ret:
-#                 self.out.write(frame)
-#
-#         self.out.release()
-#
-#     def stop(self):
-#         self.isRunning = False
-#
-#     def __del__(self):
-#         self.out.release()
 
-# if __name__ == '__main__':
-#     app.run(host='0.0.0.0', threaded=True)
-#
+class CamHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        print(self.path)
+        if self.path.endswith('/stream.mjpg'):
+            self.send_response(20)
+            self.send_header('Content-type', 'multipart/x-mixed-replace; boundary=--jpgboundary')
+            self.end_headers()
+            while True:
+                try:
 
-def main(args=None):
+                    # if(frame != None):
+                    #     pass
+                    r, buf = cv2.imencode(".jpg", frame)
+                    self.wfile.write("--jpgboundary\r\n".encode())
+                    self.end_headers()
+                    self.wfile.write(bytearray(buf))
+                except KeyboardInterrupt:
+                    break
+            return
 
-    vc = cv2.VideoCapture(args["source"])
-    while True:
-        ret, frame = vc.read()
-        frame = imutils.resize(frame, width=600)
-        # show the output frame
-        cv2.imshow("Frame", frame)
-        key = cv2.waitKey(1) & 0xFF
+        if self.path.endswith('.html') or self.path == "/":
+            self.send_response(200)
+            self.send_header('Content-type', 'text/html')
+            self.end_headers()
+            self.wfile.write('<html><head></head><body>')
+            self.wfile.write('<img src="http://localhost:9090/stream.mjpg" height="240px" width="320px"/>')
+            self.wfile.write('</body></html>')
+            return
 
-        # if the `q` key was pressed, break from the loop
-        if key == ord("q"):
-            break
+class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
+    """Handle requests in a separate thread."""
 
-    cv2.destroyAllWindows()
 
-    return "run {}".format(args['source'])
+class WebcamVideoStream:
+    def __init__(self, src=0):
+        # initialize the video camera stream and read the first frame
+        # from the stream
+        self.stream = cv2.VideoCapture(src)
+        # self.stream.set(3, 1920)
+        # self.stream.set(4, 1080)
+        # self.stream.set(15,-100)
+        (self.grabbed, self.frame) = self.stream.read()
 
+        # initialize the variable used to indicate if the thread should
+        # be stopped
+        self.stopped = False
+
+    def start(self):
+        # start the thread to read frames from the video stream
+        Thread(target=self.update, args=()).start()
+        return self
+
+    def update(self):
+        # keep looping infinitely until the thread is stopped
+        while True:
+            # if the thread indicator variable is set, stop the thread
+            if self.stopped:
+                self.stream.release()
+                return
+
+            # otherwise, read the next frame from the stream
+            (self.grabbed, self.frame) = self.stream.read()
+
+    def read(self):
+        # return the frame most recently read
+        return self.frame
+
+    def stop(self):
+        # indicate that the thread should be stopped
+        self.stopped = True
+
+
+def realmain(args=None):
+    global frame
+
+    ip = '0.0.0.0'
+
+    try:
+        cap = WebcamVideoStream(args["source"]).start()
+        server = ThreadedHTTPServer((ip, 9090), CamHandler)
+        print("starting server")
+        target = Thread(target=server.serve_forever,args=())
+
+        i = 0
+        while True:
+
+            img = cap.read()
+            #img1 = imutils.resize(img, width=600)
+            #img2 = cv2.GaussianBlur(img1, (5, 5), 0)
+            #frame = cv2.cvtColor(img2, cv2.COLOR_BGR2HSV)
+
+            #frame = cv2.Canny(img, 35, 125)
+            frame = img
+            if(i == 0):
+                target.start()
+            i +=1
+
+    except KeyboardInterrupt:
+        sys.exit()
 
 if __name__ == '__main__':
-    main(args)
-
-
+    realmain(args)
