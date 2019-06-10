@@ -1,4 +1,5 @@
 import numpy as np
+import cv2
 from scipy.spatial import distance as dist
 from collections import OrderedDict
 
@@ -36,10 +37,15 @@ class CentroidTracker:
         # distance we'll start to mark the object as "disappeared"
         self.maxDistance = maxDistance
 
-    def register(self, centroid):
+    def register(self, centroid, embeding, rect, img):
         # when registering an object we use the next available object
         # ID to store the centroid
-        self.objects[self.nextObjectID] = centroid
+        self.objects[self.nextObjectID] = {
+            "centroid": centroid,
+            "embeding": embeding,
+            "rect": rect,
+            "img": img
+        }
         self.disappeared[self.nextObjectID] = 0
         self.nextObjectID += 1
 
@@ -49,7 +55,7 @@ class CentroidTracker:
         del self.objects[objectID]
         del self.disappeared[objectID]
 
-    def update(self, rects):
+    def update(self, rects, orig_frame, resized_frame, trackable_objects, embeding_list):
         # check to see if the list of input bounding box rectangles
         # is empty
         if len(rects) == 0:
@@ -82,7 +88,10 @@ class CentroidTracker:
         # centroids and register each of them
         if len(self.objects) == 0:
             for i in range(0, len(inputCentroids)):
-                self.register(inputCentroids[i])
+                img = get_cropped_person(orig_frame, resized_frame, resized_box=rects[i])
+                # cv2.imwrite('{}.jpeg'.format(i), img)
+                # self.register(inputCentroids[i], embeding_list[i], rects[i])
+                self.register(inputCentroids[i], embeding_list[i], rects[i], img)
 
         # otherwise, are are currently tracking objects so we need to
         # try to match the input centroids to existing object
@@ -91,6 +100,7 @@ class CentroidTracker:
             # grab the set of object IDs and corresponding centroids
             objectIDs = list(self.objects.keys())
             objectCentroids = list(self.objects.values())
+            objectCentroids = [n['centroid'] for n in objectCentroids]
 
             # compute the distance between each pair of object
             # centroids and input centroids, respectively -- our
@@ -134,7 +144,16 @@ class CentroidTracker:
                 # set its new centroid, and reset the disappeared
                 # counter
                 objectID = objectIDs[row]
-                self.objects[objectID] = inputCentroids[col]
+                ##img crop
+                img = get_cropped_person(orig_frame, resized_frame, resized_box=rects[col])
+                cv2.imwrite('{}_.jpeg'.format(col), img)
+                self.objects[objectID] = {
+                    "centroid": inputCentroids[col],
+                    "embeding": embeding_list[col],
+                    "rect": rects[col],
+                    "img": img
+                }
+
                 self.disappeared[objectID] = 0
 
                 # indicate that we have examined each of the row and
@@ -170,10 +189,21 @@ class CentroidTracker:
             # register each new input centroid as a trackable object
             else:
                 for col in unusedCols:
-                    self.register(inputCentroids[col])
+                    self.register(inputCentroids[col], embeding_list[col], rects[col], None)
+
+
+            not_flat = [trackable_objects[x].embeding[0] for x in list(trackable_objects.keys())]
+            flat_list = [item for sublist in not_flat for item in sublist]
+
+
+        M = np.zeros([self.objects.__len__(), trackable_objects.__len__()])
+
+        for k, i in zip(np.arange(0, self.objects.__len__(), 1), self.objects.keys()):
+            for m, j in zip(np.arange(0, trackable_objects.__len__(), 1), trackable_objects.keys()):
+                M[k, m] = self.person_distance(self.objects[i]['embeding'], trackable_objects[j].embeding[0])
 
         # return the set of trackable objects
-        return self.objects
+        return self.objects, M
 
     def person_recognizer(self, new_person_vector, known_person_encodings, known_person_names):
         # new_person_vector = api.human_vector(new_person_image)[0]
@@ -209,7 +239,7 @@ class CentroidTracker:
 
 
 class TrackableObject:
-    def __init__(self, objectID, centroid, embeding, rect):
+    def __init__(self, objectID, centroid, embeding, rect, img):
         # store the object ID, then initialize a list of centroids
         # using the current centroid
         self.objectID = objectID
@@ -220,6 +250,7 @@ class TrackableObject:
         self.face_seq = [None]
         self.face_emb = [None]
         self.rect = rect
+        self.img = img
         # initialize a boolean used to indicate if the object has
         # already been counted or not
         self.counted = False
