@@ -32,7 +32,7 @@ from face_processing.face_recognition import load_face_models, load_known_face_e
 
 
 # path to PycharmProjects
-root_path = '/home/ekaterinaderevyanka/PycharmProjects/FaceAnalytics_api/'
+root_path = '/Users/andrey/PycharmProjects/'
 
 # person detection model
 PROTOTXT = root_path + "FaceAnalytics/main/model/MobileNetSSD_deploy.prototxt"
@@ -107,11 +107,13 @@ class VideoStream():
             rects = self.tracking(rgb, rects)
 
         if len(rects) > 0:
-            objects, M = self.ct.update(rects, orig_frame, frame, self.trackableObjects, self.embeding_list)
+            objects, embeding_matrix = self.ct.update(rects, orig_frame, frame, self.trackableObjects, self.embeding_list)
             frame = self.draw_labels(frame, objects)
 
-            #Update Trackable objects
-            self.update_trackable_objects(objects)
+            #Upddate Trackable objects
+            objects = self.ct.check_embeding(embeding_matrix, self.trackableObjects)
+
+            self.update_trackable_objects(objects, embeding_matrix)
 
             #Face recognition
             frame = self.face_recognition(frame, orig_frame)
@@ -164,8 +166,8 @@ class VideoStream():
             box = detections[0, 0, i, 3:7] * np.array([self.W, self.H, self.W, self.H])
             (startX, startY, endX, endY) = box.astype('int')
 
-            # # --- person box visualization
-            # cv2.rectangle(frame, (startX, startY), (endX, endY), (0, 255, 0), 2)
+            # --- person box visualization
+            #cv2.rectangle(frame, (startX, startY), (endX, endY), (0, 255, 0), 2)
 
             if startY < 0:
                 startY = 0
@@ -194,20 +196,19 @@ class VideoStream():
         tf.train.Saver().restore(sess, root_path+'FaceAnalytics/main/model/checkpoint-25000')
         return sess, endpoints, images
 
-    def update_trackable_objects(self, objects):
-
+    def update_trackable_objects(self, objects, matrix):
+        i = 0
         for (objectID, info) in objects.items():
 
-            # if M.size == 0:
+            # if matrix.size == 0:
             #     objectID = self.trackableObjects.__len__()
-            # elif M[np.argmin(M[list(objects.keys()).index(objectID)])] < 20:
-            #     objectID = np.argmin(M[list(objects.keys()).index(objectID)])
+            # elif matrix[i, np.argmin(matrix[list(objects.keys()).index(objectID)])] < 20:
+            #     objectID = np.argmin(matrix[list(objects.keys()).index(objectID)])
             # else:
             #     objectID = self.trackableObjects.__len__()
-
+            i += 1
 
             to = self.trackableObjects.get(objectID, None)
-
 
             # if there is no existing trackable object, create one
             if to is None:

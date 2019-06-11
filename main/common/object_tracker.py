@@ -205,6 +205,21 @@ class CentroidTracker:
         # return the set of trackable objects
         return self.objects, M
 
+    def check_embeding(self, matrix, trackableObjects):
+        i = 0
+        for (objectID, info) in self.objects.items():
+
+            if matrix.size == 0:
+                objectID_new = trackableObjects.__len__()
+            elif matrix[i, np.argmin(matrix[list(self.objects.keys()).index(objectID)])] < 16:
+                objectID_new = np.argmin(matrix[list(self.objects.keys()).index(objectID)])
+            else:
+                objectID_new = trackableObjects.__len__()
+            i += 1
+            self.objects[objectID_new] = self.objects.pop(objectID)
+
+        return self.objects
+
     def person_recognizer(self, new_person_vector, known_person_encodings, known_person_names):
         # new_person_vector = api.human_vector(new_person_image)[0]
 
