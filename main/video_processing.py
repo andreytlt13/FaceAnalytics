@@ -222,31 +222,33 @@ class VideoStream():
             self.trackableObjects[objectID] = to
 
     def face_recognition(self, frame, orig_frame):
+
         if len(self.trackableObjects.items()) > 0:
             for tr_obj in self.trackableObjects.items():
 
-                # detect face from orig size person
-                frame, detected_face = self.face_detection(frame, orig_frame, tr_obj[1].rect, tr_obj[1].img)
+                if tr_obj[1].names[0] is None:
+                    # detect face from orig size person
+                    frame, detected_face = self.face_detection(frame, orig_frame, tr_obj[1].rect, tr_obj[1].img)
 
-                # add cropped_face to face_sequence
-                if detected_face is not None and all(detected_face.shape) > 0:
-                    # add detected_face to faces_sequence_for_person
-                    tr_obj[1].face_seq.append(detected_face)
-                    print('added detected_face to faces_sequence_for_trackableObject')
+                    # add cropped_face to face_sequence
+                    if detected_face is not None and all(detected_face.shape) > 0:
+                        # add detected_face to faces_sequence_for_person
+                        tr_obj[1].face_seq.append(detected_face)
+                        print('added detected_face to faces_sequence_for_trackableObject')
 
-                # select the best face from face_sequence
-                best_detected_face = select_best_face(tr_obj[1].face_seq)
-                cv2.imwrite('best_detected_face.jpg', best_detected_face)
+                    # select the best face from face_sequence
+                    best_detected_face = select_best_face(tr_obj[1].face_seq)
+                    # cv2.imwrite('best_detected_face.jpg', best_detected_face)
 
-                # recognize best_face
-                self.info['status'] = 'Recognizing face'
-                names, best_face_emb = recognize_face(best_detected_face, self.known_face_encodings, self.known_face_names)
-                print(names)
+                    # recognize best_face
+                    self.info['status'] = 'Recognizing face'
+                    names, best_face_emb = recognize_face(best_detected_face, self.known_face_encodings, self.known_face_names)
+                    print('names', names)
 
-                if len(names) > 0:
-                    tr_obj[1].names.append(names)
-                if len(best_face_emb) > 0:
-                    tr_obj[1].face_emb.append(best_face_emb)
+                    if len(names) > 0:
+                        tr_obj[1].names = names
+                    if len(best_face_emb) > 0:
+                        tr_obj[1].face_emb = best_face_emb
 
         return frame
 
