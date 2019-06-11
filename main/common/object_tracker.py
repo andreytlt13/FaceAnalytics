@@ -1,7 +1,7 @@
 import numpy as np
 import cv2
 from scipy.spatial import distance as dist
-from collections import OrderedDict
+from collections import OrderedDict, deque
 
 
 def get_cropped_person(orig_frame, resized_frame, resized_box):
@@ -247,7 +247,8 @@ class TrackableObject:
         self.embeding = [embeding]
         self.names = [None]
         self.name = None,
-        self.face_seq = [None]
+        # self.face_seq = [None]
+        self.face_seq = deque(maxlen=5)
         self.face_emb = [None]
         self.rect = rect
         self.img = img

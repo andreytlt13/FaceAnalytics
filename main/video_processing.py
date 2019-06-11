@@ -21,21 +21,31 @@ import imutils
 import dlib
 import cv2
 
-# path to PycharmProjects
-root_path = '/Users/andrey/PycharmProjects/'
+from face_processing.best_face_selector import select_best_face
 
+# dlib recognizer
+from face_processing.face_recognition import recognize_face, load_known_face_encodings, get_cropped_person
+
+# VGG regonizer
+from keras_vggface.vggface import VGGFace
+from face_processing.face_recognition import load_face_models, load_known_face_encodings_vgg, recognize_face_vgg
+
+
+# path to PycharmProjects
+root_path = '/home/ekaterinaderevyanka/PycharmProjects/FaceAnalytics_api/'
+
+# person detection model
 PROTOTXT = root_path + "FaceAnalytics/main/model/MobileNetSSD_deploy.prototxt"
 MODEL = root_path + "FaceAnalytics/main/model/MobileNetSSD_deploy.caffemodel"
 
-# deep sort implementation
-# Definition of the parameters
-max_cosine_distance = 0.3
-nn_budget = None
-
 ENCODER_PATH = root_path + "FaceAnalytics/main/model/mars-small128.pb"
-#metric = nn_matching.NearestNeighborDistanceMetric("cosine", max_cosine_distance, nn_budget)
-#tracker = Tracker(metric)
 
+# face detection model
+PROTOTXT_FACE = root_path + "FaceAnalytics/main/face_processing/models/deploy.prototxt"
+MODEL_FACE = root_path + "FaceAnalytics/main/face_processing/models/res10_300x300_ssd_iter_140000.caffemodel"
+
+# faces base
+DB_PATH = root_path + "FaceAnalytics/main/face_processing/known_faces/"
 
 class VideoStream():
     def __init__(self, camera_url=0):
@@ -43,7 +53,20 @@ class VideoStream():
         self.vs = cv2.VideoCapture(self.camera_url)
         self.W, self.H = int(self.vs.get(3)), int(self.vs.get(4))
         self.fps = self.vs.get(5)
+        # person detection model
         self.net = cv2.dnn.readNetFromCaffe(PROTOTXT, MODEL)
+        # face models
+        self.net_face_detector = cv2.dnn.readNetFromCaffe(PROTOTXT_FACE, MODEL_FACE)
+
+        # dlib approach
+        self.known_face_encodings, self.known_face_names = load_known_face_encodings(DB_PATH)
+
+        # VGG approach
+        # self.net_face_emb = VGGFace(model='resnet50', include_top=False, input_shape=(224, 224, 3), pooling='avg')
+        # self.known_face_encodings, self.known_face_names = load_known_face_encodings_vgg(self.net_face_emb,
+        #                                                                                  self.net_face_detector,
+        #                                                                                  DB_PATH)
+
         self.classes = ["background", "aeroplane", "bicycle", "bird", "boat",
                         "bottle", "bus", "car", "cat", "chair", "cow", "diningtable",
                         "dog", "horse", "motorbike", "person", "pottedplant", "sheep",
@@ -87,10 +110,11 @@ class VideoStream():
             objects, M = self.ct.update(rects, orig_frame, frame, self.trackableObjects, self.embeding_list)
             frame = self.draw_labels(frame, objects)
 
-            #Upddate Trackable objects
+            #Update Trackable objects
             self.update_trackable_objects(objects)
 
             #Face recognition
+            frame = self.face_recognition(frame, orig_frame)
 
 
         self.info['TotalFrames'] += 1
@@ -140,8 +164,8 @@ class VideoStream():
             box = detections[0, 0, i, 3:7] * np.array([self.W, self.H, self.W, self.H])
             (startX, startY, endX, endY) = box.astype('int')
 
-            # --- person box visualization
-            #cv2.rectangle(frame, (startX, startY), (endX, endY), (0, 255, 0), 2)
+            # # --- person box visualization
+            # cv2.rectangle(frame, (startX, startY), (endX, endY), (0, 255, 0), 2)
 
             if startY < 0:
                 startY = 0
@@ -196,4 +220,77 @@ class VideoStream():
 
             self.trackableObjects[objectID] = to
 
+    def face_recognition(self, frame, orig_frame):
+        if len(self.trackableObjects.items()) > 0:
+            for tr_obj in self.trackableObjects.items():
 
+                # detect face from orig size person
+                frame, detected_face = self.face_detection(frame, orig_frame, tr_obj[1].rect, tr_obj[1].img)
+
+                # add cropped_face to face_sequence
+                if detected_face is not None and all(detected_face.shape) > 0:
+                    # add detected_face to faces_sequence_for_person
+                    tr_obj[1].face_seq.append(detected_face)
+                    print('added detected_face to faces_sequence_for_trackableObject')
+
+                # select the best face from face_sequence
+                best_detected_face = select_best_face(tr_obj[1].face_seq)
+                cv2.imwrite('best_detected_face.jpg', best_detected_face)
+
+                # recognize best_face !!!!!!!!!!!!!!!!!! dlib cant find face emb for best_detected_face :(
+                self.info['status'] = 'Recognizing face'
+                names, best_face_emb = recognize_face(best_detected_face, self.known_face_encodings, self.known_face_names)
+
+                tr_obj[1].names.append(names)
+                tr_obj[1].face_emb.append(best_face_emb)
+
+        return frame
+
+    def face_detection(self, frame, orig_frame, person_box, person_im):
+
+        # crop person by person_box coords
+        # person_im = get_cropped_person(orig_frame=orig_frame, resized_frame=frame, resized_box=person_box)
+        # cv2.imwrite('cropped_person.jpg', person_im)
+
+        # detect face from cropped person
+        self.info['status'] = 'Detecting face'
+        H, W = person_im.shape[:2]
+        blob = cv2.dnn.blobFromImage(cv2.resize(person_im, (300, 300)), 1.0, (300, 300), (104.0, 177.0, 123.0))
+        self.net_face_detector.setInput(blob)
+        detections = self.net_face_detector.forward()
+
+        face_im = None
+        for i in np.arange(0, detections.shape[2]):
+            confidence = detections[0, 0, i, 2]
+            if confidence > 0.75:
+                # face box in person_im coordinates
+                box = detections[0, 0, i, 3:7] * np.array([W, H, W, H])
+                (startX, startY, endX, endY) = box.astype('int')
+                pad_y, pad_x = 0, 0
+                face_im = person_im[startY - pad_y: endY + pad_y, startX - pad_x: endX + pad_x]
+                # cv2.imwrite('cropped_face.jpg', face_im)
+
+                # cv2.rectangle(person_im, (startX, startY), (endX, endY), (255, 255, 0), 2)
+                # cv2.imwrite('rect_test.jpg', person_im)
+
+                # reconstruction face box coordinates for visualization on frame
+                # person box coordinates
+                sX, sY, eX, eY = person_box
+                rel_sX = int( sX / frame.shape[1] * orig_frame.shape[1] )
+                rel_sY = int( sY / frame.shape[0] * orig_frame.shape[0] )
+                rel_eX = int( eX / frame.shape[1] * orig_frame.shape[1] )
+                rel_eY = int( eY / frame.shape[0] * orig_frame.shape[0] )
+
+                # cv2.rectangle(orig_frame, (sX, sY), (eX, eY), (0, 255, 255), 2)
+                # cv2.rectangle(orig_frame, (startX+sX, startY+sY), (endX+eX, endY+eY), (255, 255, 255), 2)
+                # cv2.imwrite('rect_test_full.jpg', orig_frame)
+
+                # face box visualization in resized frame coords
+                x_ = int((startX + rel_sX) / orig_frame.shape[1] * frame.shape[1])
+                y_ = int((startY + rel_sY) / orig_frame.shape[0] * frame.shape[0])
+                w_ = int((endX + rel_sX) / orig_frame.shape[1] * frame.shape[1])
+                h_ = int((endY + rel_sY) / orig_frame.shape[0] * frame.shape[0])
+                cv2.rectangle(frame, (x_, y_), (w_, h_), (255, 0, 0), 2)
+                # cv2.imwrite('frame_vis.jpg', frame)
+
+        return frame, face_im

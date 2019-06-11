@@ -7,7 +7,7 @@ import imutils
 import dlib
 
 # path to PycharmProjects
-root_path = '/PycharmProjects/FaceAnalytics_api/'
+root_path = '/home/ekaterinaderevyanka/PycharmProjects/FaceAnalytics_api/'
 
 face_cascade = cv2.CascadeClassifier(root_path+'FaceAnalytics/main/face_processing/models/haarcascade_frontalface_default.xml')
 eye_cascade = cv2.CascadeClassifier(root_path+'FaceAnalytics/main/face_processing/models/haarcascade_eye_tree_eyeglasses.xml')
