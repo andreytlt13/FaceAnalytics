@@ -27,12 +27,12 @@ from face_processing.best_face_selector import select_best_face
 from face_processing.face_recognition import recognize_face, load_known_face_encodings, get_cropped_person
 
 # VGG regonizer
-from keras_vggface.vggface import VGGFace
-from face_processing.face_recognition import load_face_models, load_known_face_encodings_vgg, recognize_face_vgg
+# from keras_vggface.vggface import VGGFace
+# from face_processing.face_recognition import load_face_models, load_known_face_encodings_vgg, recognize_face_vgg
 
 
 # path to PycharmProjects
-root_path = '/Users/andrey/PycharmProjects/'
+root_path = 'PycharmProjects/FaceAnalytics_api/'
 
 # person detection model
 PROTOTXT = root_path + "FaceAnalytics/main/model/MobileNetSSD_deploy.prototxt"
@@ -238,12 +238,15 @@ class VideoStream():
                 best_detected_face = select_best_face(tr_obj[1].face_seq)
                 cv2.imwrite('best_detected_face.jpg', best_detected_face)
 
-                # recognize best_face !!!!!!!!!!!!!!!!!! dlib cant find face emb for best_detected_face :(
+                # recognize best_face
                 self.info['status'] = 'Recognizing face'
                 names, best_face_emb = recognize_face(best_detected_face, self.known_face_encodings, self.known_face_names)
+                print(names)
 
-                tr_obj[1].names.append(names)
-                tr_obj[1].face_emb.append(best_face_emb)
+                if len(names) > 0:
+                    tr_obj[1].names.append(names)
+                if len(best_face_emb) > 0:
+                    tr_obj[1].face_emb.append(best_face_emb)
 
         return frame
 
@@ -271,20 +274,13 @@ class VideoStream():
                 face_im = person_im[startY - pad_y: endY + pad_y, startX - pad_x: endX + pad_x]
                 # cv2.imwrite('cropped_face.jpg', face_im)
 
-                # cv2.rectangle(person_im, (startX, startY), (endX, endY), (255, 255, 0), 2)
-                # cv2.imwrite('rect_test.jpg', person_im)
-
                 # reconstruction face box coordinates for visualization on frame
                 # person box coordinates
                 sX, sY, eX, eY = person_box
                 rel_sX = int( sX / frame.shape[1] * orig_frame.shape[1] )
                 rel_sY = int( sY / frame.shape[0] * orig_frame.shape[0] )
-                rel_eX = int( eX / frame.shape[1] * orig_frame.shape[1] )
-                rel_eY = int( eY / frame.shape[0] * orig_frame.shape[0] )
-
-                # cv2.rectangle(orig_frame, (sX, sY), (eX, eY), (0, 255, 255), 2)
-                # cv2.rectangle(orig_frame, (startX+sX, startY+sY), (endX+eX, endY+eY), (255, 255, 255), 2)
-                # cv2.imwrite('rect_test_full.jpg', orig_frame)
+                # rel_eX = int( eX / frame.shape[1] * orig_frame.shape[1] )
+                # rel_eY = int( eY / frame.shape[0] * orig_frame.shape[0] )
 
                 # face box visualization in resized frame coords
                 x_ = int((startX + rel_sX) / orig_frame.shape[1] * frame.shape[1])

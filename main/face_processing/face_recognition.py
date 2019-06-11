@@ -4,10 +4,10 @@ import numpy as np
 import scipy.misc
 from PIL import Image
 import cv2
-from scipy.spatial.distance import cosine
-from mtcnn.mtcnn import MTCNN
-from keras_vggface.vggface import VGGFace
-from keras_vggface.utils import preprocess_input
+# from scipy.spatial.distance import cosine
+# from mtcnn.mtcnn import MTCNN
+# from keras_vggface.vggface import VGGFace
+# from keras_vggface.utils import preprocess_input
 import face_recognition
 
 def get_cropped_person(orig_frame, resized_frame, resized_box):
@@ -27,23 +27,25 @@ def recognize_face(best_detected_face, known_face_encodings, known_face_names):
     face_encodings = dlib_api.face_encodings(best_detected_face[:, :, ::-1]) # !!!!!
 
     names = []
+    dists = []
     for face_encoding in face_encodings:
         face_distances = dlib_api.face_distance(known_face_encodings, face_encoding)
         # See if the face is a match for the known face(s)
         matches = dlib_api.compare_faces(known_face_encodings, face_encoding)
 
-        # If a match was found in known_face_encodings, just use the first one.
+        # # If a match was found in known_face_encodings, just use the first one.
         # if True in matches:
         #     first_match_index = matches.index(True)
         #     name = known_face_names[first_match_index]
+        #     names.append(name)
 
-        print(matches)
-        face_distances = dlib_api.face_distance(known_face_encodings, face_encoding)
-        top = 3
-        top_match_index = np.argpartition(face_distances, top)
-        for indx in top_match_index:
-            if matches[indx]:
+        for indx, match in enumerate(matches):
+            if match:
                 names.append(known_face_names[indx])
+                dists.append(face_distances[indx])
+
+        dists_top = np.array(dists)
+        names = [names[i] for i in dists_top.argsort()[:3]]
 
     return names, face_encodings
 
