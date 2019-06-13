@@ -72,7 +72,7 @@ class CentroidTracker:
 
             # return early as there are no centroids or tracking info
             # to update
-            return self.objects
+            return self.objects, None
 
         # initialize an array of input centroids for the current frame
         inputCentroids = np.zeros((len(rects), 2), dtype="int")
@@ -202,21 +202,26 @@ class CentroidTracker:
             for m, j in zip(np.arange(0, trackable_objects.__len__(), 1), trackable_objects.keys()):
                 M[k, m] = self.person_distance(self.objects[i]['embeding'], trackable_objects[j].embeding[0])
 
+        if trackable_objects.__len__() == 0 or self.objects.__len__() == 0:
+            M = None
         # return the set of trackable objects
         return self.objects, M
 
     def check_embeding(self, matrix, trackableObjects):
-        i = 0
-        for (objectID, info) in self.objects.items():
 
-            if matrix.size == 0:
-                objectID_new = trackableObjects.__len__()
-            elif matrix[i, np.argmin(matrix[list(self.objects.keys()).index(objectID)])] < 16:
-                objectID_new = np.argmin(matrix[list(self.objects.keys()).index(objectID)])
-            else:
-                objectID_new = trackableObjects.__len__()
-            i += 1
-            self.objects[objectID_new] = self.objects.pop(objectID)
+        if matrix is not None:
+            i = 0
+            objects_tmp = {}
+            for (objectID, info) in self.objects.items():
+                if matrix.size == 0:
+                    objectID_new = trackableObjects.__len__()
+                elif matrix[i, np.argmin(matrix[list(self.objects.keys()).index(objectID)])] < 16:
+                    objectID_new = np.argmin(matrix[list(self.objects.keys()).index(objectID)])
+                else:
+                    objectID_new = trackableObjects.__len__()
+                i += 1
+                objects_tmp[objectID_new] = self.objects[objectID]
+            self.objects = objects_tmp.copy()
 
         return self.objects
 
