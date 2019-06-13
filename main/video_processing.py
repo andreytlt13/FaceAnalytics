@@ -32,7 +32,7 @@ from face_processing.face_recognition import recognize_face, load_known_face_enc
 
 
 # path to PycharmProjects
-root_path = '/home/ekaterinaderevyanka/PycharmProjects/FaceAnalytics_api/'
+root_path = '/Users/andrey/PycharmProjects/'
 
 # person detection model
 PROTOTXT = root_path + "FaceAnalytics/main/model/MobileNetSSD_deploy.prototxt"
@@ -112,8 +112,7 @@ class VideoStream():
 
             #Upddate Trackable objects
             objects = self.ct.check_embeding(embeding_matrix, self.trackableObjects)
-
-            self.update_trackable_objects(objects, embeding_matrix)
+            self.update_trackable_objects(objects)
 
             #Face recognition
             frame = self.face_recognition(frame, orig_frame)
@@ -165,7 +164,6 @@ class VideoStream():
 
             box = detections[0, 0, i, 3:7] * np.array([self.W, self.H, self.W, self.H])
             (startX, startY, endX, endY) = box.astype('int')
-            print('---' * 5, startX, startY, endX, endY)
 
             # --- person box visualization
             #cv2.rectangle(frame, (startX, startY), (endX, endY), (0, 255, 0), 2)
@@ -197,18 +195,8 @@ class VideoStream():
         tf.train.Saver().restore(sess, root_path+'FaceAnalytics/main/model/checkpoint-25000')
         return sess, endpoints, images
 
-    def update_trackable_objects(self, objects, matrix):
-        i = 0
+    def update_trackable_objects(self, objects):
         for (objectID, info) in objects.items():
-
-            # if matrix.size == 0:
-            #     objectID = self.trackableObjects.__len__()
-            # elif matrix[i, np.argmin(matrix[list(objects.keys()).index(objectID)])] < 20:
-            #     objectID = np.argmin(matrix[list(objects.keys()).index(objectID)])
-            # else:
-            #     objectID = self.trackableObjects.__len__()
-            i += 1
-
             to = self.trackableObjects.get(objectID, None)
 
             # if there is no existing trackable object, create one
@@ -221,6 +209,7 @@ class VideoStream():
                 to.img = info["img"]
 
             self.trackableObjects[objectID] = to
+            self.ct.nextObjectID = self.trackableObjects.__len__()
 
     def face_recognition(self, frame, orig_frame):
 
