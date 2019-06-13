@@ -32,7 +32,7 @@ from face_processing.face_recognition import recognize_face, load_known_face_enc
 
 
 # path to PycharmProjects
-root_path = 'PycharmProjects/FaceAnalytics_api/'
+root_path = '/home/ekaterinaderevyanka/PycharmProjects/FaceAnalytics_api/'
 
 # person detection model
 PROTOTXT = root_path + "FaceAnalytics/main/model/MobileNetSSD_deploy.prototxt"
@@ -165,6 +165,7 @@ class VideoStream():
 
             box = detections[0, 0, i, 3:7] * np.array([self.W, self.H, self.W, self.H])
             (startX, startY, endX, endY) = box.astype('int')
+            print('---' * 5, startX, startY, endX, endY)
 
             # --- person box visualization
             #cv2.rectangle(frame, (startX, startY), (endX, endY), (0, 255, 0), 2)
@@ -224,11 +225,13 @@ class VideoStream():
     def face_recognition(self, frame, orig_frame):
 
         if len(self.trackableObjects.items()) > 0:
-            for tr_obj in self.trackableObjects.items():
+            for tr_indx, tr_obj in enumerate(self.trackableObjects.items()):
 
                 if tr_obj[1].names[0] is None:
                     # detect face from orig size person
                     frame, detected_face = self.face_detection(frame, orig_frame, tr_obj[1].rect, tr_obj[1].img)
+
+                    # print('---'*5, tr_indx, tr_obj[1].rect)
 
                     # add cropped_face to face_sequence
                     if detected_face is not None and all(detected_face.shape) > 0:
@@ -236,19 +239,20 @@ class VideoStream():
                         tr_obj[1].face_seq.append(detected_face)
                         print('added detected_face to faces_sequence_for_trackableObject')
 
-                    # select the best face from face_sequence
-                    best_detected_face = select_best_face(tr_obj[1].face_seq)
-                    # cv2.imwrite('best_detected_face.jpg', best_detected_face)
+                    if len(tr_obj[1].face_seq) > 0:
+                        # select the best face from face_sequence
+                        best_detected_face = select_best_face(tr_obj[1].face_seq)
+                        # cv2.imwrite('best_detected_face.jpg', best_detected_face)
 
-                    # recognize best_face
-                    self.info['status'] = 'Recognizing face'
-                    names, best_face_emb = recognize_face(best_detected_face, self.known_face_encodings, self.known_face_names)
-                    print('names', names)
+                        # recognize best_face
+                        self.info['status'] = 'Recognizing face'
+                        names, best_face_emb = recognize_face(best_detected_face, self.known_face_encodings, self.known_face_names)
+                        print('names', names)
 
-                    if len(names) > 0:
-                        tr_obj[1].names = names
-                    if len(best_face_emb) > 0:
-                        tr_obj[1].face_emb = best_face_emb
+                        if len(names) > 0:
+                            tr_obj[1].names = names
+                        if len(best_face_emb) > 0:
+                            tr_obj[1].face_emb = best_face_emb
 
         return frame
 
@@ -260,36 +264,40 @@ class VideoStream():
 
         # detect face from cropped person
         self.info['status'] = 'Detecting face'
-        H, W = person_im.shape[:2]
-        blob = cv2.dnn.blobFromImage(cv2.resize(person_im, (300, 300)), 1.0, (300, 300), (104.0, 177.0, 123.0))
-        self.net_face_detector.setInput(blob)
-        detections = self.net_face_detector.forward()
 
-        face_im = None
-        for i in np.arange(0, detections.shape[2]):
-            confidence = detections[0, 0, i, 2]
-            if confidence > 0.75:
-                # face box in person_im coordinates
-                box = detections[0, 0, i, 3:7] * np.array([W, H, W, H])
-                (startX, startY, endX, endY) = box.astype('int')
-                pad_y, pad_x = 0, 0
-                face_im = person_im[startY - pad_y: endY + pad_y, startX - pad_x: endX + pad_x]
-                # cv2.imwrite('cropped_face.jpg', face_im)
+        if person_im is not None and all(person_im.shape) > 0:
+            H, W = person_im.shape[:2]
+            blob = cv2.dnn.blobFromImage(cv2.resize(person_im, (300, 300)), 1.0, (300, 300), (104.0, 177.0, 123.0))
+            self.net_face_detector.setInput(blob)
+            detections = self.net_face_detector.forward()
 
-                # reconstruction face box coordinates for visualization on frame
-                # person box coordinates
-                sX, sY, eX, eY = person_box
-                rel_sX = int( sX / frame.shape[1] * orig_frame.shape[1] )
-                rel_sY = int( sY / frame.shape[0] * orig_frame.shape[0] )
-                # rel_eX = int( eX / frame.shape[1] * orig_frame.shape[1] )
-                # rel_eY = int( eY / frame.shape[0] * orig_frame.shape[0] )
+            face_im = None
+            for i in np.arange(0, detections.shape[2]):
+                confidence = detections[0, 0, i, 2]
+                if confidence > 0.75:
+                    # face box in person_im coordinates
+                    box = detections[0, 0, i, 3:7] * np.array([W, H, W, H])
+                    (startX, startY, endX, endY) = box.astype('int')
+                    pad_y, pad_x = 0, 0
+                    face_im = person_im[startY - pad_y: endY + pad_y, startX - pad_x: endX + pad_x]
+                    # cv2.imwrite('cropped_face.jpg', face_im)
 
-                # face box visualization in resized frame coords
-                x_ = int((startX + rel_sX) / orig_frame.shape[1] * frame.shape[1])
-                y_ = int((startY + rel_sY) / orig_frame.shape[0] * frame.shape[0])
-                w_ = int((endX + rel_sX) / orig_frame.shape[1] * frame.shape[1])
-                h_ = int((endY + rel_sY) / orig_frame.shape[0] * frame.shape[0])
-                cv2.rectangle(frame, (x_, y_), (w_, h_), (255, 0, 0), 2)
-                # cv2.imwrite('frame_vis.jpg', frame)
+                    # reconstruction face box coordinates for visualization on frame
+                    # person box coordinates
+                    sX, sY, eX, eY = person_box
+                    rel_sX = int( sX / frame.shape[1] * orig_frame.shape[1] )
+                    rel_sY = int( sY / frame.shape[0] * orig_frame.shape[0] )
+                    # rel_eX = int( eX / frame.shape[1] * orig_frame.shape[1] )
+                    # rel_eY = int( eY / frame.shape[0] * orig_frame.shape[0] )
+
+                    # face box visualization in resized frame coords
+                    x_ = int((startX + rel_sX) / orig_frame.shape[1] * frame.shape[1])
+                    y_ = int((startY + rel_sY) / orig_frame.shape[0] * frame.shape[0])
+                    w_ = int((endX + rel_sX) / orig_frame.shape[1] * frame.shape[1])
+                    h_ = int((endY + rel_sY) / orig_frame.shape[0] * frame.shape[0])
+                    cv2.rectangle(frame, (x_, y_), (w_, h_), (255, 0, 0), 2)
+                    # cv2.imwrite('frame_vis.jpg', frame)
+        else:
+            face_im = None
 
         return frame, face_im

@@ -27,25 +27,28 @@ def recognize_face(best_detected_face, known_face_encodings, known_face_names):
     face_encodings = dlib_api.face_encodings(best_detected_face[:, :, ::-1]) # !!!!!
 
     names = []
-    dists = []
+    # dists = []
     for face_encoding in face_encodings:
         face_distances = dlib_api.face_distance(known_face_encodings, face_encoding)
-        # See if the face is a match for the known face(s)
-        matches = dlib_api.compare_faces(known_face_encodings, face_encoding)
 
-        # # If a match was found in known_face_encodings, just use the first one.
-        # if True in matches:
-        #     first_match_index = matches.index(True)
-        #     name = known_face_names[first_match_index]
-        #     names.append(name)
+        # # See if the face is a match for the known face(s)
+        # matches = dlib_api.compare_faces(known_face_encodings, face_encoding)
+        #
+        # # # If a match was found in known_face_encodings, just use the first one.
+        # # if True in matches:
+        # #     first_match_index = matches.index(True)
+        # #     name = known_face_names[first_match_index]
+        # #     names.append(name)
+        # for indx, match in enumerate(matches):
+        #     if match:
+        #         names.append(known_face_names[indx])
+        #         dists.append(face_distances[indx])
+        #
+        # dists_top = np.array(dists)
+        # names = [names[i] for i in dists_top.argsort()[:3]]
 
-        for indx, match in enumerate(matches):
-            if match:
-                names.append(known_face_names[indx])
-                dists.append(face_distances[indx])
-
-        dists_top = np.array(dists)
-        names = [names[i] for i in dists_top.argsort()[:3]]
+        face_distances = np.array(face_distances)
+        names = [known_face_names[i] for i in face_distances.argsort()[:3]]
 
     return names, face_encodings
 
