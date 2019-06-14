@@ -1,0 +1,20 @@
+app-cameras {
+  flex: 1 1 auto;
+  display: flex;
+}
+
+app-cameras > mat-sidenav-container {
+  flex: 1 1 auto;
+}
+
+.sidenav {
+  width: 200px;
+}
+
+.grid-container {
+  margin: 20px;
+}
+
+.dashboard-card-content {
+  text-align: center;
+}
