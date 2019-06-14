@@ -32,20 +32,27 @@ pip install scipy
 ```
 
 ##Download models
-You need download this [models](https://drive.google.com/drive/folders/1PO1zneiefNjcNdf9PZz-2Y2a7ns8umxe?usp=sharing)
+For detection and recognition you need to download this [models](https://drive.google.com/drive/folders/1PO1zneiefNjcNdf9PZz-2Y2a7ns8umxe?usp=sharing)
 ```
  pip install face_recognition_models
 ```
 
+<b> Person-reid </b>
+
+For person-reid task you need to download weights of pretrained [models](https://drive.google.com/drive/folders/1F09uLEfc_QeAUHkw22BDFsPWjsLyrG6Q?usp=sharing) 
+and put them into <b> tmp_exp/person_reid/model  </b>
+
 ## Instructions
 ```
-FaceAnalytics$ export FLASK_APP=srv/webapp/run.py
+FaceAnalytics$ export FLASK_APP=srv/flask_api/run_flask.py
 FaceAnalytics$ flask run
- 
+```
+##For webcam streaming
+```
+http://0.0.0.0:9090/video_stream?0
 ```
 
-
-####*
+#### *
 If you don't have a support CUDA on your mashine, install dlib without support cuda
 
 Clone the code from github:

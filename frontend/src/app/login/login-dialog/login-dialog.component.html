@@ -1,0 +1,21 @@
+<h1 mat-dialog-title></h1>
+<div mat-dialog-content style="overflow: hidden">
+  <form (ngSubmit)="onLogin()" #loginForm="ngForm" fxLayout="column" fxFlexFill>
+    <mat-form-field>
+      <input matInput [(ngModel)]="username" name="username" placeholder="Username" required>
+    </mat-form-field>
+    <mat-form-field>
+      <input matInput [(ngModel)]="password" name="password" placeholder="Enter your password" [type]="hide ? 'password' : 'text'" required>
+      <mat-icon matSuffix (click)="hide = !hide">{{hide ? 'visibility_off' : 'visibility'}}</mat-icon>
+    </mat-form-field>
+    <button type="submit" mat-raised-button color="primary" *ngIf="!loading">Sign In</button>
+    <mat-progress-spinner
+      *ngIf="loading"
+      style="margin: 0 auto; display: inline-block;"
+      mode="indeterminate"
+      [diameter]="25">
+    </mat-progress-spinner>
+  </form>
+</div>
+<!--<div mat-dialog-actions>-->
+<!--</div>-->

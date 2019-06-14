@@ -1,0 +1,59 @@
+<div class="grid-container">
+  <mat-card class="dashboard-card mat-elevation-z6" *ngIf="selected$ | async; let selected">
+    <mat-card-header>
+      <mat-card-title>
+        <h3 class="mat-h3">{{selected.name}}</h3>
+      </mat-card-title>
+      <span class="spacer"></span>
+      <mat-button-toggle-group name="camera-actions" aria-label="Camera Actions">
+        <mat-button-toggle value="edit" (click)="editCamera(selected)">
+          <mat-icon>edit</mat-icon>
+        </mat-button-toggle>
+        <mat-button-toggle value="delete" (click)="deleteCamera(selected)">
+          <mat-icon>delete</mat-icon>
+        </mat-button-toggle>
+      </mat-button-toggle-group>
+    </mat-card-header>
+    <mat-card-content class="dashboard-card-content" style="width: 100%; min-height: 500px;">
+      <!--<video *ngIf="selected.type === 'video'">-->
+      <!--<source (src)="selected.videoStreamUrl" type="application/dash+xml">-->
+      <!--</video>-->
+      <mat-progress-spinner
+        *ngIf="streamLoading"
+        mode="indeterminate"
+        [diameter]="60">
+      </mat-progress-spinner>
+      <div #heatmap id="heatmap" [style.display]="streamLoading ? 'none' : 'block'"></div>
+      <img class="camera-video"
+           [class.camera-video--full]="!streamLoading"
+           *ngIf="selected?.type === 'image'"
+           [src]="selected?.videoStreamUrl"
+           (load)="streamLoading = false">
+      <div class="filters" fxLayout="row" fxLayoutGap="10px" fxLayoutAlign="end center">
+        <mat-form-field>
+          <input matInput [matDatepicker]="startdate" placeholder="Start date" [(ngModel)]="startDate" [max]="endDate">
+          <mat-datepicker-toggle matSuffix [for]="startdate"></mat-datepicker-toggle>
+          <mat-datepicker #startdate></mat-datepicker>
+        </mat-form-field>
+        <mat-form-field>
+          <input matInput [matDatepicker]="enddate" placeholder="End date" [(ngModel)]="endDate" [min]="startDate">
+          <mat-datepicker-toggle matSuffix [for]="enddate"></mat-datepicker-toggle>
+          <mat-datepicker #enddate></mat-datepicker>
+        </mat-form-field>
+        <button type="button" mat-raised-button color="primary" (click)="reloadGraph(selected)">Apply</button>
+        <button type="button" mat-raised-button [color]="play ? 'warn' : 'primary'" (click)="playHeatmap(selected)" [disabled]="streamLoading">{{play ? 'Stop' : 'Play'}} Heatmap</button>
+        <button type="button" mat-raised-button color="primary" (click)="resetHeatmap()" [disabled]="streamLoading">Reset Heatmap</button>
+      </div>
+      <mat-progress-spinner
+        *ngIf="graphLoading"
+        mode="indeterminate"
+        [diameter]="60">
+      </mat-progress-spinner>
+      <plotly-plot *ngIf="graphData$ | async; let graph"
+        [config]="{locale: 'en'}"
+        [data]="graph?.data"
+        [layout]="layout"
+        [useResizeHandler]="true"></plotly-plot>
+    </mat-card-content>
+  </mat-card>
+</div>
