@@ -13,7 +13,7 @@ ap = argparse.ArgumentParser()
 ap.add_argument("-src", "--source", required=False, help="cam url")
 
 args = vars(ap.parse_args())
-
+args["source"] = "/Users/andrey/Downloads/Telegram Desktop/vlc_record_2019_05_30_12h50m55s.mp4"
 
 class CamHandler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -104,7 +104,6 @@ def realmain(args=None):
         #table = connection.create_table(camera_url)
 
         vs = VideoStream(camera_url)
-
         #cap = WebcamVideoStream(camera_url).start()
         server = ThreadedHTTPServer((ip, 9090), CamHandler)
         print("[INFO] starting server")
@@ -112,8 +111,8 @@ def realmain(args=None):
 
         i = 0
         while True:
-
-            img = vs.process_next_frame
+            #img = cap.read()
+            img = vs.process_next_frame()
             #img1 = imutils.resize(img, width=600)
             #img2 = cv2.GaussianBlur(img1, (5, 5), 0)
             #frame = cv2.cvtColor(img2, cv2.COLOR_BGR2HSV)
@@ -122,6 +121,9 @@ def realmain(args=None):
             if(i == 0):
                 target.start()
             i +=1
+            if vs.trackableObjects.__len__() > 0:
+                "kokokoko"
+
 
     except KeyboardInterrupt:
         sys.exit()

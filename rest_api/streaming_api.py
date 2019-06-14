@@ -5,7 +5,8 @@ import cv2
 from flask import Response, jsonify
 from main.common import config_parser
 from flask_cors import cross_origin
-from db.event_db_logger import EventDBLogger
+from rest_api.db.event_db_logger import EventDBLogger
+import subprocess
 
 CONFIG = config_parser.parse()
 
@@ -88,8 +89,10 @@ def db_select():
 def run_processing():
     camera_url = flask.request.values['camera_url']
     print('[INFO] starting video stream...')
+
     # script = "{} -src {}".format('main/run.py',camera_url)
     # os.system(script)
+    program = "{} -src {}".format('main/run.py', camera_url)
 
     with open(cam_info_json, 'r') as f:
         data = json.load(f)

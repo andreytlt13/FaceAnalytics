@@ -1,7 +1,7 @@
 import cv2
 from video_processing import VideoStream
 
-camera_url = "local_path"
+camera_url = "/Users/andrey/Downloads/Telegram Desktop/vlc_record_2019_06_10_14h42m31s.mp4"
 vs = VideoStream(camera_url)
 
 while True:

@@ -1,13 +1,13 @@
-#!/usr/bin/env python
-import cv2
-import numpy as np
-import dlib
-from datetime import datetime
-from main.common.deep_sort import preprocessing, nn_matching
-from main.common.deep_sort.detection import Detection
-from main.common.deep_sort.tracker import Tracker
-from main.common.tools import generate_detections as gdet
-from main.common.object_tracker import TrackableObject, CentroidTracker
+# #!/usr/bin/env python
+# import cv2
+# import numpy as np
+# import dlib
+# from datetime import datetime
+# from main.common.deep_sort import preprocessing, nn_matching
+# from main.common.deep_sort.detection import Detection
+# from main.common.deep_sort.tracker import Tracker
+# from main.common.tools import generate_detections as gdet
+from common.object_tracker import TrackableObject, CentroidTracker
 
 import nets.resnet_v1_50 as model
 import heads.fc1024 as head
@@ -115,7 +115,7 @@ class VideoStream():
             self.update_trackable_objects(objects)
 
             #Face recognition
-            frame = self.face_recognition(frame, orig_frame)
+            #frame = self.face_recognition(frame, orig_frame)
 
 
         self.info['TotalFrames'] += 1
