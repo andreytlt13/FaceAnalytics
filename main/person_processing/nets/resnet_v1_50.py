@@ -1,6 +1,6 @@
 import tensorflow as tf
 
-from nets.resnet_v1 import resnet_v1_50, resnet_arg_scope
+from person_processing.nets.resnet_v1 import resnet_v1_50, resnet_arg_scope
 
 _RGB_MEAN = [123.68, 116.78, 103.94]
 

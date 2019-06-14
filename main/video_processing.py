@@ -1,51 +1,38 @@
-# #!/usr/bin/env python
-# import cv2
-# import numpy as np
-# import dlib
-# from datetime import datetime
-# from main.common.deep_sort import preprocessing, nn_matching
-# from main.common.deep_sort.detection import Detection
-# from main.common.deep_sort.tracker import Tracker
-# from main.common.tools import generate_detections as gdet
-from common.object_tracker import TrackableObject, CentroidTracker
-
+#!/usr/bin/env python
+import numpy as np
+import imutils
+import dlib
+import cv2
+import os
+from main.common import config_parser
+from main.common.object_tracker import TrackableObject, CentroidTracker
 import nets.resnet_v1_50 as model
 import heads.fc1024 as head
 import tensorflow as tf
 
-from imutils.video import FPS
-import multiprocessing
-import numpy as np
-import argparse
-import imutils
-import dlib
-import cv2
-
 from face_processing.best_face_selector import select_best_face
+from face_processing.face_recognition import recognize_face, load_known_face_encodings
 
-# dlib recognizer
-from face_processing.face_recognition import recognize_face, load_known_face_encodings, get_cropped_person
+CONFIG = config_parser.parse()
 
-# VGG regonizer
-# from keras_vggface.vggface import VGGFace
-# from face_processing.face_recognition import load_face_models, load_known_face_encodings_vgg, recognize_face_vgg
-
-
-# path to PycharmProjects
-root_path = '/Users/andrey/PycharmProjects/'
+# path to PycharmProject
+root_path = CONFIG["root_path"]
+print('root_path: ', root_path)
 
 # person detection model
-PROTOTXT = root_path + "FaceAnalytics/main/model/MobileNetSSD_deploy.prototxt"
-MODEL = root_path + "FaceAnalytics/main/model/MobileNetSSD_deploy.caffemodel"
-
-ENCODER_PATH = root_path + "FaceAnalytics/main/model/mars-small128.pb"
+PROTOTXT = os.path.join(root_path, CONFIG["person_deploy"])
+MODEL = os.path.join(root_path, CONFIG["person_model"])
 
 # face detection model
-PROTOTXT_FACE = root_path + "FaceAnalytics/main/face_processing/models/deploy.prototxt"
-MODEL_FACE = root_path + "FaceAnalytics/main/face_processing/models/res10_300x300_ssd_iter_140000.caffemodel"
+PROTOTXT_FACE = os.path.join(root_path, CONFIG["face_deploy"])
+MODEL_FACE = os.path.join(root_path, CONFIG["face_model"])
 
 # faces base
-DB_PATH = root_path + "FaceAnalytics/main/face_processing/known_faces/"
+DB_PATH = os.path.join(root_path, CONFIG["known_faces_db"])
+
+# dir for saving testing images [optional]
+save_img = False
+os.makedirs(os.path.join(root_path,'main/face_processing/tmp_faces'), exist_ok=True)
 
 class VideoStream():
     def __init__(self, camera_url=0):
@@ -57,15 +44,8 @@ class VideoStream():
         self.net = cv2.dnn.readNetFromCaffe(PROTOTXT, MODEL)
         # face models
         self.net_face_detector = cv2.dnn.readNetFromCaffe(PROTOTXT_FACE, MODEL_FACE)
-
-        # dlib approach
+        # dlib embeddings
         self.known_face_encodings, self.known_face_names = load_known_face_encodings(DB_PATH)
-
-        # VGG approach
-        # self.net_face_emb = VGGFace(model='resnet50', include_top=False, input_shape=(224, 224, 3), pooling='avg')
-        # self.known_face_encodings, self.known_face_names = load_known_face_encodings_vgg(self.net_face_emb,
-        #                                                                                  self.net_face_detector,
-        #                                                                                  DB_PATH)
 
         self.classes = ["background", "aeroplane", "bicycle", "bird", "boat",
                         "bottle", "bus", "car", "cat", "chair", "cow", "diningtable",
@@ -115,8 +95,7 @@ class VideoStream():
             self.update_trackable_objects(objects)
 
             #Face recognition
-            #frame = self.face_recognition(frame, orig_frame)
-
+            frame = self.face_recognition(frame, orig_frame)
 
         self.info['TotalFrames'] += 1
         return frame
@@ -166,7 +145,7 @@ class VideoStream():
             (startX, startY, endX, endY) = box.astype('int')
 
             # --- person box visualization
-            #cv2.rectangle(frame, (startX, startY), (endX, endY), (0, 255, 0), 2)
+            # cv2.rectangle(frame, (startX, startY), (endX, endY), (0, 255, 0), 2)
 
             if startY < 0:
                 startY = 0
@@ -192,7 +171,7 @@ class VideoStream():
         endpoints, body_prefix = model.endpoints(images, is_training=False)
         with tf.name_scope('head'):
             endpoints = head.head(endpoints, 128, is_training=False)
-        tf.train.Saver().restore(sess, root_path+'FaceAnalytics/main/model/checkpoint-25000')
+        tf.train.Saver().restore(sess, root_path+CONFIG["person_vectorizer_weights"])
         return sess, endpoints, images
 
     def update_trackable_objects(self, objects):
@@ -214,42 +193,37 @@ class VideoStream():
     def face_recognition(self, frame, orig_frame):
 
         if len(self.trackableObjects.items()) > 0:
-            for tr_indx, tr_obj in enumerate(self.trackableObjects.items()):
+            for tr_indx, tr_obj in self.trackableObjects.items():
 
-                if tr_obj[1].names[0] is None:
+                if tr_obj.names[0] is None:
                     # detect face from orig size person
-                    frame, detected_face = self.face_detection(frame, orig_frame, tr_obj[1].rect, tr_obj[1].img)
-
-                    # print('---'*5, tr_indx, tr_obj[1].rect)
+                    frame, detected_face = self.face_detection(frame, orig_frame, tr_obj.rect, tr_obj.img, tr_indx)
 
                     # add cropped_face to face_sequence
                     if detected_face is not None and all(detected_face.shape) > 0:
                         # add detected_face to faces_sequence_for_person
-                        tr_obj[1].face_seq.append(detected_face)
-                        print('added detected_face to faces_sequence_for_trackableObject')
+                        tr_obj.face_seq.append(detected_face)
+                        # print('added detected_face to faces_sequence_for_trackableObject')
 
-                    if len(tr_obj[1].face_seq) > 0:
+                    if len(tr_obj.face_seq) > 0:
                         # select the best face from face_sequence
-                        best_detected_face = select_best_face(tr_obj[1].face_seq)
-                        # cv2.imwrite('best_detected_face.jpg', best_detected_face)
+                        best_detected_face = select_best_face(tr_obj.face_seq)
+                        if save_img:
+                            cv2.imwrite('face_processing/tmp_faces/best_detected_face_{}.jpg'.format(tr_indx), best_detected_face)
 
                         # recognize best_face
                         self.info['status'] = 'Recognizing face'
                         names, best_face_emb = recognize_face(best_detected_face, self.known_face_encodings, self.known_face_names)
-                        print('names', names)
+                        print('person looks like:', names)
 
                         if len(names) > 0:
-                            tr_obj[1].names = names
+                            tr_obj.names = names
                         if len(best_face_emb) > 0:
-                            tr_obj[1].face_emb = best_face_emb
+                            tr_obj.face_emb = best_face_emb
 
         return frame
 
-    def face_detection(self, frame, orig_frame, person_box, person_im):
-
-        # crop person by person_box coords
-        # person_im = get_cropped_person(orig_frame=orig_frame, resized_frame=frame, resized_box=person_box)
-        # cv2.imwrite('cropped_person.jpg', person_im)
+    def face_detection(self, frame, orig_frame, person_box, person_im, tr_indx):
 
         # detect face from cropped person
         self.info['status'] = 'Detecting face'
@@ -267,25 +241,27 @@ class VideoStream():
                     # face box in person_im coordinates
                     box = detections[0, 0, i, 3:7] * np.array([W, H, W, H])
                     (startX, startY, endX, endY) = box.astype('int')
-                    pad_y, pad_x = 0, 0
+                    pad_y, pad_x = 30, 30
                     face_im = person_im[startY - pad_y: endY + pad_y, startX - pad_x: endX + pad_x]
-                    # cv2.imwrite('cropped_face.jpg', face_im)
+
+                    if save_img:
+                        cv2.imwrite('face_processing/tmp_faces/tmp_cropped_face_{}.jpg'.format(tr_indx), face_im)
 
                     # reconstruction face box coordinates for visualization on frame
                     # person box coordinates
                     sX, sY, eX, eY = person_box
                     rel_sX = int( sX / frame.shape[1] * orig_frame.shape[1] )
                     rel_sY = int( sY / frame.shape[0] * orig_frame.shape[0] )
-                    # rel_eX = int( eX / frame.shape[1] * orig_frame.shape[1] )
-                    # rel_eY = int( eY / frame.shape[0] * orig_frame.shape[0] )
 
-                    # face box visualization in resized frame coords
+                    # --- face box visualization in resized frame coords
                     x_ = int((startX + rel_sX) / orig_frame.shape[1] * frame.shape[1])
                     y_ = int((startY + rel_sY) / orig_frame.shape[0] * frame.shape[0])
                     w_ = int((endX + rel_sX) / orig_frame.shape[1] * frame.shape[1])
                     h_ = int((endY + rel_sY) / orig_frame.shape[0] * frame.shape[0])
                     cv2.rectangle(frame, (x_, y_), (w_, h_), (255, 0, 0), 2)
-                    # cv2.imwrite('frame_vis.jpg', frame)
+
+                    if save_img:
+                        cv2.imwrite('frame_vis.jpg', frame)
         else:
             face_im = None
 

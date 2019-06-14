@@ -1,47 +1,21 @@
 import cv2
 import numpy as np
 import os
-from imutils.face_utils import FaceAligner
-from imutils.face_utils import rect_to_bb
 import imutils
 import dlib
+from main.common import config_parser
+
+
+CONFIG = config_parser.parse()
 
 # path to PycharmProjects
-root_path = '/Users/andrey/PycharmProjects/'
+root_path = CONFIG['root_path']
 
-face_cascade = cv2.CascadeClassifier(root_path+'FaceAnalytics/main/face_processing/models/haarcascade_frontalface_default.xml')
-eye_cascade = cv2.CascadeClassifier(root_path+'FaceAnalytics/main/face_processing/models/haarcascade_eye_tree_eyeglasses.xml')
-mouth_cascade = cv2.CascadeClassifier(root_path+'FaceAnalytics/main/face_processing/models/haarcascade_mcs_mouth.xml')
-nose_cascade = cv2.CascadeClassifier(root_path+'FaceAnalytics/main/face_processing/models/haarcascade_mcs_nose.xml')
+face_cascade = cv2.CascadeClassifier(os.path.join(root_path,'main/face_processing/models/haarcascade_frontalface_default.xml'))
+eye_cascade = cv2.CascadeClassifier(os.path.join(root_path,'main/face_processing/models/haarcascade_eye_tree_eyeglasses.xml'))
+mouth_cascade = cv2.CascadeClassifier(os.path.join(root_path,'main/face_processing/models/haarcascade_mcs_mouth.xml'))
+nose_cascade = cv2.CascadeClassifier(os.path.join(root_path,'main/face_processing/models/haarcascade_mcs_nose.xml'))
 
-# initialize dlib's face detector (HOG-based) and then create
-# the facial landmark predictor and the face aligner
-shape_predictor = root_path+'FaceAnalytics/main/face_processing/models/shape_predictor_68_face_landmarks.dat'
-detector = dlib.get_frontal_face_detector()
-predictor = dlib.shape_predictor(shape_predictor)
-fa = FaceAligner(predictor, desiredFaceWidth=256)
-
-def align_face(image):
-    # load the input image, resize it, and convert it to grayscale
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    # show the original input image and detect faces in the grayscale image
-    rects = detector(gray, 1)
-    # loop over the face detections
-
-    if rects:
-        for rect in rects:
-            # extract the ROI of the *original* face, then align the face
-            # using facial landmarks
-            (x, y, w, h) = rect_to_bb(rect)
-            try:
-                image = imutils.resize(image[y:y + h, x:x + w], width=256)
-            except:
-                image = image.copy()
-            faceAligned = fa.align(image, gray, rect)
-
-            return faceAligned
-    else:
-        return 'no_face'
 
 def variance_of_laplacian(image):
     # compute the Laplacian of the image and then return the focus measure,
@@ -51,10 +25,10 @@ def variance_of_laplacian(image):
 def check_models(list_models):
     for indx, cascade in enumerate(list_models):
         if(cascade.empty()):
-            print(indx, 'file couldnt load, give up!')
+            print(indx, 'file couldnt load, check out models paths')
 
-# CASCADES METHOD
 def cascade_detection(img):
+    # cascades detection: eyes, mouth, noze
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     cascades_on_face = 0
     roi_gray = gray.copy()
@@ -82,24 +56,22 @@ def cascade_detection(img):
     return img, cascades_on_face
 
 def select_best_face(faces_sequence_for_person):
+    # get the best face from face sequence for current person
     # check_models([face_cascade, eye_cascade, mouth_cascade, nose_cascade])
     fm_faces = []
     casc_faces = []
     for face_indx, face_image in enumerate(faces_sequence_for_person):
-
         if all(face_image.shape) > 0:
             image = face_image.copy()
-            image = align_face(image)
 
-            if image != 'no_face':
-                # --- cascades face detection
-                cascaded_im, cascades_on_face = cascade_detection(image)
-                casc_faces.append(cascades_on_face)
+            try:
+                image = imutils.resize(image, width=300)
+            except:
+                image = face_image.copy()
 
-            else:
-                casc_faces.append(0)
-        else:
-            casc_faces.append(0)
+            # count cascades face detection
+            cascaded_im, cascades_on_face = cascade_detection(image)
+            casc_faces.append(cascades_on_face)
 
     # if there is more than one face with max detected cascades
     # select the best one via max of variance_of_laplacian
@@ -115,5 +87,7 @@ def select_best_face(faces_sequence_for_person):
             fm_faces.append(0)
     best_face_idx = np.argmax(fm_faces)
     best_face_img = max_imgs[best_face_idx]
+
+    best_face_img = imutils.resize(best_face_img, width=300)
 
     return best_face_img
