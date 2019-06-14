@@ -44,11 +44,13 @@ and put them into <b> tmp_exp/person_reid/model  </b>
 
 ## Instructions
 ```
-FaceAnalytics$ export FLASK_APP=srv/webapp/run.py
+FaceAnalytics$ export FLASK_APP=srv/flask_api/run_flask.py
 FaceAnalytics$ flask run
- 
 ```
-
+##For webcam streaming
+```
+http://0.0.0.0:9090/video_stream?0
+```
 
 #### *
 If you don't have a support CUDA on your mashine, install dlib without support cuda
@@ -66,25 +68,4 @@ Build and install the Python extensions:
 ```
 cd ..
 python3 setup.py install --yes USE_AVX_INSTRUCTIONS --no DLIB_USE_CUDA
-
 ```
-
-1 - create_camera (class)
-      in:
-      -url
-            --check exist table in db
-      state:
-      -read_stream (def with while true)
-          -object detection (coffe model mobile ssd)
-                -tracking objects (def)
-                    -filtered (def)
-                    -face_recognize (def)
-                        --insert event to db (def)
-                    
-           
-          
-      
-                
-                
-                
-2 - flask api     
