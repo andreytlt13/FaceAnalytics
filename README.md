@@ -52,7 +52,7 @@ FaceAnalytics$ flask run
 http://0.0.0.0:9090/video_stream?0
 ```
 
-#### *
+#### 
 If you don't have a support CUDA on your mashine, install dlib without support cuda
 
 Clone the code from github:
