@@ -1,29 +1,22 @@
-<img src="http://10.101.2.134:9090/get_face?object_id=0"/>
-<img src="http://10.101.2.134:9090/get_face_known?name=andrey"/>
+<ng-container *ngIf="dataSource$ | async as dataSource">
+  <table *ngIf="dataSource" mat-table [dataSource]="dataSource" class="rec-table mat-elevation-z8">
+    <!-- Photo Column -->
+    <ng-container matColumnDef="photo">
+      <th mat-header-cell *matHeaderCellDef> Photo</th>
+      <td mat-cell *matCellDef="let row">
+        <img [src]="row.person.photo"/>
+      </td>
+    </ng-container>
 
-<table *ngIf="dataSource" mat-table [dataSource]="dataSource" class="rec-table mat-elevation-z8">
-  <!-- Time Column -->
-  <ng-container matColumnDef="eventTime">
-    <th mat-header-cell *matHeaderCellDef> Event Time </th>
-    <td mat-cell *matCellDef="let element"> {{element.eventTime}} </td>
-  </ng-container>
+    <!-- Matches Column -->
+    <ng-container matColumnDef="matches">
+      <th mat-header-cell *matHeaderCellDef> Matches</th>
+      <td mat-cell *matCellDef="let row" class="rec-table__matches">
+        <img *ngFor="let match of row.matches" [src]="match.photo"/>
+      </td>
+    </ng-container>
 
-  <!-- Photo Column -->
-  <ng-container matColumnDef="photo">
-    <th mat-header-cell *matHeaderCellDef> Photo </th>
-    <td mat-cell *matCellDef="let element">
-      <img [src]="element.photo" />
-    </td>
-  </ng-container>
-
-  <!-- Matches Column -->
-  <ng-container matColumnDef="matches">
-    <th mat-header-cell *matHeaderCellDef> Matches </th>
-    <td mat-cell *matCellDef="let element" class="rec-table__matches">
-      <img *ngFor="let match of element.matches" [src]="match" />
-    </td>
-  </ng-container>
-
-  <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-  <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-</table>
+    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+    <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+  </table>
+</ng-container>

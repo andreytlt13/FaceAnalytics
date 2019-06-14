@@ -1,6 +1,11 @@
 import {Component, OnInit} from '@angular/core';
 import * as moment from 'moment';
 import {ClientsService} from './clients/clients.service';
+import {Client} from './clients/client';
+import {map, mergeAll, mergeMap, tap} from 'rxjs/operators';
+import {forkJoin, Observable} from 'rxjs';
+
+const CAMERA_URL = 'rtsp://admin:0ZKaxVFi@10.101.106.4:554/live/main';
 
 @Component({
   selector: 'app-recognition',
@@ -9,34 +14,33 @@ import {ClientsService} from './clients/clients.service';
 })
 export class RecognitionComponent implements OnInit {
   displayedColumns: string[] = ['eventTime', 'photo', 'matches'];
-  dataSource = Array.from({length: 10}).map((value, index) => {
-    return {
-      eventTime: moment(RecognitionComponent.randomDate(new Date(2019, 0, 1), new Date())).format(),
-      photo: `assets/photos/${index + 1}.jpg`,
-      matches: Array.from({length: 3}).map(() => {
-        return `assets/photos/${Math.floor(Math.random() * 10 + 1)}.jpg`;
-      })
-    };
-  });
+  dataSource$: Observable<{
+    person: Client,
+    matches: Client[],
+  }[]> = this.clientService.getUnknown(CAMERA_URL)
+    .pipe(
+      mergeMap(unknownClients => forkJoin(
+        unknownClients.map(client => this.clientService.getMatched(CAMERA_URL, client)
+          .pipe(
+            map(clients => ({
+              person: client,
+              matches: clients
+            })
+            )
+          )
+        )
+      )),
+      tap(console.log)
+    );
 
 
-  static randomDate(start: Date, end: Date) {
-    return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
-  }
+  // static randomDate(start: Date, end: Date) {
+  //   return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
+  // }
 
   constructor(private readonly clientService: ClientsService) {}
 
   ngOnInit() {
-    console.log(this.dataSource);
 
-    this.clientService.getAll()
-      .subscribe((data) => {
-        console.log(data);
-      });
-
-    // this.clientService.map(null, null)
-    //   .subscribe((data) => {
-    //     console.log(data);
-    //   });
   }
 }
