@@ -1,8 +1,0 @@
-{
-  "id": 0,
-  "person_name": "Jack",
-  "age": 69,
-  "gender": "Male",
-  "log_time": "1533886427",
-  "camera_url": "rtsp://admin:admin@10.101.106.12:554/ch01/1"
-}
