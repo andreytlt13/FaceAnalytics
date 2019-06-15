@@ -1,14 +1,14 @@
 import {Injectable} from '@angular/core';
-import {ActivatedRouteSnapshot, CanActivate, Router, RouterStateSnapshot} from '@angular/router';
+import {ActivatedRouteSnapshot, CanActivate, CanActivateChild, Router, RouterStateSnapshot} from '@angular/router';
 import {Store} from '@ngxs/store';
 import {Observable, of} from 'rxjs';
-import {AuthState} from '../../login/auth.state';
-import {LoginModule} from '../../login/login.module';
+import {AuthState} from '../auth.state';
+import {LoginModule} from '../login.module';
 
 @Injectable({
   providedIn: LoginModule
 })
-export class AuthRequiredService implements CanActivate {
+export class AuthGuard implements CanActivate, CanActivateChild {
 
   constructor(private store: Store, private router: Router) {
   }
