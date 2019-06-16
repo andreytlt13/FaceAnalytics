@@ -1,14 +1,16 @@
-import { AppPage } from './app.po';
+import {AppPage} from './app.po';
+import {by, element} from 'protractor';
 
-describe('workspace-project App', () => {
+describe('FaceAnalytics App', () => {
   let page: AppPage;
 
   beforeEach(() => {
     page = new AppPage();
   });
 
-  it('should display welcome message', () => {
+  it('should be displayed', () => {
     page.navigateTo();
-    expect(page.getParagraphText()).toEqual('Welcome to face-analytics!');
+
+    expect(element(by.css('app-root'))).toBeDefined();
   });
 });

@@ -34,9 +34,9 @@ export class RecognitionComponent implements OnInit {
         console.log(data);
       });
 
-    this.clientService.map(null, null)
-      .subscribe((data) => {
-        console.log(data);
-      });
+    // this.clientService.map(null, null)
+    //   .subscribe((data) => {
+    //     console.log(data);
+    //   });
   }
 }
