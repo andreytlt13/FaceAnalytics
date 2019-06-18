@@ -62,8 +62,27 @@ export class RecognitionComponent implements OnInit, OnDestroy {
     return `${item.person.id}-${item.person.name}-${item.matches.length}`;
   }
 
-  update(client) {
+  rate(client: Client, stars: number) {
+    client.stars = stars;
+
     this.clientService.update(CAMERA_URL, client)
+      .pipe(
+        tap(() => {
+          this.clientsDS.data = [...this.clientsDS.data];
+        })
+      )
+      .subscribe();
+  }
+
+  updateDescription(client: Client, description: string) {
+    client.description = description;
+
+    this.clientService.update(CAMERA_URL, client)
+      .pipe(
+        tap(() => {
+          this.clientsDS.data = [...this.clientsDS.data];
+        })
+      )
       .subscribe();
   }
 

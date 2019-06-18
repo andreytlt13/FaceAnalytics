@@ -1,10 +1,10 @@
-<ng-container *ngIf="clientsDS">
+<div *ngIf="clientsDS" class="rec-page">
   <table mat-table [dataSource]="clientsDS" [trackBy]="trackByFn" class="rec-table mat-elevation-z8">
     <!-- Photo Column -->
     <ng-container matColumnDef="person">
       <th mat-header-cell *matHeaderCellDef> Photo</th>
       <td mat-cell *matCellDef="let row">
-        <img [src]="row.person.photo" class="rec-table__photo"/>
+        <img [src]="row.person.photo" class="rec-table__photo rec-table__avatar" alt="{{row.person.id}}"/>
       </td>
     </ng-container>
 
@@ -12,13 +12,27 @@
     <ng-container matColumnDef="matches">
       <th mat-header-cell *matHeaderCellDef> Matches</th>
       <td mat-cell *matCellDef="let row" class="rec-table__matches">
-        <div *ngIf="row.person.name; else unknownPerson">
-          <img class="select-option" [src]="row.matches[0].photo"/>
-          <p>Stars: {{row.person.stars}}</p>
-          <p>Description: {{row.person.description}}</p>
+        <div *ngIf="row.person.name; else unknownPerson" class="known-person" fxLayout="row" fxLayoutAlign="start stretch" fxFill>
+          <img class="select-option rec-table__avatar" [src]="row.matches[0].photo"/>
+          <form class="known-person__info" fxLayout="column" fxLayoutAlign="space-around stretch">
+            <div class="known-person__stars">
+              <mat-icon color="primary" (click)="rate(row.person, 1)">{{row.person.stars > 0 ? 'star' : 'star_border'}}</mat-icon>
+              <mat-icon color="primary" (click)="rate(row.person, 2)">{{row.person.stars > 1 ? 'star' : 'star_border'}}</mat-icon>
+              <mat-icon color="primary" (click)="rate(row.person, 3)">{{row.person.stars > 2 ? 'star' : 'star_border'}}</mat-icon>
+              <mat-icon color="primary" (click)="rate(row.person, 4)">{{row.person.stars > 3 ? 'star' : 'star_border'}}</mat-icon>
+              <mat-icon color="primary" (click)="rate(row.person, 5)">{{row.person.stars > 4 ? 'star' : 'star_border'}}</mat-icon>
+            </div>
+
+            <mat-form-field appearance="outline">
+              <textarea (ngModelChange)="updateDescription(row.person, $event)" [ngModelOptions]="{updateOn: 'blur'}" name="{{'desc-' + row.person.id}}" [(ngModel)]="row.person.description" matInput placeholder="Description"></textarea>
+            </mat-form-field>
+          </form>
         </div>
         <ng-template #unknownPerson>
-          <img class="select-option select-option--selectable" (click)="bind(row.person, match)" *ngFor="let match of row.matches" [src]="match.photo"/>
+          <img class="select-option select-option--selectable rec-table__avatar" (click)="bind(row.person, match)" *ngFor="let match of row.matches" [src]="match.photo"/>
+          <button mat-raised-button color="primary">
+            <mat-icon>add</mat-icon>
+          </button>
         </ng-template>
       </td>
     </ng-container>
@@ -26,4 +40,4 @@
     <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
     <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
   </table>
-</ng-container>
+</div>
