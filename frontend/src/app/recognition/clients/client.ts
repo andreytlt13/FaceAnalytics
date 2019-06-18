@@ -1,31 +1,37 @@
 import {environment} from '../../../environments/environment';
+import {isNumber} from 'lodash-es';
 
 export class Client {
   constructor(
     public name: string, // because id is not defined for known person
     public id?: number,
     public description?: string,
-    public rate?: number,
+    public stars?: number,
   ) {}
 
   get photo() {
-    if (this.name) {
-      return `${environment.apiUrl}/camera/get_name_img?name=${this.name}`;
+    if (isNumber(this.id) && this.id >= 0) {
+      return `${environment.apiUrl}/camera/get_object_img?object_id=${this.id}`;
     }
 
-    if (this.id) {
-      return `${environment.apiUrl}/camera/get_object_img?object_id=${this.id}`;
+    if (this.name) {
+      return `${environment.apiUrl}/camera/get_name_img?name=${this.name}`;
     }
 
     throw new Error('Both id and name are not set to the client');
   }
 
   static parse(json: {
-    id?: number,
+    id?: string | number,
     name?: string,
     description?: string,
-    rate?: number,
+    stars?: string | number
   }) {
-    return new Client(json.name || '', json.id, json.description, json.rate);
+    return new Client(
+      json.name || '',
+      isFinite(+json.id) ? +json.id : undefined,
+      json.description,
+      isFinite(+json.stars) ? +json.stars : undefined
+    );
   }
 }

@@ -1,5 +1,11 @@
+@import '~@angular/material/theming';
+
 .rec-table {
   width: 100%;
+
+  &__photo {
+    max-height: 200px;
+  }
 
   &__matches {
     display: flex;
@@ -7,14 +13,19 @@
     align-items: center;
     justify-content: space-around;
 
-    img {
+    .select-option {
       margin: 3px;
       padding: 2px;
 
-      border: 1px solid white;
+      max-height: 200px;
 
+      border: 1px solid white;
+    }
+
+    .select-option--selectable {
       &:hover {
-        border: 1px solid red;
+        cursor: pointer;
+        border: 1px solid #4caf50;
       }
     }
   }
