@@ -2,19 +2,19 @@ import cv2
 import numpy as np
 import os
 import imutils
-import dlib
 from main.common import config_parser
 
 
 CONFIG = config_parser.parse()
 
-# path to PycharmProjects
-root_path = CONFIG['root_path']
+# path to face models storage
+face_models = os.path.join(CONFIG['root_path'], CONFIG['face_models'])
 
-face_cascade = cv2.CascadeClassifier(os.path.join(root_path,'main/face_processing/models/haarcascade_frontalface_default.xml'))
-eye_cascade = cv2.CascadeClassifier(os.path.join(root_path,'main/face_processing/models/haarcascade_eye_tree_eyeglasses.xml'))
-mouth_cascade = cv2.CascadeClassifier(os.path.join(root_path,'main/face_processing/models/haarcascade_mcs_mouth.xml'))
-nose_cascade = cv2.CascadeClassifier(os.path.join(root_path,'main/face_processing/models/haarcascade_mcs_nose.xml'))
+eye_casc, mouth_casc, nose_casc = CONFIG['face_cascades'].split(',')
+
+eye_cascade = cv2.CascadeClassifier(os.path.join(face_models, eye_casc))
+mouth_cascade = cv2.CascadeClassifier(os.path.join(face_models, mouth_casc))
+nose_cascade = cv2.CascadeClassifier(os.path.join(face_models, nose_casc))
 
 
 def variance_of_laplacian(image):
@@ -57,7 +57,7 @@ def cascade_detection(img):
 
 def select_best_face(faces_sequence_for_person):
     # get the best face from face sequence for current person
-    # check_models([face_cascade, eye_cascade, mouth_cascade, nose_cascade])
+    # check_models([eye_cascade, mouth_cascade, nose_cascade])
     fm_faces = []
     casc_faces = []
     for face_indx, face_image in enumerate(faces_sequence_for_person):

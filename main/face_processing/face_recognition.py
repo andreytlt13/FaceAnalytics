@@ -1,8 +1,7 @@
 import glob
-from face_processing import dlib_api
+from face_processing.utils import dlib_api
 import numpy as np
-import scipy.misc
-import cv2
+
 
 def get_cropped_person(orig_frame, resized_frame, resized_box):
     startX, startY, endX, endY = resized_box
@@ -16,13 +15,9 @@ def get_cropped_person(orig_frame, resized_frame, resized_box):
     cropped_person = orig_frame[startY_orig: endY_orig, startX_orig: endX_orig]
     return cropped_person
 
-# dlib face embeddings
 def recognize_face(best_detected_face, known_face_encodings, known_face_names):
-
-    face_encodings = dlib_api.face_encodings(best_detected_face) # !!!!!
-
-    print('best_detected_face curr', best_detected_face.shape)
-    print('curr face_encodings', face_encodings) # !!!!!
+    # dlib face embeddings
+    face_encodings = dlib_api.face_encodings(best_detected_face)
 
     names = []
     for face_encoding in face_encodings:
@@ -45,5 +40,5 @@ def load_known_face_encodings(db_path):
         known_face_encodings.append(face_encoding)
         known_face_names.append(title)
 
-    print('known_face_names:', known_face_names)
+    print('[INFO] known_face_names:', known_face_names)
     return known_face_encodings, known_face_names
