@@ -1,7 +1,7 @@
 import {NgModule} from '@angular/core';
 import {Routes, RouterModule} from '@angular/router';
 import {CamerasComponent} from './cameras.component';
-import {AuthRequiredService} from '../shared/auth-guard/auth-guard.service';
+import {AuthGuard} from '../login/auth/auth.guard';
 import {CameraEditComponent} from './camera-edit/camera-edit.component';
 import {CameraViewComponent} from './camera-view/camera-view.component';
 
@@ -9,8 +9,8 @@ const routes: Routes = [
   {
     path: 'cameras',
     component: CamerasComponent,
-    canActivate: [AuthRequiredService],
-    canActivateChild: [AuthRequiredService],
+    canActivate: [AuthGuard],
+    canActivateChild: [AuthGuard],
     children: [
       {path: 'create', component: CameraEditComponent, data: {title: 'Camera Create'}},
       {path: 'update/:id', component: CameraEditComponent, data: {title: 'Camera Edit'}},
