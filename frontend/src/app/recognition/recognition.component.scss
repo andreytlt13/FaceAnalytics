@@ -1,20 +1,54 @@
-.rec-table {
-  width: 100%;
+@import '~@angular/material/theming';
 
-  &__matches {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-around;
+.rec-page {
+  padding: 10px;
 
-    img {
-      margin: 3px;
-      padding: 2px;
+  .rec-table {
+    width: 100%;
 
-      border: 1px solid white;
+    &__avatar {
+      display: block;
+      border-radius: 50%;
+    }
 
-      &:hover {
-        border: 1px solid red;
+    &__photo {
+      max-height: 200px;
+    }
+
+    &__matches {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-around;
+
+      .select-option {
+        margin: 3px;
+        padding: 2px;
+
+        max-height: 200px;
+
+        border: 1px solid white;
+      }
+
+      .select-option--selectable {
+        &:hover {
+          cursor: pointer;
+          border: 1px solid #4caf50;
+        }
+      }
+
+      .known-person {
+        width: 100%;
+
+        &__info {
+          margin-left: 20px;
+          width: 100%;
+        }
+
+        &__stars {
+          cursor: pointer;
+          margin-bottom: 10px;
+        }
       }
     }
   }
