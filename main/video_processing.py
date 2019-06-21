@@ -85,7 +85,7 @@ class VideoStream():
         ret, frame = self.vs.read()
 
         if not ret:
-            return None, [None]
+            return None, [None], self.trackableObjects
 
         orig_frame = frame.copy()
         frame = imutils.resize(frame, width=600)
@@ -134,7 +134,7 @@ class VideoStream():
                     t_emb_matrix_elapsed, t_updating_trObj_elapsed,
                     t_face_recognition_elapsed]
 
-        return frame, time_log
+        return frame, time_log, self.trackableObjects
 
     def draw_labels(self, frame, objects):
 
@@ -173,30 +173,32 @@ class VideoStream():
 
         for i in np.arange(0, detections.shape[2]):
             idx = int(detections[0, 0, i, 1])
+            confidence = detections[0, 0, i, 2]
 
             if self.classes[idx] != "person":
                 continue
+            else:
+                if confidence > 0.75:
+                    box = detections[0, 0, i, 3:7] * np.array([self.W, self.H, self.W, self.H])
+                    (startX, startY, endX, endY) = box.astype('int')
 
-            box = detections[0, 0, i, 3:7] * np.array([self.W, self.H, self.W, self.H])
-            (startX, startY, endX, endY) = box.astype('int')
+                    # person box visualization
+                    cv2.rectangle(frame, (startX, startY), (endX, endY), (0, 255, 0), 2)
 
-            # person box visualization
-            # cv2.rectangle(frame, (startX, startY), (endX, endY), (0, 255, 0), 2)
+                    if startY < 0:
+                        startY = 0
 
-            if startY < 0:
-                startY = 0
+                    imgCrop = frame[startY:endY, startX:endX]
 
-            imgCrop = frame[startY:endY, startX:endX]
+                    resize_img = cv2.resize(imgCrop, (128, 256))
+                    resize_img = np.expand_dims(resize_img, axis=0)
+                    emb = self.imgVectorizer.run(self.endpoints['emb'], feed_dict={self.images: resize_img})
+                    self.embeding_list.append(emb)
 
-            resize_img = cv2.resize(imgCrop, (128, 256))
-            resize_img = np.expand_dims(resize_img, axis=0)
-            emb = self.imgVectorizer.run(self.endpoints['emb'], feed_dict={self.images: resize_img})
-            self.embeding_list.append(emb)
-
-            tracker = dlib.correlation_tracker()
-            rect = dlib.rectangle(startX, startY, endX, endY)
-            tracker.start_track(rgb, rect)
-            self.trackers.append(tracker)
+                    tracker = dlib.correlation_tracker()
+                    rect = dlib.rectangle(startX, startY, endX, endY)
+                    tracker.start_track(rgb, rect)
+                    self.trackers.append(tracker)
 
         return frame
 
@@ -282,7 +284,26 @@ class VideoStream():
                     # face box in person_im coordinates
                     box = detections[0, 0, i, 3:7] * np.array([W, H, W, H])
                     (startX, startY, endX, endY) = box.astype('int')
+
+                    # this makes face processing very slow
+                    # face_w, face_h = endX - startX, endY - startY
+                    # if face_w < 60:
+                    #     pad_x = 30
+                    # else:
+                    #     pad_x = int(0.4*face_w)
+                    #
+                    # if face_h < 120:
+                    #     pad_y = 30
+                    # else:
+                    #     pad_y = int(0.25*face_h)
+                    #
+
                     pad_y, pad_x = 30, 30
+                    if startY - pad_y < 0:
+                        pad_y = 0
+                    if startX - pad_x < 0:
+                        pad_y = 0
+
                     face_im = person_im[startY - pad_y: endY + pad_y, startX - pad_x: endX + pad_x]
 
                     if save_img:
