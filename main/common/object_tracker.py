@@ -146,7 +146,7 @@ class CentroidTracker:
                 objectID = objectIDs[row]
                 ##img crop
                 img = get_cropped_person(orig_frame, resized_frame, resized_box=rects[col])
-                cv2.imwrite('{}_.jpeg'.format(col), img)
+                # cv2.imwrite('{}_.jpeg'.format(col), img)
                 self.objects[objectID] = {
                     "centroid": inputCentroids[col],
                     "embeding": embeding_list[col],
