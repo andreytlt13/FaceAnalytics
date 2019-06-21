@@ -2,10 +2,17 @@
 // `ng build --prod` replaces `environment.ts` with `environment.prod.ts`.
 // The list of file replacements can be found in `angular.json`.
 
+const API_DOMAIN = 'http://10.101.1.23';
+const API_PORT = '9090';
+
 export const environment = {
   production: false,
 
-  apiUrl: 'http://10.101.1.23:9090'
+  apiUrl: `${API_DOMAIN}:${API_PORT}`,
+
+  // TODO: these temporary fields will be taken from API
+  cameraUrl: 'rtsp://admin:0ZKaxVFi@10.101.106.4:554/live/main',
+  videoStreamUrl: `${API_DOMAIN}:9091/stream.mjpg`,
 };
 
 /*
