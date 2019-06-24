@@ -4,8 +4,10 @@ import {Client} from './clients/client';
 import {map, mergeMap, tap} from 'rxjs/operators';
 import {forkJoin, Observable, Subscription} from 'rxjs';
 import {MatTableDataSource} from '@angular/material';
+import {environment} from '../../environments/environment';
 
-const CAMERA_URL = 'rtsp://admin:0ZKaxVFi@10.101.106.4:554/live/main';
+const CAMERA_URL = environment.cameraUrl;
+const VIDEO_STREAM_URL = environment.videoStreamUrl;
 
 @Component({
   selector: 'app-recognition',
@@ -14,6 +16,7 @@ const CAMERA_URL = 'rtsp://admin:0ZKaxVFi@10.101.106.4:554/live/main';
 })
 export class RecognitionComponent implements OnInit, OnDestroy {
   displayedColumns: string[] = ['person', 'matches'];
+  streamUrl: string
 
   dataSource$: Observable<any> = this.clientService.getUnknown(CAMERA_URL)
     .pipe(
@@ -41,6 +44,8 @@ export class RecognitionComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.clientsDS = new MatTableDataSource();
+
+    this.streamUrl = VIDEO_STREAM_URL;
 
     this.subscription = this.dataSource$.subscribe(data => {
       this.clientsDS.data = data;
