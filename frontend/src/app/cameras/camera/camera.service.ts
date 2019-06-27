@@ -5,12 +5,13 @@ import {HttpClient} from '@angular/common/http';
 import {map} from 'rxjs/operators';
 
 import CAMERAS from './mock-cameras';
-const CAMERA_URL = '';
+const CAMERA_URL = 'http://10.101.1.23:9090/camera/list';
 
 @Injectable({
   providedIn: 'root'
 })
 export class CameraService {
+  private cameras: any[] = [];
 
   constructor(private http: HttpClient) {
   }
@@ -20,18 +21,24 @@ export class CameraService {
 
     return observable
       .pipe(
-        map(({rows: cameras}: any) => cameras.map(camera => Camera.parse(camera)))
+        map((cameras: any) => cameras
+          .map((camera) => {
+            camera.id = (cameras.reduce((memo, cmr) => +cmr.id > memo ? +cmr.id : memo, 0) + 1);
+            let cam = Camera.parse(camera);
+            this.cameras.push(cam);
+            return cam;
+          }))
       );
   }
 
   create(camera: Camera): Observable<Camera> {
-    const id = CAMERAS.reduce((memo, cmr) => cmr.id > memo ? cmr.id : memo, 0) + 1;
+    const id = this.cameras.reduce((memo, cmr) => cmr.id > memo ? cmr.id : memo, 0) + 1;
     const newCamera = {
       ...camera.toJSON(),
       id
     };
 
-    CAMERAS.push(newCamera);
+    this.cameras.push(newCamera);
 
     return of(Camera.parse(newCamera));
   }
@@ -52,15 +59,15 @@ export class CameraService {
   //   return of(Camera.parse(existing));
   // }
 
-  delete(camera: Camera): Observable<{id: string}> {
+  delete(camera: Camera): Observable<{id: number}> {
     const id = +camera.id;
-    const existing = CAMERAS.find(cmr => cmr.id === id);
+    const existing = this.cameras.find(cmr => cmr.id === id);
 
     if (!existing) {
       throw new Error('Camera hasn\'t been created yet');
     }
 
-    CAMERAS.splice(CAMERAS.indexOf(existing), 1);
+    this.cameras.splice(this.cameras.indexOf(existing), 1);
 
     return of({id: camera.id});
   }

@@ -113,7 +113,7 @@ export class CamerasState {
 
     const {cameras} = getState();
 
-    payload.camera.id = (cameras.reduce((memo, cmr) => +cmr.id > memo ? +cmr.id : memo, 0) + 1).toString();
+    payload.camera.id = (cameras.reduce((memo, cmr) => +cmr.id > memo ? +cmr.id : memo, 0) + 1);
 
     patchState({
       cameras: [
