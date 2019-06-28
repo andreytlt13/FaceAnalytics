@@ -3,6 +3,7 @@ import numpy as np
 import imutils
 import dlib
 import cv2
+import PIL
 import os
 import time
 
@@ -47,14 +48,18 @@ class VideoStream():
         t_nets_initialization = time.monotonic()
         # person detection model
         self.net = cv2.dnn.readNetFromCaffe(PROTOTXT, MODEL)
-        # face models
-        self.net_face_detector = cv2.dnn.readNetFromCaffe(PROTOTXT_FACE, MODEL_FACE)
-        print('[TIME LOG] t_nets_initialization_elapsed:', time.monotonic() - t_nets_initialization)
 
-        t_loading_embs = time.monotonic()
-        # dlib embeddings
-        self.known_face_encodings, self.known_face_names = load_known_face_encodings(DB_PATH)
-        print('[TIME LOG] t_loading_embs_elapsed:', time.monotonic() - t_loading_embs)
+        # face models
+        if CONFIG['face_detection'] == 'True':
+            self.net_face_detector = cv2.dnn.readNetFromCaffe(PROTOTXT_FACE, MODEL_FACE)
+            print('[TIME LOG] t_nets_initialization_elapsed:', time.monotonic() - t_nets_initialization)
+
+            t_loading_embs = time.monotonic()
+            # dlib embeddings
+            self.known_face_encodings, self.known_face_names = load_known_face_encodings(DB_PATH)
+            print('[TIME LOG] t_loading_embs_elapsed:', time.monotonic() - t_loading_embs)
+        else:
+            print('[TIME LOG] t_nets_initialization_elapsed:', time.monotonic() - t_nets_initialization)
 
         self.classes = ["background", "aeroplane", "bicycle", "bird", "boat",
                         "bottle", "bus", "car", "cat", "chair", "cow", "diningtable",
@@ -110,7 +115,7 @@ class VideoStream():
             objects, embeding_matrix = self.ct.update(rects, orig_frame, frame, self.trackableObjects, self.embeding_list)
             t_emb_matrix_elapsed = time.monotonic() - t_emb_matrix
 
-            frame = self.draw_labels(frame, objects)
+            frame = self.draw_labels(frame, orig_frame, objects)
 
             # Update Trackable objects
             t_updating_trObj = time.monotonic()
@@ -119,9 +124,12 @@ class VideoStream():
             t_updating_trObj_elapsed = time.monotonic() - t_updating_trObj
 
             # Face recognition
-            t_face_recognition = time.monotonic()
-            frame = self.face_recognition(frame, orig_frame)
-            t_face_recognition_elapsed = time.monotonic() - t_face_recognition
+            if CONFIG['face_detection'] == 'True':
+                t_face_recognition = time.monotonic()
+                frame = self.face_recognition(frame, orig_frame)
+                t_face_recognition_elapsed = time.monotonic() - t_face_recognition
+            else:
+                t_face_recognition_elapsed = None
 
         else:
             t_emb_matrix_elapsed = None
@@ -136,7 +144,7 @@ class VideoStream():
 
         return frame, time_log, self.trackableObjects
 
-    def draw_labels(self, frame, objects):
+    def draw_labels(self, frame, orig_frame, objects):
 
         for (objectID, info) in objects.items():
 
@@ -144,6 +152,18 @@ class VideoStream():
             cv2.putText(frame, text, (info['centroid'][0] - 10, info['centroid'][1] - 10),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
             cv2.circle(frame, (info['centroid'][0], info['centroid'][1]), 4, (0, 255, 0), -1)
+
+            sX, sY, eX, eY = info['rect']
+            output = frame.copy()
+
+            mask = np.zeros(frame.shape, dtype=np.uint8)
+            color_ellipse = (0, 255, 0)
+            mask = cv2.ellipse(mask, (info['centroid'][0], info['centroid'][1]), (int(0.5 * (eX - sX)), int(0.5 * (eY - sY))), 5, 0, 360, color_ellipse, -1)
+            mask = cv2.ellipse(mask, (info['centroid'][0], info['centroid'][1]), (int(0.5 * (eX - sX)), int(0.5 * (eY - sY))), 5, 0, 360, (255, 255, 255), 5)
+            mask = cv2.GaussianBlur(mask, (11, 11), 0)
+            output = cv2.addWeighted(mask, 0.22, output, 1.0, 0, output)
+
+            frame = output.copy()
 
         return frame
 
@@ -183,7 +203,7 @@ class VideoStream():
                     (startX, startY, endX, endY) = box.astype('int')
 
                     # person box visualization
-                    cv2.rectangle(frame, (startX, startY), (endX, endY), (0, 255, 0), 2)
+                    # cv2.rectangle(frame, (startX, startY), (endX, endY), (0, 255, 0), 2)
 
                     if startY < 0:
                         startY = 0
@@ -284,19 +304,6 @@ class VideoStream():
                     # face box in person_im coordinates
                     box = detections[0, 0, i, 3:7] * np.array([W, H, W, H])
                     (startX, startY, endX, endY) = box.astype('int')
-
-                    # this makes face processing very slow
-                    # face_w, face_h = endX - startX, endY - startY
-                    # if face_w < 60:
-                    #     pad_x = 30
-                    # else:
-                    #     pad_x = int(0.4*face_w)
-                    #
-                    # if face_h < 120:
-                    #     pad_y = 30
-                    # else:
-                    #     pad_y = int(0.25*face_h)
-                    #
 
                     pad_y, pad_x = 30, 30
                     if startY - pad_y < 0:

@@ -23,7 +23,7 @@ def get_mean_stat(df, col_name):
 
     return mean_time, fig
 
-def get_result(timelog_path, save_dir):
+def get_result(timelog_path, save_dir, face_detection):
     print('[TIME LOG] summary...')
 
     df = pd.read_csv(timelog_path)
@@ -36,7 +36,12 @@ def get_result(timelog_path, save_dir):
 
     frames = []
     # mean stage processing time for each number of trackableObjects
-    for col_name in ['t_detecting', 't_tracking', 't_updating_trObj', 't_face_recognition']:
+    if face_detection == 'True':
+        to_analyze = ['t_detecting', 't_tracking', 't_updating_trObj', 't_face_recognition']
+    else:
+        to_analyze = ['t_detecting', 't_tracking', 't_updating_trObj']
+
+    for col_name in to_analyze:
         stage_frame, fig = get_mean_stat(df, col_name)
         fig.savefig(os.path.join(save_dir, 'avg_time_{}.jpg'.format(col_name)))
         frames.append(stage_frame)

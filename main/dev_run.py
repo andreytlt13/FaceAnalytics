@@ -12,6 +12,7 @@ from main.tests import performance_analysis, accuracy_analysis
 CONFIG = config_parser.parse()
 
 # camera_url = 'vlc_record_2019_05_30_12h50m55s.mp4' #kate_andrey
+# frame_out_wh = (600, 450)
 # camera_url = 'vlc-record-2019-06-04-14h03m36s.mp4' #andrey
 # camera_url = 'vlc-record-2019-06-10-14h42m31s.mp4' #varya_daria
 
@@ -88,5 +89,5 @@ out_video.release()
 
 print('[TIME LOG] all processed time :', time.monotonic() - t_all)
 
-performance_analysis.get_result(os.path.join(logs_dir, '{}.csv'.format(time_log_name)), save_dir)
+performance_analysis.get_result(os.path.join(logs_dir, '{}.csv'.format(time_log_name)), save_dir, face_detection=CONFIG['face_detection'])
 accuracy_analysis.get_result(tr_objects, tested_vid=os.path.join(tests_dir, 'testing_videos/'+camera_url), save_dir=save_dir)
