@@ -3,15 +3,16 @@ import {Observable, of} from 'rxjs';
 import {Camera} from './camera';
 import {HttpClient} from '@angular/common/http';
 import {map} from 'rxjs/operators';
+import {environment} from '../../../environments/environment';
 
 import CAMERAS from './mock-cameras';
-const CAMERA_URL = 'http://10.101.1.23:9090/camera/list';
+const CAMERA_URL = environment.apiUrl + '/camera/list';
 
 @Injectable({
   providedIn: 'root'
 })
 export class CameraService {
-  private cameras: any[] = [];
+  private cameras: Camera[] = [];
 
   constructor(private http: HttpClient) {
   }
@@ -33,10 +34,7 @@ export class CameraService {
 
   create(camera: Camera): Observable<Camera> {
     const id = this.cameras.reduce((memo, cmr) => cmr.id > memo ? cmr.id : memo, 0) + 1;
-    const newCamera = {
-      ...camera.toJSON(),
-      id
-    };
+    const newCamera = new Camera(id, camera.camera_url, camera.name, camera.status, camera.url_stream);
 
     this.cameras.push(newCamera);
 
