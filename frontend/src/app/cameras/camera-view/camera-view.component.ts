@@ -84,7 +84,7 @@ export class CameraViewComponent implements OnInit, OnDestroy {
 
     this.route.paramMap.subscribe((params) => {
       this.play = false;
-      const cameraId = params.get('id');
+      const cameraId = +params.get('id');
 
       this.store.select(CamerasState.cameras).subscribe((cameras: Camera[]) => {
         const camera = cameras.find(cmr => cmr.id === cameraId);
@@ -152,7 +152,7 @@ export class CameraViewComponent implements OnInit, OnDestroy {
 
     this.graphLoading = true;
     this.graphData$ = this.eventDataService
-      .load(camera.url, this.startDate.format('YYYY-MM-DD HH:mm:ss'), this.endDate.endOf('day').format('YYYY-MM-DD HH:mm:ss'))
+      .load(camera.camera_url, this.startDate.format('YYYY-MM-DD HH:mm:ss'), this.endDate.endOf('day').format('YYYY-MM-DD HH:mm:ss'))
       .pipe(
         tap(() => this.graphLoading = false),
         map((events: CameraEvent[]) => Graph.parse('Unique objects per date', events, {
@@ -181,7 +181,7 @@ export class CameraViewComponent implements OnInit, OnDestroy {
 
     while (start < this.endDate.endOf('day')) {
       const heatmap = await this.eventDataService
-        .load(camera.url, start.format('YYYY-MM-DD HH:mm:ss'), start.add(30, 'minute').format('YYYY-MM-DD HH:mm:ss'))
+        .load(camera.camera_url, start.format('YYYY-MM-DD HH:mm:ss'), start.add(30, 'minute').format('YYYY-MM-DD HH:mm:ss'))
         .pipe(
           // delay(100),
           catchError(() => of([])),

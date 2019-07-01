@@ -15,9 +15,9 @@ import {filter, first, map, mergeMap, tap} from 'rxjs/operators';
 })
 export class CameraEditComponent implements OnInit {
   public camera$: Observable<Camera> = this.route.paramMap.pipe(
-    map(params => params.get('id')),
+    map(params => +params.get('id')),
     mergeMap(cameraId => {
-      if (!cameraId || cameraId === 'create') {
+      if (!cameraId) {
         return of(new Camera());
       }
       return this.store.select(CamerasState.cameras)
