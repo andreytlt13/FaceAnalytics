@@ -18,7 +18,7 @@ def get_cropped_person(orig_frame, resized_frame, resized_box):
 
 
 class CentroidTracker:
-    def __init__(self, maxDisappeared=50, maxDistance=50):
+    def __init__(self, maxDisappeared=80, maxDistance=120):
         # initialize the next unique object ID along with two ordered
         # dictionaries used to keep track of mapping a given object
         # ID to its centroid and number of consecutive frames it has

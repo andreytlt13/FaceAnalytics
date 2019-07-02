@@ -3,7 +3,6 @@ import numpy as np
 import imutils
 import dlib
 import cv2
-import PIL
 import os
 import time
 
@@ -149,19 +148,37 @@ class VideoStream():
         for (objectID, info) in objects.items():
 
             text = "ID {}".format(objectID)
-            cv2.putText(frame, text, (info['centroid'][0] - 10, info['centroid'][1] - 10),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-            cv2.circle(frame, (info['centroid'][0], info['centroid'][1]), 4, (0, 255, 0), -1)
-
             sX, sY, eX, eY = info['rect']
             output = frame.copy()
 
+            # # --- visualization - centroid point and label "ID <objectID>"
+            # cv2.putText(frame, text, (info['centroid'][0] - 10-5, info['centroid'][1] - 10-5),
+            #             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+            # cv2.circle(frame, (info['centroid'][0], info['centroid'][1]), 4, (0, 255, 0), -1)
+            # ---
+
+            # # --- visualization - text in the rectangle above the head
+            # line_s, line_e = (info['centroid'][0]-20, info['centroid'][1]-80-10), (info['centroid'][0]-20, info['centroid'][1]-80)
+            # rect_s, rect_e = (line_s[0]-30, line_s[1]-30), (line_s[0]+30, line_s[1])
+            # text_s = (rect_s[0]+10, int(0.5*(rect_e[1]+rect_s[1])))
+            # overlay = frame.copy()
+            # cv2.line(overlay, line_s, line_e, (255,255,255), 2)
+            # cv2.rectangle(overlay, rect_s, rect_e, (255, 255, 255), -1)
+            # cv2.putText(overlay, text, text_s, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 2)
+            # cv2.addWeighted(overlay, 0.8, output, 1.0-0.8, 0, output)
+            # # ---
+
+            # --- visualization - blurred ellipse
             mask = np.zeros(frame.shape, dtype=np.uint8)
             color_ellipse = (0, 255, 0)
-            mask = cv2.ellipse(mask, (info['centroid'][0], info['centroid'][1]), (int(0.5 * (eX - sX)), int(0.5 * (eY - sY))), 5, 0, 360, color_ellipse, -1)
-            mask = cv2.ellipse(mask, (info['centroid'][0], info['centroid'][1]), (int(0.5 * (eX - sX)), int(0.5 * (eY - sY))), 5, 0, 360, (255, 255, 255), 5)
+            mask = cv2.ellipse(mask, (info['centroid'][0], info['centroid'][1]),
+                                     (int(0.5 * (eX - sX)), int(0.5 * (eY - sY))), 5, 0, 360, color_ellipse, -1)
+            mask = cv2.ellipse(mask, (info['centroid'][0], info['centroid'][1]),
+                                     (int(0.5 * (eX - sX)), int(0.5 * (eY - sY))), 5, 0, 360, (255, 255, 255), 5)
             mask = cv2.GaussianBlur(mask, (11, 11), 0)
             output = cv2.addWeighted(mask, 0.22, output, 1.0, 0, output)
+            cv2.putText(output, text, (info['centroid'][0] - 10 - 5, info['centroid'][1] - 10 - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+            # ---
 
             frame = output.copy()
 
@@ -194,6 +211,9 @@ class VideoStream():
         for i in np.arange(0, detections.shape[2]):
             idx = int(detections[0, 0, i, 1])
             confidence = detections[0, 0, i, 2]
+
+            if idx < 0:
+                idx = 1
 
             if self.classes[idx] != "person":
                 continue
