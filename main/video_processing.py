@@ -15,6 +15,8 @@ import tensorflow as tf
 from face_processing.best_face_selector import select_best_face
 from face_processing.face_recognition import recognize_face, load_known_face_encodings
 
+from keras.applications.resnet50 import preprocess_input
+
 CONFIG = config_parser.parse()
 
 # path to PycharmProject
@@ -47,14 +49,18 @@ class VideoStream():
         t_nets_initialization = time.monotonic()
         # person detection model
         self.net = cv2.dnn.readNetFromCaffe(PROTOTXT, MODEL)
-        # face models
-        self.net_face_detector = cv2.dnn.readNetFromCaffe(PROTOTXT_FACE, MODEL_FACE)
-        print('[TIME LOG] t_nets_initialization_elapsed:', time.monotonic() - t_nets_initialization)
 
-        t_loading_embs = time.monotonic()
-        # dlib embeddings
-        self.known_face_encodings, self.known_face_names = load_known_face_encodings(DB_PATH)
-        print('[TIME LOG] t_loading_embs_elapsed:', time.monotonic() - t_loading_embs)
+        # face models
+        if CONFIG['face_detection'] == 'True':
+            self.net_face_detector = cv2.dnn.readNetFromCaffe(PROTOTXT_FACE, MODEL_FACE)
+            print('[TIME LOG] t_nets_initialization_elapsed:', time.monotonic() - t_nets_initialization)
+
+            t_loading_embs = time.monotonic()
+            # dlib embeddings
+            self.known_face_encodings, self.known_face_names = load_known_face_encodings(DB_PATH)
+            print('[TIME LOG] t_loading_embs_elapsed:', time.monotonic() - t_loading_embs)
+        else:
+            print('[TIME LOG] t_nets_initialization_elapsed:', time.monotonic() - t_nets_initialization)
 
         self.classes = ["background", "aeroplane", "bicycle", "bird", "boat",
                         "bottle", "bus", "car", "cat", "chair", "cow", "diningtable",
@@ -85,7 +91,7 @@ class VideoStream():
         ret, frame = self.vs.read()
 
         if not ret:
-            return None, [None]
+            return None, [None], self.trackableObjects
 
         orig_frame = frame.copy()
         frame = imutils.resize(frame, width=600)
@@ -110,7 +116,7 @@ class VideoStream():
             objects, embeding_matrix = self.ct.update(rects, orig_frame, frame, self.trackableObjects, self.embeding_list)
             t_emb_matrix_elapsed = time.monotonic() - t_emb_matrix
 
-            frame = self.draw_labels(frame, objects)
+            frame = self.draw_labels(frame, orig_frame, objects)
 
             # Update Trackable objects
             t_updating_trObj = time.monotonic()
@@ -119,9 +125,12 @@ class VideoStream():
             t_updating_trObj_elapsed = time.monotonic() - t_updating_trObj
 
             # Face recognition
-            t_face_recognition = time.monotonic()
-            frame = self.face_recognition(frame, orig_frame)
-            t_face_recognition_elapsed = time.monotonic() - t_face_recognition
+            if CONFIG['face_detection'] == 'True':
+                t_face_recognition = time.monotonic()
+                frame = self.face_recognition(frame, orig_frame)
+                t_face_recognition_elapsed = time.monotonic() - t_face_recognition
+            else:
+                t_face_recognition_elapsed = None
 
         else:
             t_emb_matrix_elapsed = None
@@ -134,16 +143,46 @@ class VideoStream():
                     t_emb_matrix_elapsed, t_updating_trObj_elapsed,
                     t_face_recognition_elapsed]
 
-        return frame, time_log
+        return frame, time_log, self.trackableObjects
 
-    def draw_labels(self, frame, objects):
+    def draw_labels(self, frame, orig_frame, objects):
 
         for (objectID, info) in objects.items():
 
             text = "ID {}".format(objectID)
-            cv2.putText(frame, text, (info['centroid'][0] - 10, info['centroid'][1] - 10),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-            cv2.circle(frame, (info['centroid'][0], info['centroid'][1]), 4, (0, 255, 0), -1)
+            sX, sY, eX, eY = info['rect']
+            output = frame.copy()
+
+            # # --- visualization - centroid point and label "ID <objectID>"
+            # cv2.putText(frame, text, (info['centroid'][0] - 10-5, info['centroid'][1] - 10-5),
+            #             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+            # cv2.circle(frame, (info['centroid'][0], info['centroid'][1]), 4, (0, 255, 0), -1)
+            # ---
+
+            # # --- visualization - text in the rectangle above the head
+            # line_s, line_e = (info['centroid'][0]-20, info['centroid'][1]-80-10), (info['centroid'][0]-20, info['centroid'][1]-80)
+            # rect_s, rect_e = (line_s[0]-30, line_s[1]-30), (line_s[0]+30, line_s[1])
+            # text_s = (rect_s[0]+10, int(0.5*(rect_e[1]+rect_s[1])))
+            # overlay = frame.copy()
+            # cv2.line(overlay, line_s, line_e, (255,255,255), 2)
+            # cv2.rectangle(overlay, rect_s, rect_e, (255, 255, 255), -1)
+            # cv2.putText(overlay, text, text_s, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 2)
+            # cv2.addWeighted(overlay, 0.8, output, 1.0-0.8, 0, output)
+            # # ---
+
+            # --- visualization - blurred ellipse
+            mask = np.zeros(frame.shape, dtype=np.uint8)
+            color_ellipse = (0, 255, 0)
+            mask = cv2.ellipse(mask, (info['centroid'][0], info['centroid'][1]),
+                                     (int(0.5 * (eX - sX)), int(0.5 * (eY - sY))), 5, 0, 360, color_ellipse, -1)
+            mask = cv2.ellipse(mask, (info['centroid'][0], info['centroid'][1]),
+                                     (int(0.5 * (eX - sX)), int(0.5 * (eY - sY))), 5, 0, 360, (255, 255, 255), 5)
+            mask = cv2.GaussianBlur(mask, (11, 11), 0)
+            output = cv2.addWeighted(mask, 0.22, output, 1.0, 0, output)
+            cv2.putText(output, text, (info['centroid'][0] - 10 - 5, info['centroid'][1] - 10 - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+            # ---
+
+            frame = output.copy()
 
         return frame
 
@@ -173,30 +212,36 @@ class VideoStream():
 
         for i in np.arange(0, detections.shape[2]):
             idx = int(detections[0, 0, i, 1])
+            confidence = detections[0, 0, i, 2]
+
+            if idx < 0:
+                idx = 1
 
             if self.classes[idx] != "person":
                 continue
+            else:
+                if confidence > 0.75:
+                    box = detections[0, 0, i, 3:7] * np.array([self.W, self.H, self.W, self.H])
+                    (startX, startY, endX, endY) = box.astype('int')
 
-            box = detections[0, 0, i, 3:7] * np.array([self.W, self.H, self.W, self.H])
-            (startX, startY, endX, endY) = box.astype('int')
+                    # person box visualization
+                    # cv2.rectangle(frame, (startX, startY), (endX, endY), (0, 255, 0), 2)
 
-            # person box visualization
-            # cv2.rectangle(frame, (startX, startY), (endX, endY), (0, 255, 0), 2)
+                    if startY < 0:
+                        startY = 0
 
-            if startY < 0:
-                startY = 0
+                    imgCrop = frame[startY:endY, startX:endX]
 
-            imgCrop = frame[startY:endY, startX:endX]
+                    resize_img = cv2.resize(imgCrop, (128, 256))
+                    resize_img = np.expand_dims(resize_img, axis=0)
+                    resize_img = preprocess_input(resize_img.reshape(1, 256,128,3))
+                    emb = self.imgVectorizer.run(self.endpoints['emb'], feed_dict={self.images: resize_img})
+                    self.embeding_list.append(emb)
 
-            resize_img = cv2.resize(imgCrop, (128, 256))
-            resize_img = np.expand_dims(resize_img, axis=0)
-            emb = self.imgVectorizer.run(self.endpoints['emb'], feed_dict={self.images: resize_img})
-            self.embeding_list.append(emb)
-
-            tracker = dlib.correlation_tracker()
-            rect = dlib.rectangle(startX, startY, endX, endY)
-            tracker.start_track(rgb, rect)
-            self.trackers.append(tracker)
+                    tracker = dlib.correlation_tracker()
+                    rect = dlib.rectangle(startX, startY, endX, endY)
+                    tracker.start_track(rgb, rect)
+                    self.trackers.append(tracker)
 
         return frame
 
@@ -282,7 +327,13 @@ class VideoStream():
                     # face box in person_im coordinates
                     box = detections[0, 0, i, 3:7] * np.array([W, H, W, H])
                     (startX, startY, endX, endY) = box.astype('int')
+
                     pad_y, pad_x = 30, 30
+                    if startY - pad_y < 0:
+                        pad_y = 0
+                    if startX - pad_x < 0:
+                        pad_y = 0
+
                     face_im = person_im[startY - pad_y: endY + pad_y, startX - pad_x: endX + pad_x]
 
                     if save_img:
