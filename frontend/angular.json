@@ -77,7 +77,8 @@
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
           "options": {
-            "browserTarget": "face-analytics:build"
+            "browserTarget": "face-analytics:build",
+            "liveReload": false
           },
           "configurations": {
             "local": {
