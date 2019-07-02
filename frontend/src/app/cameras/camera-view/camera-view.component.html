@@ -26,7 +26,6 @@
       <div #heatmap id="heatmap" [style.display]="streamLoading ? 'none' : 'block'"></div>
       <img class="camera-video"
            [class.camera-video--full]="!streamLoading"
-           *ngIf="selected?.type === 'image'"
            [src]="selected?.videoStreamUrl"
            (load)="streamLoading = false">
       <div class="filters" fxLayout="row" fxLayoutGap="10px" fxLayoutAlign="end center">
