@@ -1,15 +1,8 @@
-import {environment} from '../../../environments/environment';
-
 export class Camera {
   constructor(public id: number = null, public camera_url: string = '', public name: string = '', public status = '', public url_stream = '') {}
 
   get videoStreamUrl() {
-    if (this.camera_url.includes('rtsp://')) {
-      // return `${environment.apiUrl}/video_stream?camera_url=${this.url}`;
-      return `${environment.apiUrl}/video_stream?camera_url=0`;
-    } else {
-      return this.camera_url;
-    }
+    return this.url_stream;
   }
 
   static parse({ id, camera_url, name, status, url_stream }) {
