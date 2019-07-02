@@ -5,8 +5,8 @@ export class Camera {
     public id: number = null,
     public camera_url: string = '',
     public name: string = '',
-    public status = '',
-    public url_stream = '') {
+    public status: string = '',
+    public url_stream: string = '') {
   }
 
   get videoStreamUrl() {

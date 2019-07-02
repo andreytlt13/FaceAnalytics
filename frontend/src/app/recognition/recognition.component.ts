@@ -16,7 +16,7 @@ const VIDEO_STREAM_URL = environment.videoStreamUrl;
 })
 export class RecognitionComponent implements OnInit, OnDestroy {
   displayedColumns: string[] = ['person', 'matches'];
-  streamUrl: string
+  streamUrl: string;
 
   dataSource$: Observable<any> = this.clientService.getUnknown(CAMERA_URL)
     .pipe(

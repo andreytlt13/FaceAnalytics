@@ -25,7 +25,7 @@ export class CameraService {
         map((cameras: any) => cameras
           .map((camera) => {
             camera.id = (cameras.reduce((memo, cmr) => +cmr.id > memo ? +cmr.id : memo, 0) + 1);
-            let cam = Camera.parse(camera);
+            const cam = Camera.parse(camera);
             this.cameras.push(cam);
             return cam;
           }))
