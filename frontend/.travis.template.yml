@@ -1,10 +1,6 @@
 dist: trusty
 sudo: false
 
-language: node_js
-node_js:
-  - "10"
-
 addons:
   apt:
     sources:
@@ -12,12 +8,22 @@ addons:
     packages:
       - google-chrome-stable
 
+language: node_js
+node_js:
+  - "10"
+
 cache:
   directories:
-    - ./node_modules
+    - ./frontend/node_modules
+
+before_install:
+  - cd frontend/
 
 install:
   - npm install
+
+before_script:
+  - cd frontend/
 
 script:
   - npm run test -- --no-watch --no-progress --browsers=ChromeHeadlessCI
