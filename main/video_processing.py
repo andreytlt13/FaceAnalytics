@@ -15,6 +15,8 @@ import tensorflow as tf
 from face_processing.best_face_selector import select_best_face
 from face_processing.face_recognition import recognize_face, load_known_face_encodings
 
+from keras.applications.resnet50 import preprocess_input
+
 CONFIG = config_parser.parse()
 
 # path to PycharmProject
@@ -232,6 +234,7 @@ class VideoStream():
 
                     resize_img = cv2.resize(imgCrop, (128, 256))
                     resize_img = np.expand_dims(resize_img, axis=0)
+                    resize_img = preprocess_input(resize_img.reshape(1, 256,128,3))
                     emb = self.imgVectorizer.run(self.endpoints['emb'], feed_dict={self.images: resize_img})
                     self.embeding_list.append(emb)
 
