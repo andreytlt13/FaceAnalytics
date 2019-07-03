@@ -1,0 +1,27 @@
+dist: trusty
+sudo: false
+
+addons:
+  apt:
+    sources:
+      - google-chrome
+    packages:
+      - google-chrome-stable
+
+language: node_js
+node_js:
+  - "10"
+
+cache:
+  directories:
+    - ./frontend/node_modules
+
+before_install:
+  - cd frontend/
+
+install:
+  - npm install
+
+script:
+  - npm run test -- --no-watch --no-progress --browsers=ChromeHeadlessCI
+  - npm run e2e -- --protractor-config=e2e/protractor-ci.conf.js
