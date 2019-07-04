@@ -4,9 +4,8 @@ import os
 import imutils
 from main.common import config_parser
 
-
 CONFIG = config_parser.parse()
-
+CONFIG["root_path"] = os.path.expanduser("~") + CONFIG["root_path"]
 # path to face models storage
 face_models = os.path.join(CONFIG['root_path'], CONFIG['face_models'])
 
@@ -20,12 +19,14 @@ nose_cascade = cv2.CascadeClassifier(os.path.join(face_models, nose_casc))
 def variance_of_laplacian(image):
     # compute the Laplacian of the image and then return the focus measure,
     # which is simply the variance of the Laplacian
-	return cv2.Laplacian(image, cv2.CV_64F).var()
+    return cv2.Laplacian(image, cv2.CV_64F).var()
+
 
 def check_models(list_models):
     for indx, cascade in enumerate(list_models):
-        if(cascade.empty()):
+        if (cascade.empty()):
             print(indx, 'file couldnt load, check out models paths')
+
 
 def cascade_detection(img):
     # cascades detection: eyes, mouth, noze
@@ -54,6 +55,7 @@ def cascade_detection(img):
     img = roi_color.copy()
     print('found cascades_on_face:', cascades_on_face)
     return img, cascades_on_face
+
 
 def select_best_face(faces_sequence_for_person):
     # get the best face from face sequence for current person

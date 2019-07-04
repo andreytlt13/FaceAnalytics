@@ -1,19 +1,35 @@
 import argparse
 import sys
 import cv2
+import socket
+import pickle
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from socketserver import ThreadingMixIn
 from threading import Thread
-from video_processing import VideoStream
+from main.video_processing import VideoStream
 
-__version__ = '0.1.1'
+__version__ = '0.1.2'
 
 parser = argparse.ArgumentParser(description='video url or path')
 ap = argparse.ArgumentParser()
 ap.add_argument("-src", "--source", required=False, help="cam url")
+ap.add_argument("-s", "--server_ip", required=False, default='0.0.0.0',
+                help="ip address of the server to which the client will connect")
+ap.add_argument("-p", "--port", required=False, default=14600,
+                help="socket port")
 
 args = vars(ap.parse_args())
-args["source"] = "/Users/andrey/Downloads/Telegram Desktop/vlc_record_2019_05_30_12h50m55s.mp4"
+#args["source"] = "/Users/andrey/Downloads/Telegram Desktop/vlc_record_2019_05_30_12h50m55s.mp4"
+#args["source"] = "rtsp://user:Hneu74k092@10.101.106.104:554/live/main"
+#args["source"] = "rtsp://admin:admin@10.101.1.221:554/ch01/1" #base stream 0
+args["source"] = 0
+
+
+sock = socket.socket()
+sock.bind((args["server_ip"], args["port"]))
+sock.listen(10)
+sock.setblocking(0)
+
 
 class CamHandler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -24,9 +40,6 @@ class CamHandler(BaseHTTPRequestHandler):
             self.end_headers()
             while True:
                 try:
-
-                    # if(frame != None):
-                    #     pass
                     r, buf = cv2.imencode(".jpg", frame)
                     self.wfile.write("--jpgboundary\r\n".encode())
                     self.end_headers()
@@ -88,41 +101,58 @@ class WebcamVideoStream:
         self.stopped = True
 
 
-def realmain(args=None):
-
+def main(args=None):
     global frame
-
-    ip = '0.0.0.0'
-
+    ip = args["server_ip"]
     try:
         if args["source"] == '0':
             camera_url = int(args["source"])
         else:
             camera_url = args["source"]
 
-        #connection = EventDBLogger()
-        #table = connection.create_table(camera_url)
+        # connection = EventDBLogger()
+        # table = connection.create_table(camera_url)
 
         vs = VideoStream(camera_url)
-        #cap = WebcamVideoStream(camera_url).start()
-        server = ThreadedHTTPServer((ip, 9090), CamHandler)
+        server = ThreadedHTTPServer((ip, 9091), CamHandler)
         print("[INFO] starting server")
         target = Thread(target=server.serve_forever,args=())
 
         i = 0
         while True:
-            #img = cap.read()
-            img = vs.process_next_frame()
-            #img1 = imutils.resize(img, width=600)
-            #img2 = cv2.GaussianBlur(img1, (5, 5), 0)
-            #frame = cv2.cvtColor(img2, cv2.COLOR_BGR2HSV)
-            #frame = cv2.Canny(img, 35, 125)
-            frame = img
+            frame, _, _ = vs.process_next_frame()
             if(i == 0):
                 target.start()
             i +=1
-            if vs.trackableObjects.__len__() > 0:
-                "kokokoko"
+            try:
+                client, addr = sock.accept()
+                print("accept")
+            except socket.error:  # данных нет
+                pass  # тут ставим код выхода
+            else:  # данные есть
+                client.setblocking(0)  # снимаем блокировку и тут тоже
+                query = client.recv(16384)
+                query = pickle.loads(query)
+                print("Request type: " + query["type"])
+                if query["type"] == "get_objects":
+                    message = {}
+                    for i in vs.trackableObjects.keys():
+                        tmp = {
+                            #'objectID': vs.trackableObjects[i].objectID,
+                            'name':  vs.trackableObjects[i].name,
+                            'names': vs.trackableObjects[i].names
+                        }
+                        message[i] = tmp
+                    b_message = pickle.dumps(message)
+                    client.send(b_message)
+                    client.close()
+                    print("close")
+                elif query["type"] == "set_name":
+                    object_id = int(query['object_id'])
+                    vs.trackableObjects[object_id].name = (query['name'], )
+                    #vs.trackableObjects[object_id].stars = query['stars']
+                    #vs.trackableObjects[object_id].description = query['description']
+                    print("close")
 
 
     except KeyboardInterrupt:
@@ -130,4 +160,4 @@ def realmain(args=None):
 
 
 if __name__ == '__main__':
-    realmain(args)
+    main(args)

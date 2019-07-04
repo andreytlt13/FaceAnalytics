@@ -1,9 +1,9 @@
 import pandas as pd
 from sqlalchemy import *
 from common import config_parser
+import os
 import json
 import datetime
-
 CONFIG = config_parser.parse()
 DEFAULT_PATH = 'sqlite:///db/surveillance.db'
 
