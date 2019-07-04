@@ -137,7 +137,7 @@ class VideoStream():
                     self.connection.insert(self.table_event_log, event)
 
                     person_save_path = os.path.join(CONFIG["root_path"],
-                                                    'data/photo/id_{}/person/'.format(tr_indx))
+                                                    'data/photo/{}/id_{}/person/'.format(self.db_name, tr_indx))
                     os.makedirs(person_save_path, exist_ok=True)
 
                     if save_img:
@@ -319,7 +319,8 @@ class VideoStream():
                     # detect face from orig size person
                     frame, detected_face = self.face_detection(frame, orig_frame, tr_obj.rect, tr_obj.img, tr_indx)
 
-                    face_save_path = os.path.join(CONFIG["root_path"], 'data/photo/id_{}/face/'.format(tr_indx))
+                    face_save_path = os.path.join(CONFIG["root_path"], 'data/photo/{}/id_{}/face/'.format(self.db_name,
+                                                                                                          tr_indx))
                     os.makedirs(face_save_path, exist_ok=True)
 
                     # add cropped_face to face_sequence
