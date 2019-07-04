@@ -11,9 +11,9 @@ from main.tests import performance_analysis, accuracy_analysis
 
 CONFIG = config_parser.parse()
 
-log_ = True
-analyze_log_ = True
-save_res_ = True
+log_ = False
+analyze_log_ = False
+save_res_ = False
 
 stream_ = False
 
@@ -21,20 +21,20 @@ tests_dir = os.path.join(CONFIG["root_path"], CONFIG["tests_dir"])
 logs_dir = os.path.join(tests_dir, 'logs')
 
 if stream_:
-    camera_url = 'rtsp://<>'
+    camera_url = 'rtsp://user:Hneu74k092@10.101.106.104:554/live/main'
     tmp_name = camera_url.replace('/', '_')
     vs = VideoStream(camera_url)
 
 else:
 
-    # camera_url = 'vlc_record_2019_05_30_12h50m55s.mp4' #kate_andrey
+    camera_url = 'vlc_record_2019_05_30_12h50m55s.mp4' #kate_andrey
     # camera_url = 'vlc-record-2019-06-04-14h03m36s.mp4' #andrey #frame_out_wh = (600, 450)
     # camera_url = 'vlc-record-2019-06-10-14h42m31s.mp4' #varya_daria
     # camera_url = 'vlc-record-2019-05-27-14h45m56s.mp4' #simon_artemy
     # camera_url = 'vlc-record-2019-05-24-13h45m52s.mp4' #simon_dmitry
     # camera_url = 'vlc_record_2019_05_24_15h29m07s.mp4' #simon_walking_nikita
     # camera_url = 'vlc-record-2019-07-01-16h31m45s.mp4' #andrey_sitting_0
-    camera_url = 'vlc-record-2019-07-01-16h32m15s.mp4' #andrey_sitting_1
+    # camera_url = 'vlc-record-2019-07-01-16h32m15s.mp4' #andrey_sitting_1
     # camera_url = 'vlc-record-2019-07-01-17h38m49s.mp4' #sveta
 
     # cctv videos
@@ -80,7 +80,7 @@ if save_res_:
     # saving video result [optional]
     if stream_:
         save_dir = os.path.join(tests_dir, 'results/{}'.format(tmp_name))
-        out_vid_path = os.path.join(save_dir, 'res_{}.mp4'.format(tmp_name))
+        out_vid_path = os.path.join(save_dir, 'res_{}_{}.mp4'.format(tmp_name, datetime.datetime.now()))
     else:
         save_dir = os.path.join(tests_dir, 'results/{}'.format(camera_url))
         out_vid_path = os.path.join(save_dir, 'res_{}_{}.mp4'.format(camera_url.split('.')[0], datetime.datetime.now()))

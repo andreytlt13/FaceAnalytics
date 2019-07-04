@@ -5,6 +5,8 @@ import dlib
 import cv2
 import os
 import time
+import json
+import datetime
 
 from main.common import config_parser
 from main.common.object_tracker import TrackableObject, CentroidTracker
@@ -16,6 +18,9 @@ from face_processing.best_face_selector import select_best_face
 from face_processing.face_recognition import recognize_face, load_known_face_encodings
 
 from keras.applications.resnet50 import preprocess_input
+
+from rest_api.db.event_db_logger import EventDBLogger
+
 
 CONFIG = config_parser.parse()
 
@@ -36,8 +41,11 @@ MODEL_FACE = os.path.join(face_models, CONFIG["face_detector"])
 DB_PATH = os.path.join(CONFIG["root_path"], CONFIG["known_faces_db"])
 
 # dir for saving testing images [optional]
-save_img = False
-os.makedirs(os.path.join(CONFIG["root_path"], 'face_processing/tmp_faces'), exist_ok=True)
+save_img = True
+
+for d in ['face_processing/tmp_faces', 'data/db']:
+    os.makedirs(os.path.join(CONFIG["root_path"], d), exist_ok=True)
+
 
 class VideoStream():
     def __init__(self, camera_url=0):
@@ -87,6 +95,19 @@ class VideoStream():
             'Count People': 0
         }
 
+        # extracting camera name from json
+        with open('../rest_api/cam_info.json') as json_file:
+            data = json.load(json_file)
+        for elem in data:
+            if elem["camera_url"] == self.camera_url:
+                self.db_name = elem["name"].replace(' ', '_')
+                break
+
+        # creating db and connection
+        self.connection = EventDBLogger(db_name=self.db_name)
+        # creating table in db
+        self.table_event_log = self.connection.create_table_event_logger(cam_name = self.db_name)
+
     def process_next_frame(self):
         ret, frame = self.vs.read()
 
@@ -104,6 +125,24 @@ class VideoStream():
             frame = self.detecting(frame, rgb)
             t_detecting_elapsed = time.monotonic() - t_detecting
             t_tracking_elapsed = None
+
+            if len(self.trackableObjects.items()) > 0:
+                for tr_indx, tr_obj in self.trackableObjects.items():
+                    event = {
+                        'object_id': int(tr_indx),
+                        'event_time': datetime.datetime.now(),
+                        'centroid_x': int(int(tr_obj.centroids[-1][0])),
+                        'centroid_y': int(tr_obj.centroids[-1][1])
+                    }
+                    self.connection.insert(self.table_event_log, event)
+
+                    person_save_path = os.path.join(CONFIG["root_path"],
+                                                    'data/photo/id_{}/person/'.format(tr_indx))
+                    os.makedirs(person_save_path, exist_ok=True)
+
+                    if save_img:
+                        if tr_obj.img is not None and all(tr_obj.img.shape) > 0:
+                            cv2.imwrite(person_save_path + '{}_{}.jpeg'.format(tr_indx, datetime.datetime.now()), tr_obj.img)
 
         else:
             t_tracking = time.monotonic()
@@ -234,7 +273,7 @@ class VideoStream():
 
                     resize_img = cv2.resize(imgCrop, (128, 256))
                     resize_img = np.expand_dims(resize_img, axis=0)
-                    resize_img = preprocess_input(resize_img.reshape(1, 256,128,3))
+                    # resize_img = preprocess_input(resize_img.reshape(1, 256,128,3))
                     emb = self.imgVectorizer.run(self.endpoints['emb'], feed_dict={self.images: resize_img})
                     self.embeding_list.append(emb)
 
@@ -279,23 +318,28 @@ class VideoStream():
                 if tr_obj.names[0] is None:
                     # detect face from orig size person
                     frame, detected_face = self.face_detection(frame, orig_frame, tr_obj.rect, tr_obj.img, tr_indx)
-                    if save_img:
-                        cv2.imwrite(os.path.join(CONFIG["root_path"],
-                                    os.path.join(CONFIG["tmp_face_tests"], 'detected_face_{}.jpg'.format(tr_indx))),
-                                    detected_face)
+
+                    face_save_path = os.path.join(CONFIG["root_path"], 'data/photo/id_{}/face/'.format(tr_indx))
+                    os.makedirs(face_save_path, exist_ok=True)
 
                     # add cropped_face to face_sequence
                     if detected_face is not None and all(detected_face.shape) > 0:
                         # add detected_face to faces_sequence_for_person
                         tr_obj.face_seq.append(detected_face)
+                        # save face to folder
+                        if save_img:
+
+                            cv2.imwrite(face_save_path + '{}_detected_{}.jpg'.format(tr_indx,
+                                                                                     datetime.datetime.now()),
+                                                                                     detected_face)
 
                     if len(tr_obj.face_seq) > 0:
                         # select the best face from face_sequence
                         best_detected_face = select_best_face(tr_obj.face_seq)
                         if save_img:
-                            cv2.imwrite(os.path.join(CONFIG["root_path"],
-                                        os.path.join(CONFIG["tmp_face_tests"], 'best_detected_face_{}.jpg'.format(tr_indx))),
-                                        best_detected_face)
+                            cv2.imwrite(face_save_path + '{}_best_detected_face_{}.jpg'.format(tr_indx,
+                                                                                               datetime.datetime.now()),
+                                                                                               best_detected_face)
 
                         # recognize best_face
                         self.info['status'] = 'Recognizing face'
@@ -336,10 +380,10 @@ class VideoStream():
 
                     face_im = person_im[startY - pad_y: endY + pad_y, startX - pad_x: endX + pad_x]
 
-                    if save_img:
-                        cv2.imwrite(os.path.join(CONFIG["root_path"],
-                                    os.path.join(CONFIG["tmp_face_tests"], 'tmp_cropped_face_{}.jpg'.format(tr_indx))),
-                                    face_im)
+                    # if save_img:
+                    #     cv2.imwrite(os.path.join(CONFIG["root_path"],
+                    #                 os.path.join(CONFIG["tmp_face_tests"], 'tmp_cropped_face_{}.jpg'.format(tr_indx))),
+                    #                 face_im)
 
                     # reconstruction face box coordinates for visualization on frame
                     # person box coordinates
