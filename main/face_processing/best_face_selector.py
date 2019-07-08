@@ -7,14 +7,14 @@ from main.common import config_parser
 
 CONFIG = config_parser.parse()
 
-# path to face models storage
-face_models = os.path.join(CONFIG['root_path'], CONFIG['face_models'])
-
-eye_casc, mouth_casc, nose_casc = CONFIG['face_cascades'].split(',')
-
-eye_cascade = cv2.CascadeClassifier(os.path.join(face_models, eye_casc))
-mouth_cascade = cv2.CascadeClassifier(os.path.join(face_models, mouth_casc))
-nose_cascade = cv2.CascadeClassifier(os.path.join(face_models, nose_casc))
+# # path to face models storage
+# face_models = os.path.join(CONFIG['root_path'], CONFIG['face_models'])
+#
+# eye_casc, mouth_casc, nose_casc = CONFIG['face_cascades'].split(',')
+#
+# eye_cascade = cv2.CascadeClassifier(os.path.join(face_models, eye_casc))
+# mouth_cascade = cv2.CascadeClassifier(os.path.join(face_models, mouth_casc))
+# nose_cascade = cv2.CascadeClassifier(os.path.join(face_models, nose_casc))
 
 
 def variance_of_laplacian(image):
@@ -27,8 +27,10 @@ def check_models(list_models):
         if(cascade.empty()):
             print(indx, 'file couldnt load, check out models paths')
 
-def cascade_detection(img):
+def cascade_detection(img, face_cascades):
     # cascades detection: eyes, mouth, noze
+    eye_cascade, mouth_cascade, nose_cascade = face_cascades
+
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     cascades_on_face = 0
     roi_gray = gray.copy()
@@ -55,7 +57,7 @@ def cascade_detection(img):
     print('found cascades_on_face:', cascades_on_face)
     return img, cascades_on_face
 
-def select_best_face(faces_sequence_for_person):
+def select_best_face(faces_sequence_for_person, face_cascades):
     # get the best face from face sequence for current person
     # check_models([eye_cascade, mouth_cascade, nose_cascade])
     fm_faces = []
@@ -70,7 +72,7 @@ def select_best_face(faces_sequence_for_person):
                 image = face_image.copy()
 
             # count cascades face detection
-            cascaded_im, cascades_on_face = cascade_detection(image)
+            cascaded_im, cascades_on_face = cascade_detection(image, face_cascades)
             casc_faces.append(cascades_on_face)
 
     # if there is more than one face with max detected cascades
