@@ -5,15 +5,21 @@ import dlib
 import cv2
 import os
 import time
-import tensorflow as tf
-from keras.applications.resnet50 import preprocess_input
+import json
+import datetime
+
 from main.common import config_parser
 from main.common.object_tracker import TrackableObject, CentroidTracker
 import model.person_processing.nets.resnet_v1_50 as model
 import model.person_processing.heads.fc1024 as head
+
+import tensorflow as tf
+from keras.applications.resnet50 import preprocess_input
+
 from face_processing.best_face_selector import select_best_face
 from face_processing.face_recognition import recognize_face, load_known_face_encodings
 
+from rest_api.db.event_db_logger import EventDBLogger
 
 CONFIG = config_parser.parse()
 CONFIG["root_path"] = os.path.expanduser("~") + CONFIG["root_path"]
@@ -27,18 +33,29 @@ MODEL = os.path.join(person_models, CONFIG["person_detector"])
 
 # face detection model
 face_models = os.path.join(CONFIG["root_path"], CONFIG["face_models"])
-PROTOTXT_FACE = os.path.join(face_models, CONFIG["face_deploy"])
-MODEL_FACE = os.path.join(face_models, CONFIG["face_detector"])
+# PROTOTXT_FACE = os.path.join(face_models, CONFIG["face_deploy"])
+# MODEL_FACE = os.path.join(face_models, CONFIG["face_detector"])
 
 # faces base
 DB_PATH = os.path.join(CONFIG["root_path"], CONFIG["known_faces_db"])
 
 # dir for saving testing images [optional]
-save_img = False
-os.makedirs(os.path.join(CONFIG["root_path"], 'face_processing/tmp_faces'), exist_ok=True)
+save_img = True
+
+for d in ['face_processing/tmp_faces', 'data/db']:
+    os.makedirs(os.path.join(CONFIG["root_path"], d), exist_ok=True)
+
 
 
 class VideoStream():
+
+    # hacked just for recording stream
+    # def __init__(self, camera_url=0):
+    #     self.camera_url = 0 if camera_url == '0' else camera_url
+    #     self.vs = cv2.VideoCapture(self.camera_url)
+    #     self.fps = self.vs.get(5)
+    #     self.W, self.H = int(self.vs.get(3)), int(self.vs.get(4))
+
     def __init__(self, camera_url=0):
         self.camera_url = 0 if camera_url == '0' else camera_url
         self.vs = cv2.VideoCapture(self.camera_url)
@@ -51,7 +68,12 @@ class VideoStream():
 
         # face models
         if CONFIG['face_detection'] == 'True':
-            self.net_face_detector = cv2.dnn.readNetFromCaffe(PROTOTXT_FACE, MODEL_FACE)
+            # self.net_face_detector = cv2.dnn.readNetFromCaffe(PROTOTXT_FACE, MODEL_FACE)
+            self.net_face_detector = cv2.CascadeClassifier(os.path.join(face_models, 'haarcascade_frontalface_default.xml'))
+
+            eye_casc, mouth_casc, nose_casc = CONFIG['face_cascades'].split(',')
+            self.face_haars = [cv2.CascadeClassifier(os.path.join(face_models, m)) for m in [eye_casc,mouth_casc,nose_casc]]
+
             print('[TIME LOG] t_nets_initialization_elapsed:', time.monotonic() - t_nets_initialization)
 
             t_loading_embs = time.monotonic()
@@ -86,12 +108,42 @@ class VideoStream():
             'Count People': 0
         }
 
+        # extracting camera name from json
+        with open('../rest_api/cam_info.json') as json_file:
+            data = json.load(json_file)
+        # creating db name for current camera
+        for elem in data:
+            if elem["camera_url"] == self.camera_url:
+                self.db_name = elem["name"].replace(' ', '_')
+                break
+            else:
+                self.db_name = self.camera_url.split('/')[-1].replace('.', '_')
+
+        # creating db and connection
+        self.connection = EventDBLogger(db_name=self.db_name)
+        # creating table in db
+        self.table_event_log = self.connection.create_table_event_logger(cam_name = self.db_name)
+
+
+    def procees_stream(self):
+        ret, frame = self.vs.read()
+        if not ret:
+            self.vs = cv2.VideoCapture(self.camera_url)
+            ret, frame = self.vs.read()
+            if not ret:
+                frame = np.random.rand(self.H, self.W, 3) * 255
+                return frame, [None], self.trackableObjects
+        return frame
 
     def process_next_frame(self):
         ret, frame = self.vs.read()
 
         if not ret:
-            return np.random.rand(250, 250, 3) * 255, [None], self.trackableObjects
+            self.vs = cv2.VideoCapture(self.camera_url)
+            ret, frame = self.vs.read()
+            if not ret:
+                frame = np.random.rand(self.H, self.W, 3) * 255
+                return frame, [None], self.trackableObjects
 
         orig_frame = frame.copy()
         frame = imutils.resize(frame, width=600)
@@ -99,36 +151,59 @@ class VideoStream():
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         rects = []
         objects = ()
+
         if self.info['TotalFrames'] % 30 == 0:
             t_detecting = time.monotonic()
-            frame = self.detecting(frame, rgb)
+            frame = self.detecting(frame, rgb) # person detection
             t_detecting_elapsed = time.monotonic() - t_detecting
             t_tracking_elapsed = None
 
+            if len(self.trackableObjects.items()) > 0:
+                for tr_indx, tr_obj in self.trackableObjects.items():
+                    # inserting event in db logger
+                    event = {
+                        'object_id': int(tr_indx),
+                        'event_time': datetime.datetime.now(),
+                        'centroid_x': int(int(tr_obj.centroids[-1][0])),
+                        'centroid_y': int(tr_obj.centroids[-1][1])
+                    }
+                    self.connection.insert(self.table_event_log, event)
+
+                    person_save_path = os.path.join(CONFIG["root_path"],
+                                                    'data/photo/{}/id_{}/person/'.format(self.db_name, tr_indx))
+                    os.makedirs(person_save_path, exist_ok=True)
+
+                    if save_img:
+                        if tr_obj.img is not None and all(tr_obj.img.shape) > 0:
+                            cv2.imwrite(person_save_path + '{}_{}.jpeg'.format(tr_indx, datetime.datetime.now()), tr_obj.img)
+
         else:
             t_tracking = time.monotonic()
-            rects = self.tracking(rgb, rects)
+            rects = self.tracking(rgb, rects) # person tracking
             t_tracking_elapsed = time.monotonic() - t_tracking
             t_detecting_elapsed = None
 
         if len(rects) > 0:
             t_emb_matrix = time.monotonic()
-            objects, embeding_matrix = self.ct.update(rects, orig_frame, frame, self.trackableObjects, self.embeding_list)
+            objects, embeding_matrix = self.ct.update(rects, orig_frame, frame, self.trackableObjects, self.embeding_list) # updating centroid tracker
             t_emb_matrix_elapsed = time.monotonic() - t_emb_matrix
 
-            frame = self.draw_labels(frame, orig_frame, objects)
+            frame = self.draw_labels(frame, orig_frame, objects) # drawing info on each frame
 
             # Update Trackable objects
             t_updating_trObj = time.monotonic()
-            objects = self.ct.check_embeding(embeding_matrix, self.trackableObjects)
-            self.update_trackable_objects(objects)
+            objects = self.ct.check_embeding(embeding_matrix, self.trackableObjects) # checking embeddings for persons
+            self.update_trackable_objects(objects) # updating trackable objects
             t_updating_trObj_elapsed = time.monotonic() - t_updating_trObj
 
             # Face recognition
-            if CONFIG['face_detection'] == 'True':
-                t_face_recognition = time.monotonic()
-                frame = self.face_recognition(frame, orig_frame)
-                t_face_recognition_elapsed = time.monotonic() - t_face_recognition
+            if self.info['TotalFrames'] % 5 == 0:
+                if CONFIG['face_detection'] == 'True':
+                    t_face_recognition = time.monotonic()
+                    frame = self.face_recognition(frame, orig_frame)
+                    t_face_recognition_elapsed = time.monotonic() - t_face_recognition
+                else:
+                    t_face_recognition_elapsed = None
             else:
                 t_face_recognition_elapsed = None
 
@@ -234,7 +309,7 @@ class VideoStream():
 
                     resize_img = cv2.resize(imgCrop, (128, 256))
                     resize_img = np.expand_dims(resize_img, axis=0)
-                    resize_img = preprocess_input(resize_img.reshape(1, 256,128,3))
+                    # resize_img = preprocess_input(resize_img.reshape(1, 256,128,3))
                     emb = self.imgVectorizer.run(self.endpoints['emb'], feed_dict={self.images: resize_img})
                     self.embeding_list.append(emb)
 
@@ -272,34 +347,42 @@ class VideoStream():
             self.ct.nextObjectID = self.trackableObjects.__len__()
 
     def face_recognition(self, frame, orig_frame):
-
         if len(self.trackableObjects.items()) > 0:
             for tr_indx, tr_obj in self.trackableObjects.items():
 
                 if tr_obj.names[0] is None:
                     # detect face from orig size person
                     frame, detected_face = self.face_detection(frame, orig_frame, tr_obj.rect, tr_obj.img, tr_indx)
-                    if save_img:
-                        cv2.imwrite(os.path.join(CONFIG["root_path"],
-                                    os.path.join(CONFIG["tmp_face_tests"], 'detected_face_{}.jpg'.format(tr_indx))),
-                                    detected_face)
+
+                    face_save_path = os.path.join(CONFIG["root_path"], 'data/photo/{}/id_{}/face/'.format(self.db_name,
+                                                                                                          tr_indx))
+                    os.makedirs(face_save_path, exist_ok=True)
 
                     # add cropped_face to face_sequence
                     if detected_face is not None and all(detected_face.shape) > 0:
                         # add detected_face to faces_sequence_for_person
                         tr_obj.face_seq.append(detected_face)
+                        # save face to folder
+                        if save_img:
+
+                            cv2.imwrite(face_save_path + '{}_detected_{}.jpg'.format(tr_indx,
+                                                                                     datetime.datetime.now()),
+                                                                                     detected_face)
 
                     if len(tr_obj.face_seq) > 0:
                         # select the best face from face_sequence
-                        best_detected_face = select_best_face(tr_obj.face_seq)
-                        if save_img:
-                            cv2.imwrite(os.path.join(CONFIG["root_path"],
-                                        os.path.join(CONFIG["tmp_face_tests"], 'best_detected_face_{}.jpg'.format(tr_indx))),
-                                        best_detected_face)
+                        best_detected_face = select_best_face(tr_obj.face_seq, self.face_haars)
 
                         # recognize best_face
                         self.info['status'] = 'Recognizing face'
                         names, best_face_emb = recognize_face(best_detected_face, self.known_face_encodings, self.known_face_names)
+
+                        if save_img:
+                            if np.array_equal(np.array(tr_obj.face_emb), np.array(best_face_emb)):
+                                cv2.imwrite(face_save_path + '{}_best_detected_face_{}.jpg'.format(tr_indx,
+                                                                                               datetime.datetime.now()),
+                                                                                               best_detected_face)
+
                         print('This person looks like:', names)
 
                         if len(names) > 0:
@@ -314,33 +397,18 @@ class VideoStream():
         # detect face from cropped person
         self.info['status'] = 'Detecting face'
 
+        # # haar's cascade approach [GOOD but gives artifacts]
+        face_im = None
         if person_im is not None and all(person_im.shape) > 0:
-            H, W = person_im.shape[:2]
-            blob = cv2.dnn.blobFromImage(cv2.resize(person_im, (300, 300)), 1.0, (300, 300), (104.0, 177.0, 123.0))
-            self.net_face_detector.setInput(blob)
-            detections = self.net_face_detector.forward()
 
-            face_im = None
-            for i in np.arange(0, detections.shape[2]):
-                confidence = detections[0, 0, i, 2]
-                if confidence > 0.75:
-                    # face box in person_im coordinates
-                    box = detections[0, 0, i, 3:7] * np.array([W, H, W, H])
-                    (startX, startY, endX, endY) = box.astype('int')
+            gray = cv2.cvtColor(person_im, cv2.COLOR_BGR2GRAY)
+            faces = self.net_face_detector.detectMultiScale(gray, 1.3, 5)
+            for (x, y, w, h) in faces:
+                startX, startY, endX, endY = x, y, x+w, y+h
+                pad_y, pad_x = int(w*0.2), int(h*0.2)
+                face_im = person_im[startY - pad_y: endY + pad_y, startX - pad_x: endX + pad_x]
 
-                    pad_y, pad_x = 30, 30
-                    if startY - pad_y < 0:
-                        pad_y = 0
-                    if startX - pad_x < 0:
-                        pad_y = 0
-
-                    face_im = person_im[startY - pad_y: endY + pad_y, startX - pad_x: endX + pad_x]
-
-                    if save_img:
-                        cv2.imwrite(os.path.join(CONFIG["root_path"],
-                                    os.path.join(CONFIG["tmp_face_tests"], 'tmp_cropped_face_{}.jpg'.format(tr_indx))),
-                                    face_im)
-
+                if all(face_im.shape) > 0:
                     # reconstruction face box coordinates for visualization on frame
                     # person box coordinates
                     sX, sY, eX, eY = person_box
@@ -353,8 +421,12 @@ class VideoStream():
                     w_ = int((endX + rel_sX) / orig_frame.shape[1] * frame.shape[1])
                     h_ = int((endY + rel_sY) / orig_frame.shape[0] * frame.shape[0])
                     cv2.rectangle(frame, (x_, y_), (w_, h_), (255, 0, 0), 2)
-
-        else:
-            face_im = None
+                else:
+                    face_im = None
 
         return frame, face_im
+
+
+
+
+
