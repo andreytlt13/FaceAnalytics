@@ -6,11 +6,12 @@ import imutils
 def variance_of_laplacian(image):
     # compute the Laplacian of the image and then return the focus measure,
     # which is simply the variance of the Laplacian
-	return cv2.Laplacian(image, cv2.CV_64F).var()
+    return cv2.Laplacian(image, cv2.CV_64F).var()
+
 
 def check_models(list_models):
     for indx, cascade in enumerate(list_models):
-        if(cascade.empty()):
+        if (cascade.empty()):
             print(indx, 'file couldnt load, check out models paths')
 
 def cascade_detection(img, face_cascades):

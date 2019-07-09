@@ -19,12 +19,10 @@ from keras.applications.resnet50 import preprocess_input
 from face_processing.best_face_selector import select_best_face
 from face_processing.face_recognition import recognize_face, load_known_face_encodings
 
-
 from rest_api.db.event_db_logger import EventDBLogger
 
-
 CONFIG = config_parser.parse()
-
+CONFIG["root_path"] = os.path.expanduser("~") + CONFIG["root_path"]
 # path to PycharmProject
 print('root_path: ', CONFIG["root_path"])
 
@@ -46,6 +44,7 @@ save_img = True
 
 for d in ['face_processing/tmp_faces', 'data/db']:
     os.makedirs(os.path.join(CONFIG["root_path"], d), exist_ok=True)
+
 
 
 class VideoStream():
@@ -135,7 +134,6 @@ class VideoStream():
                 frame = np.random.rand(self.H, self.W, 3) * 255
                 return frame, [None], self.trackableObjects
         return frame
-
 
     def process_next_frame(self):
         ret, frame = self.vs.read()

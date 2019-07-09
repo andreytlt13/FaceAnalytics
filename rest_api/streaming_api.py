@@ -1,24 +1,27 @@
 import flask
 import json
 import os
-import cv2
+import pickle
+import socket
 from flask import Response, jsonify
 from main.common import config_parser
 from flask_cors import cross_origin
 from rest_api.db.event_db_logger import EventDBLogger
-import subprocess
 
 CONFIG = config_parser.parse()
+PORT = 14600
 
 app = flask.Flask(__name__)
 
+sock = socket.socket()
 cam_info_json = 'rest_api/cam_info.json'
-
 root_path = os.path.dirname(os.getcwd())
 db_faces = root_path + '/main/face_processing/known_faces/'
 db_objects = root_path + '/main/photo/'
 
-@app.route('/camera/list', methods=['GET'])
+
+@app.route('/camera', methods=['GET'])
+@cross_origin()
 def get_camers_list():
 
     if not os.path.isfile(cam_info_json):
@@ -32,7 +35,8 @@ def get_camers_list():
     return jsonify(data)
 
 
-@app.route('/camera/add', methods=['PUT'])
+@app.route('/camera', methods=['POST'])
+@cross_origin()
 def add_camera():
 
     camera_url = flask.request.values['camera_url']
@@ -42,7 +46,9 @@ def add_camera():
 
     cam_info = {
         "camera_url": camera_url,
-        "status": status
+        "status": status,
+        "url_stream": None,
+        "name": "4 floor"
     }
 
     with open(cam_info_json, 'w') as f:
@@ -55,6 +61,7 @@ def add_camera():
 
 
 @app.route('/camera/del', methods=['PUT'])
+@cross_origin()
 def del_camera():
     camera_url = flask.request.values['camera_url']
 
@@ -73,19 +80,8 @@ def del_camera():
     return jsonify(data)
 
 
-@app.route('/camera/db_select', methods=['GET'])
+@app.route('/camera', methods=['PUT'])
 @cross_origin()
-def db_select():
-    start_date = flask.request.args.get('start_date')
-    end_date = flask.request.args.get('end_date')
-    table_name = flask.request.args.get('camera_url')
-    connection = EventDBLogger()
-    table = connection.create_table(table_name)
-    result = connection.select(table, start_date, end_date)
-    return Response(result, mimetype='application/json')
-
-
-@app.route('/camera/start', methods=['PUT'])
 def run_processing():
     camera_url = flask.request.values['camera_url']
     print('[INFO] starting video stream...')
@@ -109,7 +105,71 @@ def run_processing():
     return Response({"starting":camera_url}, mimetype='application/json')
 
 
-@app.route('/camera/object_id', methods=['PUT'])
+@app.route('/camera/objects', methods=['GET'])
+@cross_origin()
+def get_objects():
+    camera_url = flask.request.args.get('camera_url')
+    sock.connect(('127.0.0.1', PORT))
+    object_id_info = {
+        "type": "get_objects"
+    }
+    b_message = pickle.dumps(object_id_info)
+    sock.send(b_message)
+    data = b""
+    tmp = sock.recv(16384)
+    while tmp:
+        data += tmp
+        tmp = sock.recv(16384)
+
+    result = pickle.loads(data)
+    print(result)
+    sock.close()
+
+    return jsonify(result)
+
+
+@app.route('/camera/object/photo', methods=['GET'])
+@cross_origin()
+def get_object_photo():
+    object_id = flask.request.args.get('object_id')
+    img_path = os.path.join(db_objects, 'ID_{}.jpg'.format(object_id))
+    if os.path.exists(img_path):
+        return flask.send_file(img_path, mimetype='image/jpg')
+    else:
+        return 'file doesnt exist'
+
+
+@app.route('/camera/name/photo', methods=['GET'])
+@cross_origin()
+def get_name_photo():
+    name = flask.request.args.get('name')
+    img_path = os.path.join(db_faces, '{}.jpg'.format(name))
+    if os.path.exists(img_path):
+        return flask.send_file(img_path, mimetype='image/jpg')
+    else:
+        return 'file doesnt exist'
+
+
+@app.route('/camera/name/info', methods=['GET'])
+@cross_origin()
+def get_name_info():
+    camera_url = flask.request.args.get('camera_url')
+    #object_id = [0,1,2]#flask.request.args.get('object_id')
+    name = flask.request.args.get('name') #flask.request.values['name']
+    stars = 3 #flask.request.values['stars']
+    description = 'iphone' #flask.request.values['description']
+    object_id_info = {
+        "camera_url": camera_url,
+        "name": name,
+        "stars": stars,
+        "description": description
+    }
+
+    return jsonify(object_id_info)
+
+
+@app.route('/camera/object', methods=['PUT'])
+@cross_origin()
 def object_id():
     camera_url = flask.request.values['camera_url']
     object_id = flask.request.values['object_id']
@@ -117,12 +177,25 @@ def object_id():
     stars = flask.request.values['stars']
     description = flask.request.values['description']
     object_id_info = {
+        "type": "set_name",
         "camera_url": camera_url,
         "object_id": object_id,
         "name": name,
         "stars": stars,
         "description": description
     }
+    sock.connect(('127.0.0.1', PORT))
+    b_message = pickle.dumps(object_id_info)
+    sock.send(b_message)
+    data = b""
+    tmp = sock.recv(16384)
+    while tmp:
+        data += tmp
+        tmp = sock.recv(16384)
+
+    result = pickle.loads(data)
+    print(result)
+    sock.close()
 
     return jsonify(object_id_info)
 
@@ -136,7 +209,9 @@ def get_object_img():
     else:
         return 'file doesnt exist'
 
+
 @app.route('/camera/get_name_img', methods=['GET'])
+@cross_origin()
 def get_name_img():
     name = flask.request.args.get('name')
     img_path = os.path.join(db_faces, '{}.jpg'.format(name))
@@ -144,6 +219,19 @@ def get_name_img():
         return flask.send_file(img_path, mimetype='image/jpg')
     else:
         return 'file doesnt exist'
+
+
+@app.route('/camera/db_select', methods=['GET'])
+@cross_origin()
+def db_select():
+    start_date = flask.request.args.get('start_date') #2019-05-16 22:06:04.369857
+    end_date = flask.request.args.get('end_date') #2019-05-16 22:06:04.369857
+    table = "rtsp://admin:0ZKaxVFi@10.101.106.4:554/live/main"
+    name = flask.request.args.get('name')
+    connection = EventDBLogger()
+    table = connection.create_table(table)
+    result = connection.select(table, start_date, end_date)
+    return Response(result, mimetype='application/json')
 
 
 def run():
