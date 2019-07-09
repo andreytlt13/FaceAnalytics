@@ -15,14 +15,14 @@ log_ = False
 analyze_log_ = False
 save_res_ = False
 
-stream_ = False
+stream_ = True
 
 tests_dir = os.path.join(CONFIG["root_path"], CONFIG["tests_dir"])
 logs_dir = os.path.join(tests_dir, 'logs')
 
 if stream_:
     camera_url = 'rtsp://user:Hneu74k092@10.101.106.104:554/live/main'
-    # camera_url = 0
+    camera_url = 0
     tmp_name = camera_url.replace('/', '_')
     vs = VideoStream(camera_url)
 
@@ -39,7 +39,8 @@ else:
     # camera_url = 'vlc-record-2019-07-01-17h38m49s.mp4' #sveta
     # camera_url = 'videoplayback.mp4'
     camera_url = 'andrey_vitya.mp4'
-    camera_url = 'vitya.mp4'
+    # camera_url = 'vitya.mp4'
+    # camera_url = 0
 
     # cctv videos
     # camera_url = '123317_cut_5_persons.mp4' #5_persons
