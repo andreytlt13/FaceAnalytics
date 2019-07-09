@@ -12,19 +12,15 @@ from main.common import config_parser
 from main.common.object_tracker import TrackableObject, CentroidTracker
 import model.person_processing.nets.resnet_v1_50 as model
 import model.person_processing.heads.fc1024 as head
+
 import tensorflow as tf
+from keras.applications.resnet50 import preprocess_input
 
 from face_processing.best_face_selector import select_best_face
 from face_processing.face_recognition import recognize_face, load_known_face_encodings
 
-import face_recognition
-
-from keras.applications.resnet50 import preprocess_input
 
 from rest_api.db.event_db_logger import EventDBLogger
-
-from faced import FaceDetector
-from faced.utils import annotate_image
 
 
 CONFIG = config_parser.parse()
@@ -39,8 +35,8 @@ MODEL = os.path.join(person_models, CONFIG["person_detector"])
 
 # face detection model
 face_models = os.path.join(CONFIG["root_path"], CONFIG["face_models"])
-PROTOTXT_FACE = os.path.join(face_models, CONFIG["face_deploy"])
-MODEL_FACE = os.path.join(face_models, CONFIG["face_detector"])
+# PROTOTXT_FACE = os.path.join(face_models, CONFIG["face_deploy"])
+# MODEL_FACE = os.path.join(face_models, CONFIG["face_detector"])
 
 # faces base
 DB_PATH = os.path.join(CONFIG["root_path"], CONFIG["known_faces_db"])
@@ -74,14 +70,12 @@ class VideoStream():
         # face models
         if CONFIG['face_detection'] == 'True':
             # self.net_face_detector = cv2.dnn.readNetFromCaffe(PROTOTXT_FACE, MODEL_FACE)
-            print('[TIME LOG] t_nets_initialization_elapsed:', time.monotonic() - t_nets_initialization)
-
-            # self.net_face_detector = FaceDetector()
-            # self.net_face_detector = dlib.get_frontal_face_detector()
             self.net_face_detector = cv2.CascadeClassifier(os.path.join(face_models, 'haarcascade_frontalface_default.xml'))
 
             eye_casc, mouth_casc, nose_casc = CONFIG['face_cascades'].split(',')
             self.face_haars = [cv2.CascadeClassifier(os.path.join(face_models, m)) for m in [eye_casc,mouth_casc,nose_casc]]
+
+            print('[TIME LOG] t_nets_initialization_elapsed:', time.monotonic() - t_nets_initialization)
 
             t_loading_embs = time.monotonic()
             # dlib embeddings
@@ -355,7 +349,6 @@ class VideoStream():
             self.ct.nextObjectID = self.trackableObjects.__len__()
 
     def face_recognition(self, frame, orig_frame):
-
         if len(self.trackableObjects.items()) > 0:
             for tr_indx, tr_obj in self.trackableObjects.items():
 
@@ -388,7 +381,7 @@ class VideoStream():
 
                         if save_img:
                             if np.array_equal(np.array(tr_obj.face_emb), np.array(best_face_emb)):
-                                cv2.imwrite(face_save_path + '{}_best_detected_face11_{}.jpg'.format(tr_indx,
+                                cv2.imwrite(face_save_path + '{}_best_detected_face_{}.jpg'.format(tr_indx,
                                                                                                datetime.datetime.now()),
                                                                                                best_detected_face)
 
@@ -406,206 +399,18 @@ class VideoStream():
         # detect face from cropped person
         self.info['status'] = 'Detecting face'
 
-        # # resnet 300x300 ssd
-        # if person_im is not None and all(person_im.shape) > 0:
-        #     H, W = person_im.shape[:2]
-        #     blob = cv2.dnn.blobFromImage(cv2.resize(person_im, (300, 300)), 1.0, (300, 300), (104.0, 177.0, 123.0))
-        #     self.net_face_detector.setInput(blob)
-        #     detections = self.net_face_detector.forward()
-        #
-        #     face_im = None
-        #     for i in np.arange(0, detections.shape[2]):
-        #         confidence = detections[0, 0, i, 2]
-        #         if confidence > 0.75:
-        #             # face box in person_im coordinates
-        #             box = detections[0, 0, i, 3:7] * np.array([W, H, W, H])
-        #             (startX, startY, endX, endY) = box.astype('int')
-        #
-        #             pad_y, pad_x = 30, 30
-        #             if startY - pad_y < 0:
-        #                 pad_y = 0
-        #             if startX - pad_x < 0:
-        #                 pad_y = 0
-        #
-        #             face_im = person_im[startY - pad_y: endY + pad_y, startX - pad_x: endX + pad_x]
-        #
-        #             # if save_img:
-        #             #     cv2.imwrite(os.path.join(CONFIG["root_path"],
-        #             #                 os.path.join(CONFIG["tmp_face_tests"], 'tmp_cropped_face_{}.jpg'.format(tr_indx))),
-        #             #                 face_im)
-        #
-        #             # reconstruction face box coordinates for visualization on frame
-        #             # person box coordinates
-        #             sX, sY, eX, eY = person_box
-        #             rel_sX = int( sX / frame.shape[1] * orig_frame.shape[1] )
-        #             rel_sY = int( sY / frame.shape[0] * orig_frame.shape[0] )
-        #
-        #             # face box visualization in resized frame coords
-        #             x_ = int((startX + rel_sX) / orig_frame.shape[1] * frame.shape[1])
-        #             y_ = int((startY + rel_sY) / orig_frame.shape[0] * frame.shape[0])
-        #             w_ = int((endX + rel_sX) / orig_frame.shape[1] * frame.shape[1])
-        #             h_ = int((endY + rel_sY) / orig_frame.shape[0] * frame.shape[0])
-        #             cv2.rectangle(frame, (x_, y_), (w_, h_), (255, 0, 0), 2)
-        #
-        # else:
-        #     face_im = None
-        # return frame, face_im
-
-
-        # # faced library approach [BAD]
-        # face_im = None
-        # if person_im is not None and all(person_im.shape) > 0:
-        #     H, W = person_im.shape[:2]
-        #
-        #     rgb_img = cv2.cvtColor(person_im.copy(), cv2.COLOR_BGR2RGB)
-        #     # Receives RGB numpy image (HxWxC) and
-        #     # returns (x_center, y_center, width, height, prob) tuples.
-        #     bboxes = self.net_face_detector.predict(rgb_img, 0.6)
-        #     print('bboxes', bboxes)
-        #
-        #     if len(bboxes) > 0:
-        #         for idx,(x, y, w, h, p) in enumerate(bboxes):
-        #
-        #             startX, startY, endX, endY = int(x - w / 2), int(y - h / 2), int(x + w / 2), int(y + h / 2)
-        #             pad_y, pad_x = 20, 20
-        #             if startY - pad_y < 0:
-        #                 pad_y = 0
-        #             if startX - pad_x < 0:
-        #                 pad_y = 0
-        #
-        #             face_im = person_im[startY - pad_y: endY + pad_y, startX - pad_x: endX + pad_x]
-        #
-        #             # cv2.rectangle(person_im, (int(x - w / 2), int(y - h / 2)), (int(x + w / 2), int(y + h / 2)), (0, 255, 0), 3)
-        #             cv2.imwrite('person_face_h{}.jpeg'.format(idx), person_im)
-        #             cv2.imwrite('face_im_h{}.jpeg'.format(idx), face_im)
-        #
-        #             # reconstruction face box coordinates for visualization on frame
-        #             # person box coordinates
-        #             sX, sY, eX, eY = person_box
-        #             rel_sX = int( sX / frame.shape[1] * orig_frame.shape[1] )
-        #             rel_sY = int( sY / frame.shape[0] * orig_frame.shape[0] )
-        #
-        #             # face box visualization in resized frame coords
-        #             x_ = int((startX + rel_sX) / orig_frame.shape[1] * frame.shape[1])
-        #             y_ = int((startY + rel_sY) / orig_frame.shape[0] * frame.shape[0])
-        #             w_ = int((endX + rel_sX) / orig_frame.shape[1] * frame.shape[1])
-        #             h_ = int((endY + rel_sY) / orig_frame.shape[0] * frame.shape[0])
-        #             cv2.rectangle(frame, (x_, y_), (w_, h_), (255, 0, 0), 2)
-        #
-        #             cv2.imwrite('frame_h{}.jpeg'.format(idx), frame)
-        #
-        # return frame, face_im
-
-
-        # # dlib frontal face detector approach [BAD, not so fast]
-        # face_im = None
-        # if person_im is not None and all(person_im.shape) > 0:
-        #     H, W = person_im.shape[:2]
-        #
-        #     # resize image, and convert it to grayscale
-        #     face_im = imutils.resize(person_im.copy(), width=500)
-        #     gray = cv2.cvtColor(face_im, cv2.COLOR_BGR2GRAY)
-        #
-        #     rects = self.net_face_detector(gray, 1)
-        #     print('rects', rects)
-        #
-        #     # loop over the face detections
-        #     for (i, rect) in enumerate(rects):
-        #         x = rect.left()
-        #         y = rect.top()
-        #         w = rect.right() - x
-        #         h = rect.bottom() - y
-        #
-        #         startX, startY, endX, endY = x,y,w,h
-        #         face_im = person_im[startY : endY , startX : endX ]
-        #
-        #         cv2.rectangle(face_im, (x, y), (x + w, y + h), (0, 255, 0), 2)
-        #         cv2.rectangle(person_im, (x,y), (x + w, y + h), (0, 255, 0), 3)
-        #         cv2.imwrite('person_face_ddk{}.jpeg'.format(i), person_im)
-        #         cv2.imwrite('face_im_ddk{}.jpeg'.format(i), face_im)
-        #
-        #         # reconstruction face box coordinates for visualization on frame
-        #         # person box coordinates
-        #         sX, sY, eX, eY = person_box
-        #         rel_sX = int( sX / frame.shape[1] * orig_frame.shape[1] )
-        #         rel_sY = int( sY / frame.shape[0] * orig_frame.shape[0] )
-        #
-        #         # face box visualization in resized frame coords
-        #         x_ = int((startX + rel_sX) / orig_frame.shape[1] * frame.shape[1])
-        #         y_ = int((startY + rel_sY) / orig_frame.shape[0] * frame.shape[0])
-        #         w_ = int((endX + rel_sX) / orig_frame.shape[1] * frame.shape[1])
-        #         h_ = int((endY + rel_sY) / orig_frame.shape[0] * frame.shape[0])
-        #         cv2.rectangle(frame, (x_, y_), (w_, h_), (255, 0, 0), 2)
-        #
-        #         cv2.imwrite('frame_ddk{}.jpeg'.format(i), frame)
-        #
-        # return frame, face_im
-
-
-
-
-        # # face_recognition.face_locations - hog detection approach [GOOD enough]
-        # face_im = None
-        # if person_im is not None and all(person_im.shape) > 0:
-        #     H, W = person_im.shape[:2]
-        #     face_locations = face_recognition.face_locations(person_im)
-        #     if len(face_locations) > 0:
-        #         for (top, right, bottom, left) in face_locations:
-        #             # cv2.rectangle(person_im, (left, top), (right, bottom), (0, 0, 255), 2)
-        #
-        #             startX, startY, endX, endY = left, top, right, bottom
-        #             pad_y, pad_x = int((right-left)*0.25), int((bottom-top)*0.25)
-        #             if startY - pad_y < 0:
-        #                 pad_y = 0
-        #             if startX - pad_x < 0:
-        #                 pad_y = 0
-        #             face_im = person_im[startY - pad_y: endY + pad_y, startX - pad_x: endX + pad_x]
-        #
-        #             if all(face_im.shape) > 0:
-        #                 # cv2.imwrite('face_im_test11.jpeg', face_im)
-        #
-        #                 # reconstruction face box coordinates for visualization on frame
-        #                 # person box coordinates
-        #                 sX, sY, eX, eY = person_box
-        #                 rel_sX = int( sX / frame.shape[1] * orig_frame.shape[1] )
-        #                 rel_sY = int( sY / frame.shape[0] * orig_frame.shape[0] )
-        #
-        #                 # face box visualization in resized frame coords
-        #                 x_ = int((startX + rel_sX) / orig_frame.shape[1] * frame.shape[1])
-        #                 y_ = int((startY + rel_sY) / orig_frame.shape[0] * frame.shape[0])
-        #                 w_ = int((endX + rel_sX) / orig_frame.shape[1] * frame.shape[1])
-        #                 h_ = int((endY + rel_sY) / orig_frame.shape[0] * frame.shape[0])
-        #                 cv2.rectangle(frame, (x_, y_), (w_, h_), (255, 0, 0), 2)
-        #             else:
-        #                 face_im = None
-        #
-        #     # cv2.imwrite('frame_test11.jpeg', frame)
-        #
-        # return frame, face_im
-
-
-
-
-
         # # haar's cascade approach [GOOD but gives artifacts]
         face_im = None
         if person_im is not None and all(person_im.shape) > 0:
-            H, W = person_im.shape[:2]
 
             gray = cv2.cvtColor(person_im, cv2.COLOR_BGR2GRAY)
             faces = self.net_face_detector.detectMultiScale(gray, 1.3, 5)
             for (x, y, w, h) in faces:
-                # cv2.rectangle(person_im, (x, y), (x + w, y + h), (255, 0, 0), 2)
-                # face_im = person_im[y:y + h, x:x + w]
-                # cv2.imwrite('haar_{}.png'.format(datetime.datetime.now()),face_im)
-
                 startX, startY, endX, endY = x, y, x+w, y+h
                 pad_y, pad_x = int(w*0.2), int(h*0.2)
                 face_im = person_im[startY - pad_y: endY + pad_y, startX - pad_x: endX + pad_x]
 
                 if all(face_im.shape) > 0:
-                    # cv2.imwrite('face_haar_{}.jpeg'.format(datetime.datetime.now()), face_im)
-
                     # reconstruction face box coordinates for visualization on frame
                     # person box coordinates
                     sX, sY, eX, eY = person_box
@@ -617,7 +422,7 @@ class VideoStream():
                     y_ = int((startY + rel_sY) / orig_frame.shape[0] * frame.shape[0])
                     w_ = int((endX + rel_sX) / orig_frame.shape[1] * frame.shape[1])
                     h_ = int((endY + rel_sY) / orig_frame.shape[0] * frame.shape[0])
-                    cv2.rectangle(frame, (x_, y_), (w_, h_), (255, 0, 255), 2)
+                    cv2.rectangle(frame, (x_, y_), (w_, h_), (255, 0, 0), 2)
                 else:
                     face_im = None
 
