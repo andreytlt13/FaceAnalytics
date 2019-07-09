@@ -1,20 +1,6 @@
 import cv2
 import numpy as np
-import os
 import imutils
-from main.common import config_parser
-
-
-CONFIG = config_parser.parse()
-
-# # path to face models storage
-# face_models = os.path.join(CONFIG['root_path'], CONFIG['face_models'])
-#
-# eye_casc, mouth_casc, nose_casc = CONFIG['face_cascades'].split(',')
-#
-# eye_cascade = cv2.CascadeClassifier(os.path.join(face_models, eye_casc))
-# mouth_cascade = cv2.CascadeClassifier(os.path.join(face_models, mouth_casc))
-# nose_cascade = cv2.CascadeClassifier(os.path.join(face_models, nose_casc))
 
 
 def variance_of_laplacian(image):
