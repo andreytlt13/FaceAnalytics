@@ -117,7 +117,7 @@ class VideoStream():
                 self.db_name = elem["name"].replace(' ', '_')
                 break
             else:
-                self.db_name = self.camera_url.split('/')[-1].replace('.', '_')
+                self.db_name = str(self.camera_url).split('/')[-1].replace('.', '_')
 
         # creating db and connection
         self.connection = EventDBLogger(db_name=self.db_name)
