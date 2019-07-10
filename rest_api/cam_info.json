@@ -1,20 +1,26 @@
 [
     {
         "camera_url": "rtsp://user:Hneu74k092@10.101.106.104:554/live/main",
-        "status": "disabled",
-        "url_stream": "http://10.101.1.23:9091/stream.mjpg",
-        "name": "4_floor"
-    },
-    {
-        "camera_url": "rtsp://admin:admin@10.101.1.221:554/ch01/0",
         "status": "active",
         "url_stream": "http://10.101.1.23:9091/stream.mjpg",
-        "name": "2_floor"
+        "name": "4 floor_test"
     },
     {
-        "camera_url": "/Users/andrey/Downloads/Telegram Desktop/vlc_record_2019_05_30_12h50m55s.mp4",
+        "camera_url": "0",
         "status": "disabled",
-        "url_stream": "",
-        "name": "video_record"
+        "url_stream": "http://10.101.1.23:9091/stream.mjpg",
+        "name": "video record"
+    },
+    {
+        "camera_url": "/home/ekaterinaderevyanka/PycharmProjects/FaceAnalytics/main/tests/testing_videos/vlc_record_2019_05_30_12h50m55s.mp4",
+        "status": "disabled",
+        "url_stream": "http://10.101.1.23:9091/stream.mjpg",
+        "name": "4 floor"
+    },
+    {
+        "camera_url": "/home/ekaterinaderevyanka/PycharmProjects/FaceAnalytics/main/tests/testing_videos/vlc-record-2019-05-24-13h45m52s.mp4",
+        "status": "disabled",
+        "url_stream": "http://10.101.1.23:9091/stream.mjpg",
+        "name": "4 floor sitting"
     }
 ]

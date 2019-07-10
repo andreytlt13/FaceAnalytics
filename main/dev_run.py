@@ -17,6 +17,8 @@ save_res_ = False
 
 stream_ = False
 
+CONFIG["root_path"] = os.path.expanduser("~") + CONFIG["root_path"]
+
 tests_dir = os.path.join(CONFIG["root_path"], CONFIG["tests_dir"])
 logs_dir = os.path.join(tests_dir, 'logs')
 
@@ -103,7 +105,7 @@ if save_res_:
 t_all = time.monotonic()
 while True:
     t_proc_next_frame = time.monotonic()
-    img, time_log, tr_objects = vs.process_next_frame
+    img, time_log, tr_objects = vs.process_next_frame()
     t_proc_next_frame_elapsed = time.monotonic() - t_proc_next_frame
 
     if log_:

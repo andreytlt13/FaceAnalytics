@@ -22,8 +22,9 @@ from face_processing.face_recognition import recognize_face, load_known_face_enc
 from rest_api.db.event_db_logger import EventDBLogger
 
 CONFIG = config_parser.parse()
-CONFIG["root_path"] = os.path.expanduser("~") + CONFIG["root_path"]
+
 # path to PycharmProject
+CONFIG["root_path"] = os.path.expanduser("~") + CONFIG["root_path"]
 print('root_path: ', CONFIG["root_path"])
 
 # person detection model
@@ -122,7 +123,7 @@ class VideoStream():
         # creating db and connection
         self.connection = EventDBLogger(db_name=self.db_name)
         # creating table in db
-        self.table_event_log = self.connection.create_table_event_logger(cam_name = self.db_name)
+        self.table_event_log = self.connection.create_table_event_logger(cam_name=self.db_name)
 
 
     def procees_stream(self):
