@@ -47,7 +47,6 @@ for d in ['face_processing/tmp_faces', 'data/db']:
     os.makedirs(os.path.join(CONFIG["root_path"], d), exist_ok=True)
 
 
-
 class VideoStream():
 
     # hacked just for recording stream
@@ -219,7 +218,7 @@ class VideoStream():
                     t_emb_matrix_elapsed, t_updating_trObj_elapsed,
                     t_face_recognition_elapsed]
 
-        return frame, time_log, self.trackableObjects
+        return frame, time_log
 
     def draw_labels(self, frame, orig_frame, objects):
 
