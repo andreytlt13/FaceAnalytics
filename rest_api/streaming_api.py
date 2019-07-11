@@ -16,7 +16,7 @@ app = flask.Flask(__name__)
 sock = socket.socket()
 cam_info_json = 'rest_api/cam_info.json'
 root_path = os.path.dirname(os.getcwd())
-db_faces = root_path + '/main/face_processing/known_faces/'
+db_faces = root_path + '/main/data/known_faces/'
 db_objects = root_path + '/main/photo/'
 
 
