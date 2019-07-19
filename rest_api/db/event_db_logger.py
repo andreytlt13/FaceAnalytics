@@ -1,9 +1,6 @@
 import pandas as pd
 from sqlalchemy import *
 from common import config_parser
-import os
-import json
-import datetime
 CONFIG = config_parser.parse()
 DEFAULT_PATH = 'sqlite:///data/db/4_floor.db' #surveillance.db'
 
@@ -32,7 +29,7 @@ class EventDBLogger:
         return table
 
     def create_table_event_logger(self, cam_name):
-        name = 'event_logger_{}'.format(cam_name)
+        name = 'event_logger'.format(cam_name)
         if not self.engine.dialect.has_table(self.engine, name):
             table = Table(name, self.metadata,
                   Column('id', Integer, primary_key=True, autoincrement=True),
@@ -47,7 +44,7 @@ class EventDBLogger:
         return table
 
     def create_table_recognized_logger(self, cam_name):
-        name = 'recognized_logger_{}'.format(cam_name)
+        name = 'recognized_logger'.format(cam_name)
         if not self.engine.dialect.has_table(self.engine, name):
             table = Table(name, self.metadata,
                   Column('id', Integer, ForeignKey("event_logger_{}.object_id".format(cam_name)), autoincrement=True),
