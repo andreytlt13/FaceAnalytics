@@ -24,7 +24,8 @@ from rest_api.db.event_db_logger import EventDBLogger
 CONFIG = config_parser.parse()
 
 # path to PycharmProject
-CONFIG["root_path"] = os.path.expanduser("~") + CONFIG["root_path"]
+# CONFIG["root_path"] = os.path.expanduser("~") + CONFIG["root_path"]
+CONFIG["root_path"] = os.getcwd()
 print('root_path: ', CONFIG["root_path"])
 
 # person detection model

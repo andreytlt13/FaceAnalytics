@@ -17,7 +17,9 @@ and put them into  <b> FaceAnalytics/main/model </b>
 
 ## Run demo
 ```
+You need to run a demo from root dir (FaceAnalytics/main): 
 
+python run.py 
 ```
 
 #### * Optional
