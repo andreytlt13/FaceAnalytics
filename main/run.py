@@ -24,8 +24,8 @@ ap.add_argument("-p", "--port", required=False, default=14600,
 args = vars(ap.parse_args())
 # args["source"] = "/Users/andrey/Downloads/Telegram Desktop/vlc_record_2019_05_30_12h50m55s.mp4"
 # args["source"] = "rtsp://user:Hneu74k092@10.101.106.104:554/live/main"
-# args["source"] = "rtsp://admin:admin@10.101.1.221:554/ch01/1" #base stream 0
-args["source"] = 0
+args["source"] = "rtsp://admin:admin@10.101.1.221:554/ch01/1" #base stream 0
+# args["source"] = 0
 
 sock = socket.socket()
 sock.bind((args["server_ip"], args["port"]))
