@@ -357,11 +357,13 @@ class VideoStream():
 
         known_face_save_path = os.path.join(CONFIG["root_path"],
                                             'data/photo/{}/known_faces/'.format(self.db_name))
-        # os.makedirs(known_face_save_path, exist_ok=True)
-        face_img = self.trackableObjects[object_id].face_seq[0]
-        img = Image.fromarray(face_img, 'RGB')
-        cv2.imwrite(known_face_save_path + '{}.jpg'.format(name), face_img)
-        cv2.imwrite(known_face_save_path + '{}_frame.jpg'.format(name), frame)
+        os.makedirs(known_face_save_path, exist_ok=True)
+        if len(self.trackableObjects) > 0:
+            if len(self.trackableObjects[object_id].face_seq) > 0:
+                face_img = self.trackableObjects[object_id].face_seq[0]
+                # img = Image.fromarray(face_img, 'RGB')
+                cv2.imwrite(known_face_save_path + '{}.jpg'.format(name), face_img)
+                # cv2.imwrite(known_face_save_path + '{}_frame.jpg'.format(name), frame)
 
 
 
