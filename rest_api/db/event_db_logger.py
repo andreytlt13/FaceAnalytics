@@ -1,8 +1,10 @@
 import pandas as pd
 from sqlalchemy import *
+
 from common import config_parser
+
 CONFIG = config_parser.parse()
-DEFAULT_PATH = 'sqlite:///data/db/4_floor.db' #surveillance.db'
+DEFAULT_PATH = 'sqlite:///data/db/4_floor.db'  # surveillance.db'
 
 
 class EventDBLogger:
@@ -20,9 +22,9 @@ class EventDBLogger:
                   Column('id', Integer, primary_key=True, autoincrement=True),
                   Column('object_id', Integer),
                   Column('event_time', BigInteger),
-                  Column('x', BigInteger),
-                  Column('y', BigInteger),
-                  )
+                          Column('centroid_x', BigInteger),
+                          Column('centroid_y', BigInteger),
+                          )
             self.metadata.create_all()
         else:
             table = self.metadata.tables[name]
@@ -32,11 +34,11 @@ class EventDBLogger:
         name = 'event_logger'
         if not self.engine.dialect.has_table(self.engine, name):
             table = Table(name, self.metadata,
-                  Column('id', Integer, primary_key=True, autoincrement=True),
-                  Column('object_id', Integer),
-                  Column('event_time', BigInteger),
-                  Column('centroid_x', BigInteger),
-                  Column('centroid_y', BigInteger),
+                          Column('id', Integer, primary_key=True, autoincrement=True),
+                          Column('object_id', Integer),
+                          Column('event_time', BigInteger),
+                          Column('centroid_x', BigInteger),
+                          Column('centroid_y', BigInteger),
                   )
             self.metadata.create_all()
         else:
@@ -47,18 +49,37 @@ class EventDBLogger:
         name = 'recognized_logger'
         if not self.engine.dialect.has_table(self.engine, name):
             table = Table(name, self.metadata,
-                  Column('id', Integer, ForeignKey("event_logger.object_id"), autoincrement=True),
-                  Column('name', Text),
-                  Column('description', Text),
-                  Column('stars', Text),
-                  Column('img_path', Text),
-                  )
+                          Column('id', Integer, ForeignKey("event_logger.object_id"), autoincrement=True),
+                          Column('name', Text),
+                          Column('description', Text),
+                          Column('stars', Text),
+                          Column('img_path', Text),
+                          )
             self.metadata.create_all()
         else:
             table = self.metadata.tables[name]
         return table
 
-    def insert(self, table, dict):
+    def insert_describe(self, table, dict):
+        ins = table.insert().values(
+            id=dict['event_time'],
+            name=dict['object_id'],
+            description=dict['centroid_y'],
+            stars=dict['centroid_x'],
+            img_path=dict['centroid_x'])
+        print(ins)
+        self.conn.execute(ins)
+
+    def insert_event(self, table, dict):
+        ins = table.insert().values(
+            event_time=dict['event_time'],
+            object_id=dict['object_id'],
+            centroid_y=dict['centroid_y'],
+            centroid_x=dict['centroid_x'])
+        print(ins)
+        self.conn.execute(ins)
+
+    def insert_describe(self, table, dict):
         ins = table.insert().values(
             event_time=dict['event_time'],
             object_id=dict['object_id'],

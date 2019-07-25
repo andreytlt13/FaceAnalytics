@@ -1,19 +1,21 @@
-import flask
 import json
 import os
 import pickle
 import socket
+
+import flask
 from flask import Response, jsonify
-from main.common import config_parser
 from flask_cors import cross_origin
+
+from main.common import config_parser
 from rest_api.db.event_db_logger import EventDBLogger
 
 CONFIG = config_parser.parse()
-PORT = 14600
+PORT = 14200
 
 app = flask.Flask(__name__)
 
-sock = socket.socket()
+# sock = socket.socket()
 cam_info_json = 'rest_api/cam_info.json'
 root_path = os.path.dirname(os.getcwd())
 db_faces = root_path + '/main/data/known_faces/'
@@ -88,7 +90,7 @@ def run_processing():
 
     # script = "{} -src {}".format('main/run.py',camera_url)
     # os.system(script)
-    program = "{} -src {}".format('main/run.py', camera_url)
+    # program = "{} -src {}".format('main/run.py', camera_url)
 
     with open(cam_info_json, 'r') as f:
         data = json.load(f)
@@ -109,6 +111,7 @@ def run_processing():
 @cross_origin()
 def get_objects():
     camera_url = flask.request.args.get('camera_url')
+    sock = socket.socket()
     sock.connect(('127.0.0.1', PORT))
     object_id_info = {
         "type": "get_objects"
@@ -154,23 +157,36 @@ def get_name_photo():
 @cross_origin()
 def get_name_info():
     camera_url = flask.request.args.get('camera_url')
-    #object_id = [0,1,2]#flask.request.args.get('object_id')
-    name = flask.request.args.get('name') #flask.request.values['name']
-    stars = 3 #flask.request.values['stars']
-    description = 'iphone' #flask.request.values['description']
-    object_id_info = {
+    name = flask.request.args.get('name')  # flask.request.values['name']
+    # object_id = [0,1,2]#flask.request.args.get('object_id')
+    sock = socket.socket()
+    sock.connect(('127.0.0.1', PORT))
+    message = {
+        "type": "get_name_info",
         "camera_url": camera_url,
-        "name": name,
-        "stars": stars,
-        "description": description
+        "name": name
     }
+    b_message = pickle.dumps(message)
+    sock.send(b_message)
 
-    return jsonify(object_id_info)
+    data = b""
+    tmp = sock.recv(16384)
+    while tmp:
+        data += tmp
+        tmp = sock.recv(16384)
+
+    result = pickle.loads(data)
+
+    print(result)
+    sock.close()
+
+    return jsonify(result)
 
 
 @app.route('/camera/object', methods=['PUT'])
 @cross_origin()
 def object_id():
+    sock = socket.socket()
     camera_url = flask.request.values['camera_url']
     object_id = flask.request.values['object_id']
     name = flask.request.values['name']
@@ -197,7 +213,19 @@ def object_id():
     print(result)
     sock.close()
 
-    return jsonify(object_id_info)
+    return jsonify(result)
+
+
+def db_insert():
+    start_date = flask.request.args.get('start_date')
+    end_date = flask.request.args.get('end_date')
+    name = flask.request.args.get('name')
+    table = "event_logger"
+    db_name = "0"
+    connection = EventDBLogger(db_name)
+    table = connection.create_table(table)
+    result = connection.select(table, start_date, end_date)
+    return Response(result, mimetype='application/json')
 
 
 @app.route('/camera/get_object_img', methods=['GET'])
@@ -224,11 +252,12 @@ def get_name_img():
 @app.route('/camera/db_select', methods=['GET'])
 @cross_origin()
 def db_select():
-    start_date = flask.request.args.get('start_date') #2019-05-16 22:06:04.369857
-    end_date = flask.request.args.get('end_date') #2019-05-16 22:06:04.369857
-    table = "rtsp://admin:0ZKaxVFi@10.101.106.4:554/live/main"
+    start_date = flask.request.args.get('start_date')
+    end_date = flask.request.args.get('end_date')
     name = flask.request.args.get('name')
-    connection = EventDBLogger()
+    table = "event_logger"
+    db_name = "0"
+    connection = EventDBLogger(db_name)
     table = connection.create_table(table)
     result = connection.select(table, start_date, end_date)
     return Response(result, mimetype='application/json')

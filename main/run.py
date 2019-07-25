@@ -8,7 +8,6 @@ import pickle
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from socketserver import ThreadingMixIn
 from threading import Thread
-sys.path.append('../')
 from main.video_processing import VideoStream
 
 __version__ = '0.1.2'
@@ -22,10 +21,11 @@ ap.add_argument("-p", "--port", required=False, default=14600,
                 help="socket port")
 
 args = vars(ap.parse_args())
-# args["source"] = "/Users/andrey/Downloads/Telegram Desktop/vlc_record_2019_05_30_12h50m55s.mp4"
-# args["source"] = "rtsp://user:Hneu74k092@10.101.106.104:554/live/main"
-args["source"] = "rtsp://admin:admin@10.101.1.221:554/ch01/1" #base stream 0
-# args["source"] = 0
+#args["source"] = "/Users/andrey/Downloads/Telegram Desktop/vlc_record_2019_05_30_12h50m55s.mp4"
+#args["source"] = "rtsp://user:Hneu74k092@10.101.106.104:554/live/main"
+#args["source"] = "rtsp://admin:admin@10.101.1.221:554/ch01/1" #base stream 0
+args["source"] = 0
+
 
 sock = socket.socket()
 sock.bind((args["server_ip"], args["port"]))
@@ -148,7 +148,7 @@ def main(args=None):
 
         server = ThreadedHTTPServer((ip, 9091), CamHandler)
         print("[INFO] starting server")
-        target = Thread(target=server.serve_forever,args=())
+        target = Thread(target=server.serve_forever, args=())
 
         i = 0
         fr_inxd = 0
@@ -175,24 +175,75 @@ def main(args=None):
                 print("Request type: " + query["type"])
                 if query["type"] == "get_objects":
                     message = {}
-                    for i in vs.trackableObjects.keys():
+                    for n in vs.trackableObjects.keys():
                         tmp = {
                             #'objectID': vs.trackableObjects[i].objectID,
-                            'name':  vs.trackableObjects[i].name,
-                            'names': vs.trackableObjects[i].names
+                            'name': vs.trackableObjects[n].name,
+                            'names': vs.trackableObjects[n].names
                         }
-                        message[i] = tmp
+                        message[n] = tmp
                     b_message = pickle.dumps(message)
                     client.send(b_message)
                     client.close()
                     print("close")
                 elif query["type"] == "set_name":
                     object_id = int(query['object_id'])
-                    vs.trackableObjects[object_id].name = (query['name'], )
-                    #vs.trackableObjects[object_id].stars = query['stars']
-                    #vs.trackableObjects[object_id].description = query['description']
-                    print("close")
+                    vs.trackableObjects[object_id].name = query['name']
+                    vs.trackableObjects[object_id].stars = query['stars']
+                    vs.trackableObjects[object_id].description = query['description']
+                    vs.write_recognized_face(object_id, query['name'])
 
+                    b_message = pickle.dumps("done")
+                    client.send(b_message)
+                    print("close")
+                    client.close()
+
+
+
+
+
+                elif query["type"] == "get_name_info":
+                    for n in vs.trackableObjects.keys():
+                        if vs.trackableObjects[n].name == query["name"]:
+                            message = {
+                                'camera_url': camera_url,
+                                'name': vs.trackableObjects[n].name,
+                                'description': vs.trackableObjects[n].description,
+                                'stars': vs.trackableObjects[n].stars,
+                            }
+                            b_message = pickle.dumps(message)
+                            client.send(b_message)
+                            client.close()
+                            print("close")
+                        else:
+                            message = {
+                                'camera_url': camera_url
+                            }
+                            b_message = pickle.dumps(message)
+                            client.send(b_message)
+                            print("close")
+                            client.close()
+                elif query["type"] == "add_name":
+                    for n in vs.trackableObjects.keys():
+                        if vs.trackableObjects[n].name == query["name"]:
+                            message = {
+                                'camera_url': camera_url,
+                                'name': vs.trackableObjects[n].name,
+                                'description': vs.trackableObjects[n].description,
+                                'stars': vs.trackableObjects[n].stars,
+                            }
+                            b_message = pickle.dumps(message)
+                            client.send(b_message)
+                            client.close()
+                            print("close")
+                        else:
+                            message = {
+                                'camera_url': camera_url
+                            }
+                            b_message = pickle.dumps(message)
+                            client.send(b_message)
+                            print("close")
+                            client.close()
 
     except KeyboardInterrupt:
         save_object(obj=vs.trackableObjects, filename=cam_name)

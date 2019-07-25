@@ -1,30 +1,27 @@
 #!/usr/bin/env python
-import numpy as np
-import imutils
-import dlib
-import cv2
+import datetime
+import json
 import os
 import time
-import json
-import datetime
 
-from main.common import config_parser
-from main.common.object_tracker import TrackableObject, CentroidTracker
-import model.person_processing.nets.resnet_v1_50 as model
-import model.person_processing.heads.fc1024 as head
-
+import cv2
+import dlib
+import imutils
+import numpy as np
 import tensorflow as tf
-from keras.applications.resnet50 import preprocess_input
+from PIL import Image
 
+import model.person_processing.heads.fc1024 as head
+import model.person_processing.nets.resnet_v1_50 as model
 from face_processing.best_face_selector import select_best_face
 from face_processing.face_recognition import recognize_face, load_known_face_encodings
-
+from main.common import config_parser
+from main.common.object_tracker import TrackableObject, CentroidTracker
 from rest_api.db.event_db_logger import EventDBLogger
 
 CONFIG = config_parser.parse()
-
+CONFIG["root_path"] = os.path.expanduser("~") + CONFIG["root_path"]
 # path to PycharmProject
-CONFIG["root_path"] = os.getcwd()
 print('root_path: ', CONFIG["root_path"])
 
 # person detection model
@@ -47,6 +44,7 @@ for d in ['face_processing/tmp_faces', 'data/db']:
     os.makedirs(os.path.join(CONFIG["root_path"], d), exist_ok=True)
 
 
+
 class VideoStream():
 
     # hacked just for recording stream
@@ -62,30 +60,28 @@ class VideoStream():
         self.W, self.H = int(self.vs.get(3)), int(self.vs.get(4))
         self.fps = self.vs.get(5)
 
-        self.test_info = []
         t_nets_initialization = time.monotonic()
         # person detection model
         self.net = cv2.dnn.readNetFromCaffe(PROTOTXT, MODEL)
 
         # face models
         if CONFIG['face_detection'] == 'True':
-            self.test_info.append('[INFO] face_detection : True\n')
             # self.net_face_detector = cv2.dnn.readNetFromCaffe(PROTOTXT_FACE, MODEL_FACE)
-            self.net_face_detector = cv2.CascadeClassifier(os.path.join(face_models, 'haarcascade_frontalface_default.xml'))
+            self.net_face_detector = cv2.CascadeClassifier(
+                os.path.join(face_models, 'haarcascade_frontalface_default.xml'))
 
             eye_casc, mouth_casc, nose_casc = CONFIG['face_cascades'].split(',')
-            self.face_haars = [cv2.CascadeClassifier(os.path.join(face_models, m)) for m in [eye_casc,mouth_casc,nose_casc]]
+            self.face_haars = [cv2.CascadeClassifier(os.path.join(face_models, m)) for m in
+                               [eye_casc, mouth_casc, nose_casc]]
 
-            self.test_info.append('[TIME LOG] t_nets_initialization_elapsed: {}\n'.format(time.monotonic() - t_nets_initialization))
+            print('[TIME LOG] t_nets_initialization_elapsed:', time.monotonic() - t_nets_initialization)
 
             t_loading_embs = time.monotonic()
             # dlib embeddings
             self.known_face_encodings, self.known_face_names = load_known_face_encodings(DB_PATH)
-            self.test_info.append('[TIME LOG] t_loading_embs_elapsed: {}\n'.format(time.monotonic() - t_loading_embs))
+            print('[TIME LOG] t_loading_embs_elapsed:', time.monotonic() - t_loading_embs)
         else:
-            self.test_info.append('[INFO] face_detection : False')
-            self.test_info.append('[TIME LOG] t_nets_initialization_elapsed: {}'.format(time.monotonic() - t_nets_initialization))
-
+            print('[TIME LOG] t_nets_initialization_elapsed:', time.monotonic() - t_nets_initialization)
 
         self.classes = ["background", "aeroplane", "bicycle", "bird", "boat",
                         "bottle", "bus", "car", "cat", "chair", "cow", "diningtable",
@@ -100,7 +96,7 @@ class VideoStream():
         t_vectorizer_initialization = time.monotonic()
         self.imgVectorizer, self.endpoints, self.images = self.start_img_vectorizer()
         t_vectorizer_initialization_elapsed = time.monotonic() - t_vectorizer_initialization
-        self.test_info.append('[TIME LOG] t_vectorizer_initialization_elapsed: {}\n'.format(t_vectorizer_initialization_elapsed))
+        print('[TIME LOG] t_vectorizer_initialization_elapsed:', t_vectorizer_initialization_elapsed)
 
         self.info = {
             'status': None,
@@ -121,13 +117,16 @@ class VideoStream():
                 self.db_name = elem["name"].replace(' ', '_')
                 break
             else:
-                self.db_name = str(self.camera_url).split('/')[-1].replace('.', '_')
+                if type(self.camera_url) is int:
+                    self.db_name = str(self.camera_url)
+                else:
+                    self.db_name = self.camera_url.split('/')[-1].replace('.', '_')
 
         # creating db and connection
         self.connection = EventDBLogger(db_name=self.db_name)
         # creating table in db
         self.table_event_log = self.connection.create_table_event_logger()
-
+        self.table_recog_log = self.connection.create_table_recognized_logger()
 
     def process_stream(self):
         ret, frame = self.vs.read()
@@ -158,7 +157,7 @@ class VideoStream():
 
         if self.info['TotalFrames'] % 30 == 0:
             t_detecting = time.monotonic()
-            frame = self.detecting(frame, rgb) # person detection
+            frame = self.detecting(frame, rgb)  # person detection
             t_detecting_elapsed = time.monotonic() - t_detecting
             t_tracking_elapsed = None
 
@@ -171,33 +170,37 @@ class VideoStream():
                         'centroid_x': int(int(tr_obj.centroids[-1][0])),
                         'centroid_y': int(tr_obj.centroids[-1][1])
                     }
-                    self.connection.insert(self.table_event_log, event)
+                    self.connection.insert_event(self.table_event_log, event)
 
+                    # person_save_path = os.path.join(CONFIG["root_path"],
+                    #                                 'data/photo/{}/id_{}/person/'.format(self.db_name, tr_indx))
                     person_save_path = os.path.join(CONFIG["root_path"],
-                                                    'data/photo/{}/id_{}/person/'.format(self.db_name, tr_indx))
+                                                    'data/photo/{}/objects/id_{}/person/'.format(self.db_name, tr_indx))
                     os.makedirs(person_save_path, exist_ok=True)
 
                     if save_img:
                         if tr_obj.img is not None and all(tr_obj.img.shape) > 0:
-                            cv2.imwrite(person_save_path + '{}_{}.jpeg'.format(tr_indx, datetime.datetime.now()), tr_obj.img)
+                            cv2.imwrite(person_save_path + '{}_{}.jpeg'.format(tr_indx, datetime.datetime.now()),
+                                        tr_obj.img)
 
         else:
             t_tracking = time.monotonic()
-            rects = self.tracking(rgb, rects) # person tracking
+            rects = self.tracking(rgb, rects)  # person tracking
             t_tracking_elapsed = time.monotonic() - t_tracking
             t_detecting_elapsed = None
 
         if len(rects) > 0:
             t_emb_matrix = time.monotonic()
-            objects, embeding_matrix = self.ct.update(rects, orig_frame, frame, self.trackableObjects, self.embeding_list) # updating centroid tracker
+            objects, embeding_matrix = self.ct.update(rects, orig_frame, frame, self.trackableObjects,
+                                                      self.embeding_list)  # updating centroid tracker
             t_emb_matrix_elapsed = time.monotonic() - t_emb_matrix
 
-            frame = self.draw_labels(frame, orig_frame, objects) # drawing info on each frame
+            frame = self.draw_labels(frame, orig_frame, objects)  # drawing info on each frame
 
             # Update Trackable objects
             t_updating_trObj = time.monotonic()
-            objects = self.ct.check_embeding(embeding_matrix, self.trackableObjects) # checking embeddings for persons
-            self.update_trackable_objects(objects) # updating trackable objects
+            objects = self.ct.check_embeding(embeding_matrix, self.trackableObjects)  # checking embeddings for persons
+            self.update_trackable_objects(objects)  # updating trackable objects
             t_updating_trObj_elapsed = time.monotonic() - t_updating_trObj
 
             # Face recognition
@@ -222,7 +225,7 @@ class VideoStream():
                     t_emb_matrix_elapsed, t_updating_trObj_elapsed,
                     t_face_recognition_elapsed]
 
-        return frame, time_log
+        return frame, time_log, self.trackableObjects
 
     def draw_labels(self, frame, orig_frame, objects):
 
@@ -350,16 +353,30 @@ class VideoStream():
             self.trackableObjects[objectID] = to
             self.ct.nextObjectID = self.trackableObjects.__len__()
 
+    def write_recognized_face(self, object_id, name):
+
+        known_face_save_path = os.path.join(CONFIG["root_path"],
+                                            'data/photo/{}/known_faces/'.format(self.db_name))
+        # os.makedirs(known_face_save_path, exist_ok=True)
+        face_img = self.trackableObjects[object_id].face_seq[0]
+        img = Image.fromarray(face_img, 'RGB')
+        cv2.imwrite(known_face_save_path + '{}.jpg'.format(name), face_img)
+        cv2.imwrite(known_face_save_path + '{}_frame.jpg'.format(name), frame)
+
+
+
     def face_recognition(self, frame, orig_frame):
         if len(self.trackableObjects.items()) > 0:
             for tr_indx, tr_obj in self.trackableObjects.items():
 
                 if tr_obj.names[0] is None:
                     # detect face from orig size person
-                    frame, detected_face = self.face_detection(frame, orig_frame, tr_obj.rect, tr_obj.img)
+                    frame, detected_face = self.face_detection(frame, orig_frame, tr_obj.rect, tr_obj.img, tr_indx)
 
-                    face_save_path = os.path.join(CONFIG["root_path"], 'data/photo/{}/id_{}/face/'.format(self.db_name,
-                                                                                                          tr_indx))
+                    face_save_path = os.path.join(CONFIG["root_path"],
+                                                  'data/photo/{}/objects/id_{}/face/'.format(self.db_name,
+                                                                                             tr_indx))
+
                     os.makedirs(face_save_path, exist_ok=True)
 
                     # add cropped_face to face_sequence
@@ -370,7 +387,7 @@ class VideoStream():
                         if save_img:
                             cv2.imwrite(face_save_path + '{}_detected_{}.jpg'.format(tr_indx,
                                                                                      datetime.datetime.now()),
-                                                                                     detected_face)
+                                        detected_face)
 
                     if len(tr_obj.face_seq) > 0:
                         # select the best face from face_sequence
@@ -383,33 +400,32 @@ class VideoStream():
                         if save_img:
                             if np.array_equal(np.array(tr_obj.face_emb), np.array(best_face_emb)):
                                 cv2.imwrite(face_save_path + '{}_best_detected_face_{}.jpg'.format(tr_indx,
-                                                                                               datetime.datetime.now()),
-                                                                                               best_detected_face)
+                                                                                                   datetime.datetime.now()),
+                                            best_detected_face)
 
-                        print('[RECOGNITION INFO] This person id: {} - looks like: {}'.format(tr_indx, names))
+                        print('This person looks like:', names)
 
                         if len(names) > 0:
-                            self.test_info.append('[RECOGNITION INFO] This person id: {} - looks like: {}\n'.format(tr_indx, names))
                             tr_obj.names = names
                         if len(best_face_emb) > 0:
                             tr_obj.face_emb = best_face_emb
 
         return frame
 
-    def face_detection(self, frame, orig_frame, person_box, person_im):
+    def face_detection(self, frame, orig_frame, person_box, person_im, tr_indx):
 
         # detect face from cropped person
         self.info['status'] = 'Detecting face'
 
-        # haars cascade approach [GOOD but gives artifacts]
+        # # haar's cascade approach [GOOD but gives artifacts]
         face_im = None
         if person_im is not None and all(person_im.shape) > 0:
 
             gray = cv2.cvtColor(person_im, cv2.COLOR_BGR2GRAY)
             faces = self.net_face_detector.detectMultiScale(gray, 1.3, 5)
             for (x, y, w, h) in faces:
-                startX, startY, endX, endY = x, y, x+w, y+h
-                pad_y, pad_x = int(w*0.2), int(h*0.2)
+                startX, startY, endX, endY = x, y, x + w, y + h
+                pad_y, pad_x = int(w * 0.2), int(h * 0.2)
                 face_im = person_im[startY - pad_y: endY + pad_y, startX - pad_x: endX + pad_x]
 
                 if all(face_im.shape) > 0:
@@ -429,8 +445,3 @@ class VideoStream():
                     face_im = None
 
         return frame, face_im
-
-
-
-
-
