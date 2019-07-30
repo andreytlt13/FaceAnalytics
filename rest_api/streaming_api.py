@@ -12,7 +12,7 @@ from main.common import config_parser
 from rest_api.db.event_db_logger import EventDBLogger
 
 CONFIG = config_parser.parse()
-PORT = 14500
+PORT = 14100
 
 app = flask.Flask(__name__)
 
@@ -21,14 +21,13 @@ app = flask.Flask(__name__)
 root_path = os.path.dirname(os.getcwd())
 cam_info_json = root_path + '/rest_api/cam_info.json'
 db_faces = root_path + '/main/face_processing/known_faces/'
-db_faces = root_path + '/main/data/photo/0/known_faces/'
+db_faces = root_path + '/main/data/photo/2_floor/known_faces/'
 db_objects = root_path + '/main/data/photo/'
 
 
 @app.route('/camera', methods=['GET'])
 @cross_origin()
 def get_camers_list():
-
     if not os.path.isfile(cam_info_json):
         with open(cam_info_json, 'r') as f:
             data = []
@@ -193,14 +192,14 @@ def get_name_info():
 @cross_origin()
 def object_id():
     sock = socket.socket()
-    camera_url = flask.request.values['camera_url']
+    camera_name = flask.request.values['camera_name']
     object_id = flask.request.values['object_id']
     name = flask.request.values['name']
     stars = flask.request.values['stars']
     description = flask.request.values['description']
     object_id_info = {
         "type": "set_name",
-        "camera_url": camera_url,
+        "camera_url": camera_name,
         "object_id": object_id,
         "name": name,
         "stars": stars,

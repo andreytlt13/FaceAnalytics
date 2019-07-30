@@ -179,7 +179,7 @@ class VideoStream():
 
                     if save_img:
                         if tr_obj.img is not None and all(tr_obj.img.shape) > 0:
-                            cv2.imwrite(person_save_path + '{}_{}.jpeg'.format(tr_indx, datetime.datetime.now()),
+                            cv2.imwrite(person_save_path + '{}.jpeg'.format(tr_indx),
                                         tr_obj.img)
 
         else:
@@ -364,7 +364,8 @@ class VideoStream():
                 img_path = known_face_save_path + '{}.jpg'.format(name)
                 cv2.imwrite(img_path, face_img)
                 # cv2.imwrite(known_face_save_path + '{}_frame.jpg'.format(name), frame)
-        return img_path
+                return img_path
+        return None
 
     def add_desciption(self, object_id, name, description, stars, img_path):
         event = {
@@ -403,8 +404,7 @@ class VideoStream():
                         tr_obj.face_seq.append(detected_face)
                         # save face to folder
                         if save_img:
-                            cv2.imwrite(face_save_path + '{}_detected_{}.jpg'.format(tr_indx,
-                                                                                     datetime.datetime.now()),
+                            cv2.imwrite(face_save_path + '{}_detected.jpg'.format(tr_indx),
                                         detected_face)
 
                     if len(tr_obj.face_seq) > 0:
@@ -417,8 +417,7 @@ class VideoStream():
 
                         if save_img:
                             if np.array_equal(np.array(tr_obj.face_emb), np.array(best_face_emb)):
-                                cv2.imwrite(face_save_path + '{}_best_detected_face_{}.jpg'.format(tr_indx,
-                                                                                                   datetime.datetime.now()),
+                                cv2.imwrite(face_save_path + '{}_best_detected_face.jpg'.format(tr_indx),
                                             best_detected_face)
 
                         print('This person looks like:', names)
