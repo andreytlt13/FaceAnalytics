@@ -67,7 +67,10 @@ if log_:
     # log all escalated at and above DEBUG
     logger.setLevel(logging.DEBUG)
     # add a file handler
-    handler = logging.FileHandler(os.path.join(logs_dir, '{}.csv'.format(time_log_name)))
+    log_file_path = os.path.join(logs_dir, '{}.csv'.format(time_log_name))
+    if os.path.exists(log_file_path):
+        os.remove(log_file_path)
+    handler = logging.FileHandler(log_file_path)
     handler.setLevel(logging.DEBUG)
 
     # create a formatter and set the formatter for the handler.
@@ -77,19 +80,34 @@ if log_:
     logger.addHandler(handler)
 
 
+# for FPS measuring
+frame_counter = 0
+t_proc_fr_rate = time.monotonic()
+fps_proc_next_frame = 0
+all_fps = []
+
 t_all = time.monotonic()
 while True:
     t_proc_next_frame = time.monotonic()
     img, time_log = vs.process_next_frame()
     t_proc_next_frame_elapsed = time.monotonic() - t_proc_next_frame
 
-    if log_:
-        time_log.append(t_proc_next_frame)
-        time_log = str(time_log).strip('[]')
-        logger.info(time_log)
+    # for FPS measuring - frame processing
+    print('frame_counter:', frame_counter)
+    frame_counter += 1
+    if (time.time() - t_proc_fr_rate) > 1.0:
+        fps_proc_next_frame = frame_counter / (time.monotonic() - t_proc_fr_rate)
+        all_fps.append(fps_proc_next_frame)
+        print('FPS:{}'.format(fps_proc_next_frame))
+        frame_counter = 0
+        t_proc_fr_rate = time.monotonic()
 
-    if img is None:
-        break
+    if log_:
+        time_log.append(t_proc_next_frame_elapsed)
+        time_log.append(fps_proc_next_frame)
+        time_log_ = str(time_log).strip('[]')
+        logger.info(time_log_)
+
     cv2.imshow('image', img)
 
     if save_res_:
@@ -98,10 +116,16 @@ while True:
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
+    if vs.info['TotalFrames'] == 2040:
+        break
+
 if save_res_:
     out_video.release()
 
 vs.test_info.append('[TIME LOG] all processed time : {}\n'.format(time.monotonic() - t_all))
+vs.test_info.append('[TIME LOG] FPS for frame full processing : min = {}, max = {}, avg = {}\n'.format(min(all_fps),
+                                                                                                       max(all_fps),
+                                                                                                       sum(all_fps) / len(all_fps)))
 
 if analyze_log_:
     performance_analysis.get_result(vs, os.path.join(logs_dir, '{}.csv'.format(time_log_name)), save_dir, face_detection=CONFIG['face_detection'])
