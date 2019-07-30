@@ -1,13 +1,13 @@
 import argparse
-import sys
-import cv2
-import os
-import json
-import socket
 import pickle
+import socket
+import sys
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from socketserver import ThreadingMixIn
 from threading import Thread
+
+import cv2
+
 from main.video_processing import VideoStream
 
 __version__ = '0.1.2'
@@ -17,7 +17,7 @@ ap = argparse.ArgumentParser()
 ap.add_argument("-src", "--source", required=False, help="cam url")
 ap.add_argument("-s", "--server_ip", required=False, default='0.0.0.0',
                 help="ip address of the server to which the client will connect")
-ap.add_argument("-p", "--port", required=False, default=14600,
+ap.add_argument("-p", "--port", required=False, default=14200,
                 help="socket port")
 
 args = vars(ap.parse_args())
@@ -32,7 +32,6 @@ sock.bind((args["server_ip"], args["port"]))
 sock.listen(10)
 sock.setblocking(0)
 
-save_object_frequency = 500 #frames
 
 class CamHandler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -186,21 +185,20 @@ def main(args=None):
                     client.send(b_message)
                     client.close()
                     print("close")
+                    # move string injections to constant
                 elif query["type"] == "set_name":
                     object_id = int(query['object_id'])
                     vs.trackableObjects[object_id].name = query['name']
                     vs.trackableObjects[object_id].stars = query['stars']
                     vs.trackableObjects[object_id].description = query['description']
-                    vs.write_recognized_face(object_id, query['name'])
+                    img_path = vs.write_recognized_face(object_id, query['name'])
+
+                    vs.add_desciption(object_id, query['name'], query['description'], query['stars'], img_path)
 
                     b_message = pickle.dumps("done")
                     client.send(b_message)
                     print("close")
                     client.close()
-
-
-
-
 
                 elif query["type"] == "get_name_info":
                     for n in vs.trackableObjects.keys():

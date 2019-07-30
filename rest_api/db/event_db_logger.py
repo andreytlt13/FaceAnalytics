@@ -38,8 +38,8 @@ class EventDBLogger:
                           Column('object_id', Integer),
                           Column('event_time', BigInteger),
                           Column('centroid_x', BigInteger),
-                          Column('centroid_y', BigInteger),
-                  )
+                          Column('centroid_y', BigInteger)
+                          )
             self.metadata.create_all()
         else:
             table = self.metadata.tables[name]
@@ -54,6 +54,7 @@ class EventDBLogger:
                           Column('description', Text),
                           Column('stars', Text),
                           Column('img_path', Text),
+                          Column('event_time', BigInteger)
                           )
             self.metadata.create_all()
         else:
@@ -62,24 +63,16 @@ class EventDBLogger:
 
     def insert_describe(self, table, dict):
         ins = table.insert().values(
-            id=dict['event_time'],
-            name=dict['object_id'],
-            description=dict['centroid_y'],
-            stars=dict['centroid_x'],
-            img_path=dict['centroid_x'])
+            id=dict['object_id'],
+            name=dict['name'],
+            description=dict['description'],
+            stars=dict['stars'],
+            img_path=dict['img_path'],
+            event_time=dict['event_time'])
         print(ins)
         self.conn.execute(ins)
 
     def insert_event(self, table, dict):
-        ins = table.insert().values(
-            event_time=dict['event_time'],
-            object_id=dict['object_id'],
-            centroid_y=dict['centroid_y'],
-            centroid_x=dict['centroid_x'])
-        print(ins)
-        self.conn.execute(ins)
-
-    def insert_describe(self, table, dict):
         ins = table.insert().values(
             event_time=dict['event_time'],
             object_id=dict['object_id'],
@@ -93,6 +86,18 @@ class EventDBLogger:
             and_(
             table.c.event_time > start_date,
             table.c.event_time < end_date))
+        res = self.conn.execute(select_st).fetchall()
+        if len(res) == 0:
+            return pd.DataFrame().to_json(orient='records')
+        else:
+            df = pd.DataFrame(res)
+            df.columns = res[0].keys()
+            j = df.to_json(orient='records')
+            return j
+
+    def select_name_description(self, table, name):
+        select_st = table.select().where(
+            table.c.name == name)
         res = self.conn.execute(select_st).fetchall()
         if len(res) == 0:
             return pd.DataFrame().to_json(orient='records')

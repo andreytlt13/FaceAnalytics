@@ -9,7 +9,6 @@ import dlib
 import imutils
 import numpy as np
 import tensorflow as tf
-from PIL import Image
 
 import model.person_processing.heads.fc1024 as head
 import model.person_processing.nets.resnet_v1_50 as model
@@ -362,8 +361,25 @@ class VideoStream():
             if len(self.trackableObjects[object_id].face_seq) > 0:
                 face_img = self.trackableObjects[object_id].face_seq[0]
                 # img = Image.fromarray(face_img, 'RGB')
-                cv2.imwrite(known_face_save_path + '{}.jpg'.format(name), face_img)
+                img_path = known_face_save_path + '{}.jpg'.format(name)
+                cv2.imwrite(img_path, face_img)
                 # cv2.imwrite(known_face_save_path + '{}_frame.jpg'.format(name), frame)
+        return img_path
+
+    def add_desciption(self, object_id, name, description, stars, img_path):
+        event = {
+            'object_id': object_id,
+            'name': name,
+            'description': description,
+            'stars': stars,
+            'img_path': img_path,
+            'event_time': datetime.datetime.now(),
+        }
+        self.connection.insert_describe(self.table_recog_log, event)
+
+
+
+
 
 
 

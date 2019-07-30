@@ -1,3 +1,4 @@
+import glob
 import json
 import os
 import pickle
@@ -11,15 +12,17 @@ from main.common import config_parser
 from rest_api.db.event_db_logger import EventDBLogger
 
 CONFIG = config_parser.parse()
-PORT = 14200
+PORT = 14500
 
 app = flask.Flask(__name__)
 
 # sock = socket.socket()
-cam_info_json = 'rest_api/cam_info.json'
+
 root_path = os.path.dirname(os.getcwd())
-db_faces = root_path + '/main/data/known_faces/'
-db_objects = root_path + '/main/photo/'
+cam_info_json = root_path + '/rest_api/cam_info.json'
+db_faces = root_path + '/main/face_processing/known_faces/'
+db_faces = root_path + '/main/data/photo/0/known_faces/'
+db_objects = root_path + '/main/data/photo/'
 
 
 @app.route('/camera', methods=['GET'])
@@ -31,7 +34,7 @@ def get_camers_list():
             data = []
             json.dump(data, f, indent=4)
     else:
-        with open(cam_info_json, 'r') as  f:
+        with open(cam_info_json, 'r') as f:
             data = json.load(f)
 
     return jsonify(data)
@@ -110,7 +113,7 @@ def run_processing():
 @app.route('/camera/objects', methods=['GET'])
 @cross_origin()
 def get_objects():
-    camera_url = flask.request.args.get('camera_url')
+    camera_name = flask.request.args.get('camera_name')
     sock = socket.socket()
     sock.connect(('127.0.0.1', PORT))
     object_id_info = {
@@ -134,8 +137,11 @@ def get_objects():
 @app.route('/camera/object/photo', methods=['GET'])
 @cross_origin()
 def get_object_photo():
+    camera_name = flask.request.args.get('camera_name')
     object_id = flask.request.args.get('object_id')
-    img_path = os.path.join(db_objects, 'ID_{}.jpg'.format(object_id))
+    img_path = os.path.join(db_objects, '{}/objects/id_{}/face/*'.format(camera_name, object_id))
+    img_path = glob.glob(img_path)
+    img_path = max(img_path, key=os.path.getctime)
     if os.path.exists(img_path):
         return flask.send_file(img_path, mimetype='image/jpg')
     else:
@@ -260,6 +266,18 @@ def db_select():
     connection = EventDBLogger(db_name)
     table = connection.create_table(table)
     result = connection.select(table, start_date, end_date)
+    return Response(result, mimetype='application/json')
+
+
+@app.route('/camera/db_select_description', methods=['GET'])
+@cross_origin()
+def db_select_description():
+    name = flask.request.args.get('name')
+    table = "event_logger"
+    db_name = "0"
+    connection = EventDBLogger(db_name)
+    table = connection.create_table_recognized_logger()
+    result = connection.select_name_description(table, name)
     return Response(result, mimetype='application/json')
 
 
