@@ -17,17 +17,18 @@ save_res_ = False
 
 stream_ = False
 
+CONFIG["root_path"] = os.path.expanduser("~") + CONFIG["root_path"]
+
 tests_dir = os.path.join(CONFIG["root_path"], CONFIG["tests_dir"])
 logs_dir = os.path.join(tests_dir, 'logs')
 
 if stream_:
     camera_url = 'rtsp://user:Hneu74k092@10.101.106.104:554/live/main'
-    # camera_url = 0
-    tmp_name = camera_url.replace('/', '_')
+    camera_url = 0
+    tmp_name = str(camera_url).replace('/', '_')
     vs = VideoStream(camera_url)
 
 else:
-
     # camera_url = 'vlc_record_2019_05_30_12h50m55s.mp4' #kate_andrey
     camera_url = 'vlc-record-2019-06-04-14h03m36s.mp4' #andrey #frame_out_wh = (600, 450)
     # camera_url = 'vlc-record-2019-06-10-14h42m31s.mp4' #varya_daria
@@ -39,7 +40,7 @@ else:
     # camera_url = 'vlc-record-2019-07-01-17h38m49s.mp4' #sveta
     # camera_url = 'videoplayback.mp4'
     camera_url = 'andrey_vitya.mp4'
-    camera_url = 'vitya.mp4'
+    # camera_url = 'vitya.mp4'
 
     # cctv videos
     # camera_url = '123317_cut_5_persons.mp4' #5_persons
@@ -47,7 +48,6 @@ else:
     # camera_url = '154522_3_persons.mp4' #3_persons
 
     vs = VideoStream(os.path.join(os.path.join(CONFIG["root_path"], CONFIG["tests_dir"]),'testing_videos/'+camera_url))
-    # vs = VideoStream(0)
 
 class CustomHandler(logging.StreamHandler):
     def __init__(self):
@@ -103,7 +103,7 @@ if save_res_:
 t_all = time.monotonic()
 while True:
     t_proc_next_frame = time.monotonic()
-    img, time_log, tr_objects = vs.process_next_frame
+    img, time_log = vs.process_next_frame()
     t_proc_next_frame_elapsed = time.monotonic() - t_proc_next_frame
 
     if log_:
@@ -128,4 +128,4 @@ print('[TIME LOG] all processed time :', time.monotonic() - t_all)
 
 if analyze_log_:
     performance_analysis.get_result(os.path.join(logs_dir, '{}.csv'.format(time_log_name)), save_dir, face_detection=CONFIG['face_detection'])
-    accuracy_analysis.get_result(tr_objects, tested_vid=os.path.join(tests_dir, 'testing_videos/'+camera_url), save_dir=save_dir)
+    accuracy_analysis.get_result(vs.trackableObjects, tested_vid=os.path.join(tests_dir, 'testing_videos/'+camera_url), save_dir=save_dir)

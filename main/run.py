@@ -1,11 +1,14 @@
 import argparse
 import sys
 import cv2
+import os
+import json
 import socket
 import pickle
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from socketserver import ThreadingMixIn
 from threading import Thread
+sys.path.append('../')
 from main.video_processing import VideoStream
 
 __version__ = '0.1.2'
@@ -19,17 +22,17 @@ ap.add_argument("-p", "--port", required=False, default=14600,
                 help="socket port")
 
 args = vars(ap.parse_args())
-#args["source"] = "/Users/andrey/Downloads/Telegram Desktop/vlc_record_2019_05_30_12h50m55s.mp4"
-#args["source"] = "rtsp://user:Hneu74k092@10.101.106.104:554/live/main"
-#args["source"] = "rtsp://admin:admin@10.101.1.221:554/ch01/1" #base stream 0
-args["source"] = 0
-
+# args["source"] = "/Users/andrey/Downloads/Telegram Desktop/vlc_record_2019_05_30_12h50m55s.mp4"
+# args["source"] = "rtsp://user:Hneu74k092@10.101.106.104:554/live/main"
+args["source"] = "rtsp://admin:admin@10.101.1.221:554/ch01/1" #base stream 0
+# args["source"] = 0
 
 sock = socket.socket()
 sock.bind((args["server_ip"], args["port"]))
 sock.listen(10)
 sock.setblocking(0)
 
+save_object_frequency = 500 #frames
 
 class CamHandler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -100,6 +103,17 @@ class WebcamVideoStream:
         # indicate that the thread should be stopped
         self.stopped = True
 
+def save_object(obj,filename):
+    filepath = 'data/objects/'
+    if not os.path.exists(filepath):
+        os.makedirs(filepath)
+    with open(filepath+'{}.pkl'.format(filename), 'wb') as output:
+        pickle.dump(obj, output, pickle.HIGHEST_PROTOCOL)
+
+def load_object(filename):
+    with open('data/objects/{}.pkl'.format(filename), 'rb') as input:
+        obj = pickle.load(input)
+    return obj
 
 def main(args=None):
     global frame
@@ -113,14 +127,39 @@ def main(args=None):
         # connection = EventDBLogger()
         # table = connection.create_table(camera_url)
 
+        # extracting camera name from json
+        with open('../rest_api/cam_info.json') as json_file:
+            data = json.load(json_file)
+        # creating db name for current camera
+        for elem in data:
+            if elem["camera_url"] == args["source"]:
+                cam_name = elem["name"].replace(' ', '_')
+                break
+            else:
+                cam_name = str(args["source"]).split('/')[-1].replace('.', '_')
+
         vs = VideoStream(camera_url)
+
+        # check if saved trackableObjects exist
+        if os.path.exists('data/objects/{}.pkl'.format(cam_name)):
+            # load saved trackableObjects
+            vs.trackableObjects = load_object(filename=cam_name)
+            print('[INFO] vs.trackableObjects loaded')
+
         server = ThreadedHTTPServer((ip, 9091), CamHandler)
         print("[INFO] starting server")
         target = Thread(target=server.serve_forever,args=())
 
         i = 0
+        fr_inxd = 0
         while True:
-            frame, _, _ = vs.process_next_frame()
+            frame, _ = vs.process_next_frame()
+
+            fr_inxd += 1
+            if fr_inxd % save_object_frequency == 0:
+                save_object(obj=vs.trackableObjects, filename=cam_name)
+                print('[INFO] vs.trackableObjects saved {}'.format(fr_inxd))
+
             if(i == 0):
                 target.start()
             i +=1
@@ -156,6 +195,8 @@ def main(args=None):
 
 
     except KeyboardInterrupt:
+        save_object(obj=vs.trackableObjects, filename=cam_name)
+        print('[INFO] vs.trackableObjects saved {} - KeyboardInterrupt'.format(fr_inxd))
         sys.exit()
 
 

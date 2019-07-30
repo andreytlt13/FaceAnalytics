@@ -1,14 +1,19 @@
-import os
 import json
 
 
-def get_result(tr_objects, tested_vid, save_dir):
+def get_result(vs, tested_vid):
+    tr_objects = vs.trackableObjects
     vid_name = tested_vid.split('.')[0]
-    with open('{}.json'.format(vid_name)) as json_file:
-        data = json.load(json_file)
-
-    persons = data['persons']
-    visible_faces = data['visible_faces']
+    try:
+        with open('{}.json'.format(vid_name)) as json_file:
+            data = json.load(json_file)
+        persons = data['persons']
+        visible_faces = data['visible_faces']
+    except:
+        vs.test_info.append('[WARNING!!!] json description for a tested video doesnt exist!\n')
+        print('[WARNING!!!] json description for a tested video doesnt exist!')
+        persons = 0
+        visible_faces = 0
 
     detected_persons = 0
     detected_faces = 0
@@ -22,11 +27,6 @@ def get_result(tr_objects, tested_vid, save_dir):
             if len(tr_obj.face_seq):
                 detected_faces += 1
 
-    result = 'Actual persons: {}, detected_persons: {}\nActual visible faces: {}, detected_faces: {}, recognized: {}'.format(
-                persons, detected_persons, visible_faces, detected_faces, recognized_faces)
-    print(result)
-
-    with open(os.path.join(save_dir, '{}.txt'.format(save_dir.split('/')[-1].split('.')[0])), 'w') as f:
-        f.write(result)
-
-    return result
+    vs.test_info \
+        .append('[ACCURACY RESULT INFO] actual persons: {}, detected_persons: {}\n[ACCURACY RESULT INFO] actual visible faces: {}, detected_faces: {}, recognized: {}\n'\
+        .format(persons, detected_persons, visible_faces, detected_faces, recognized_faces))
