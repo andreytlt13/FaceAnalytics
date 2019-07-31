@@ -12,7 +12,7 @@ from main.common import config_parser
 from rest_api.db.event_db_logger import EventDBLogger
 
 CONFIG = config_parser.parse()
-PORT = 14100
+PORT = 14500
 
 app = flask.Flask(__name__)
 
@@ -21,7 +21,7 @@ app = flask.Flask(__name__)
 root_path = os.path.dirname(os.getcwd())
 cam_info_json = root_path + '/rest_api/cam_info.json'
 db_faces = root_path + '/main/face_processing/known_faces/'
-db_faces = root_path + '/main/data/photo/2_floor/known_faces/'
+db_faces = root_path + '/main/data/photo/0/known_faces/'
 db_objects = root_path + '/main/data/photo/'
 
 

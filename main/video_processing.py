@@ -12,8 +12,7 @@ import tensorflow as tf
 
 import model.person_processing.heads.fc1024 as head
 import model.person_processing.nets.resnet_v1_50 as model
-from face_processing.best_face_selector import select_best_face
-from face_processing.face_recognition import recognize_face, load_known_face_encodings
+from face_processing.face_recognition import load_known_face_encodings
 from main.common import config_parser
 from main.common.object_tracker import TrackableObject, CentroidTracker
 from rest_api.db.event_db_logger import EventDBLogger
@@ -154,7 +153,7 @@ class VideoStream():
         rects = []
         objects = ()
 
-        if self.info['TotalFrames'] % 30 == 0:
+        if self.info['TotalFrames'] % 60 == 0:
             t_detecting = time.monotonic()
             frame = self.detecting(frame, rgb)  # person detection
             t_detecting_elapsed = time.monotonic() - t_detecting
@@ -179,7 +178,7 @@ class VideoStream():
 
                     if save_img:
                         if tr_obj.img is not None and all(tr_obj.img.shape) > 0:
-                            cv2.imwrite(person_save_path + '{}.jpeg'.format(tr_indx),
+                            cv2.imwrite(person_save_path + 'person.jpg',
                                         tr_obj.img)
 
         else:
@@ -404,28 +403,28 @@ class VideoStream():
                         tr_obj.face_seq.append(detected_face)
                         # save face to folder
                         if save_img:
-                            cv2.imwrite(face_save_path + '{}_detected.jpg'.format(tr_indx),
+                            cv2.imwrite(face_save_path + 'detected.jpg',
                                         detected_face)
 
-                    if len(tr_obj.face_seq) > 0:
-                        # select the best face from face_sequence
-                        best_detected_face = select_best_face(tr_obj.face_seq, self.face_haars)
-
-                        # recognize best_face
-                        self.info['status'] = 'Recognizing face'
-                        names, best_face_emb = recognize_face(best_detected_face, self.known_face_encodings, self.known_face_names)
-
-                        if save_img:
-                            if np.array_equal(np.array(tr_obj.face_emb), np.array(best_face_emb)):
-                                cv2.imwrite(face_save_path + '{}_best_detected_face.jpg'.format(tr_indx),
-                                            best_detected_face)
-
-                        print('This person looks like:', names)
-
-                        if len(names) > 0:
-                            tr_obj.names = names
-                        if len(best_face_emb) > 0:
-                            tr_obj.face_emb = best_face_emb
+                    # if len(tr_obj.face_seq) > 0:
+                    #     # select the best face from face_sequence
+                    #     best_detected_face = select_best_face(tr_obj.face_seq, self.face_haars)
+                    #
+                    #     # recognize best_face
+                    #     self.info['status'] = 'Recognizing face'
+                    #     names, best_face_emb = recognize_face(best_detected_face, self.known_face_encodings, self.known_face_names)
+                    #
+                    #     if save_img:
+                    #         if np.array_equal(np.array(tr_obj.face_emb), np.array(best_face_emb)):
+                    #             cv2.imwrite(face_save_path + 'best_detected_face.jpg',
+                    #                         best_detected_face)
+                    #
+                    #     print('This person looks like:', names)
+                    #
+                    #     if len(names) > 0:
+                    #         tr_obj.names = names
+                    #     if len(best_face_emb) > 0:
+                    #         tr_obj.face_emb = best_face_emb
 
         return frame
 
