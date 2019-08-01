@@ -1,4 +1,6 @@
 import argparse
+import json
+import os
 import pickle
 import socket
 import sys
@@ -17,7 +19,7 @@ ap = argparse.ArgumentParser()
 ap.add_argument("-src", "--source", required=False, help="cam url")
 ap.add_argument("-s", "--server_ip", required=False, default='0.0.0.0',
                 help="ip address of the server to which the client will connect")
-ap.add_argument("-p", "--port", required=False, default=14200,
+ap.add_argument("-p", "--port", required=False, default=14300,
                 help="socket port")
 
 args = vars(ap.parse_args())
@@ -32,7 +34,7 @@ sock = socket.socket()
 sock.bind((args["server_ip"], args["port"]))
 sock.listen(10)
 sock.setblocking(0)
-
+save_object_frequency = 500  # frames
 
 class CamHandler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -153,7 +155,7 @@ def main(args=None):
         i = 0
         fr_inxd = 0
         while True:
-            frame, _ = vs.process_next_frame()
+            frame, _, _ = vs.process_next_frame()
 
             fr_inxd += 1
             if fr_inxd % save_object_frequency == 0:

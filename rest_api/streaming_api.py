@@ -12,7 +12,7 @@ from main.common import config_parser
 from rest_api.db.event_db_logger import EventDBLogger
 
 CONFIG = config_parser.parse()
-PORT = 14500
+PORT = 14300
 
 app = flask.Flask(__name__)
 
