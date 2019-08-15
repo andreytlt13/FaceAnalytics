@@ -1,34 +1,32 @@
 import {Injectable} from '@angular/core';
 import {HttpClient, HttpParams} from '@angular/common/http';
-import {forkJoin, Observable} from 'rxjs';
+import {forkJoin, from, Observable, of} from 'rxjs';
 import {Client} from './client';
-import {map, mergeMap, tap} from 'rxjs/operators';
+import {map, mergeAll, mergeMap, toArray} from 'rxjs/operators';
 
 import {environment} from '../../../environments/environment';
 import {isNumber} from 'lodash-es';
-
-const CLIENTS_PATH = '';
-
+import * as uuidv4 from 'uuid/v4';
 
 interface UnknownPersonResponse {
-  object_id: number[];
-  camera_url: string;
-}
-
-interface MatchedPersonResponse {
-  camera_url: string;
-  names: string[];
-  object_id: number;
+  [id: string]: {
+    face_detected: boolean;
+    name: string | null;
+    names: string[];
+    probability: number[];
+  };
 }
 
 interface KnownPersonResponse {
-  camera_url: string;
+  camera_name: string;
   description: string;
   name: string;
   stars: number;
 }
 
-type UpdatePersonResponse = KnownPersonResponse & {object_id: string, stars: string};
+interface UpdatePersonResponse {
+  status: string;
+}
 
 @Injectable({
   providedIn: 'root'
@@ -37,62 +35,79 @@ export class ClientsService {
   constructor(private readonly http: HttpClient) {
   }
 
-  getUnknown(cameraUrl: string): Observable<Client[]> {
+  getUnknown(cameraName: string): Observable<{ person: Client, matches: Client[] }[]> {
     const params = new HttpParams()
-      .set('camera_url', cameraUrl);
+      .set('camera_name', cameraName);
 
-    return this.http.get<UnknownPersonResponse>(`${environment.apiUrl}/camera/object_id`, {responseType: 'json', params})
+    return this.http.get<UnknownPersonResponse>(`${environment.apiUrl}/camera/objects`, {responseType: 'json', params})
       .pipe(
-        map(response => response.object_id.map(id => Client.parse({id})))
-      );
-  }
+        map(response => Object.keys(response).map(id => ({
+          client: Client.parse(cameraName, {
+            id,
+            name: response[id].name ? response[id].name : undefined,
+            face_detected: response[id].face_detected
+          }),
+          names: response[id].names && response[id].names.length > 0 && response[id].names[0] !== null ? response[id].names : [],
+        }))),
+        map(data => from(data)
+          .pipe(
+            mergeMap(client => {
+              let observable = forkJoin(
+                // tslint:disable-next-line:no-shadowed-variable
+                client.names.map(name => this.getKnown(cameraName, name))
+              ).pipe(
+                map(matches => ({person: client.client, matches}))
+              );
 
-  getMatched(cameraUrl: string, client: Client): Observable<Client[]> {
-    const params = new HttpParams()
-      .set('camera_url', cameraUrl)
-      .set('object_id', client.id.toString());
+              if (client.client.name) {
+                observable = this.getKnown(cameraName, client.client.name).pipe(map(c => ({
+                  person: c,
+                  matches: [c]
+                })));
+              }
 
-    return this.http.get<MatchedPersonResponse>(`${environment.apiUrl}/camera/name`, {params})
-      .pipe(
-        map(response => response.names.map(name => Client.parse({name}))),
-        mergeMap(clients => forkJoin(
-          // tslint:disable-next-line:no-shadowed-variable
-          clients.map(client => this.getKnown(cameraUrl, client.name)
-            .pipe(
-              tap(c => c.name = client.name)
-            )
+              return observable;
+            })
           )
-        ))
+        ),
+        mergeAll(),
+        toArray()
       );
   }
 
-  bind(cameraUrl: string, client1: Client, client2: Client): Observable<Client> {
+  bind(cameraName: string, client1: Client, client2: Client): Observable<Client> {
     const body = new FormData();
 
-    body.set('camera_url', cameraUrl);
+    body.set('camera_name', cameraName);
     body.set('object_id', client1.id.toString());
     body.set('name', client2.name);
     body.set('stars', client2.stars.toString());
     body.set('description', client2.description);
 
-    return this.http.put<UpdatePersonResponse>(`${environment.apiUrl}/camera/object_id`, body)
+    return this.http.put<UpdatePersonResponse>(`${environment.apiUrl}/camera/object`, body)
       .pipe(
-        map(response => Client.parse({id: response.object_id, ...response}))
+        map(() => Client.parse(cameraName, {
+          id: client1.id,
+          name: client2.name,
+          stars: client2.stars,
+          description: client2.description,
+          face_detected: client1.isFaceDetected
+        }))
       );
   }
 
-  getKnown(cameraUrl: string, name: string): Observable<Client> {
+  getKnown(cameraName: string, name: string): Observable<Client> {
     const params = new HttpParams()
-      .set('camera_url', cameraUrl)
+      .set('camera_name', cameraName)
       .set('name', name);
 
     return this.http.get<KnownPersonResponse>(`${environment.apiUrl}/camera/name/info`, {params})
       .pipe(
-        map(response => Client.parse(response))
+        map(response => Client.parse(cameraName, response))
       );
   }
 
-  update(cameraUrl: string, client: Client): Observable<Client> {
+  update(cameraName: string, client: Client): Observable<Client> {
     if (!isNumber(client.id) || !client.name) {
       console.error(client);
       throw new Error('Can\'t update client without id and name set');
@@ -100,15 +115,38 @@ export class ClientsService {
 
     const body = new FormData();
 
-    body.set('camera_url', cameraUrl);
+    body.set('camera_name', cameraName);
     body.set('object_id', client.id.toString());
     body.set('name', client.name);
     body.set('stars', client.stars.toString());
     body.set('description', client.description);
 
-    return this.http.put<UpdatePersonResponse>(`${environment.apiUrl}/camera/object_id`, body)
+    return this.http.put<UpdatePersonResponse>(`${environment.apiUrl}/camera/object`, body)
       .pipe(
-        map(response => Client.parse({id: response.object_id, ...response}))
+        map(() => client)
+      );
+  }
+
+  create(cameraName: string, client: Client): Observable<Client> {
+    const body = new FormData();
+
+    client.name = uuidv4();
+
+    body.set('camera_name', cameraName);
+    body.set('object_id', client.id.toString());
+    body.set('name', client.name);
+    body.set('stars', '0');
+    body.set('description', '');
+
+    return this.http.put<UpdatePersonResponse>(`${environment.apiUrl}/camera/object`, body)
+      .pipe(
+        map(() => Client.parse(cameraName, {
+          id: client.id,
+          name: client.name,
+          stars: '0',
+          description: '',
+          face_detected: client.isFaceDetected
+        }))
       );
   }
 }

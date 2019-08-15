@@ -1,6 +1,6 @@
 <div class="rec-page" fxLayout="row" fxLayoutAlign="space-between" fxLayoutGap="5px">
   <div class="rec-stream">
-    <img [src]="streamUrl" class="mat-elevation-z8" />
+    <img [src]="streamUrl" class="mat-elevation-z8" style="display: block; width: 100%;"/>
   </div>
   <table *ngIf="clientsDS" mat-table [dataSource]="clientsDS" [trackBy]="trackByFn" class="rec-table mat-elevation-z8">
     <!-- Photo Column -->
@@ -33,7 +33,7 @@
         </div>
         <ng-template #unknownPerson>
           <div class="rec-table__photo mat-elevation-z4 select-option select-option--selectable rec-table__avatar" (click)="bind(row.person, match)" *ngFor="let match of row.matches" [style.backgroundImage]="'url('+ match.photo + ')'"></div>
-          <button mat-raised-button color="primary">
+          <button mat-raised-button color="primary" (click)="create(row.person)">
             <mat-icon>add</mat-icon>
           </button>
         </ng-template>

@@ -25,8 +25,7 @@ import {RecognitionModule} from './recognition/recognition.module';
 
     NgxsStoragePluginModule.forRoot({
       key: [
-        'auth.username',
-        'cameras.cameras'
+        'auth.username'
       ]
     }),
     NgxsLoggerPluginModule.forRoot(),

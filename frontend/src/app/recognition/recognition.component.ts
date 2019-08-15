@@ -1,12 +1,12 @@
 import {Component, OnDestroy, OnInit} from '@angular/core';
 import {ClientsService} from './clients/clients.service';
 import {Client} from './clients/client';
-import {map, mergeMap, tap} from 'rxjs/operators';
-import {forkJoin, Observable, Subscription} from 'rxjs';
+import {switchMap, tap} from 'rxjs/operators';
+import {Observable, Subscription, timer} from 'rxjs';
 import {MatTableDataSource} from '@angular/material';
 import {environment} from '../../environments/environment';
 
-const CAMERA_URL = environment.cameraUrl;
+const CAMERA_NAME = 'andrey_vitya_mp4';
 const VIDEO_STREAM_URL = environment.videoStreamUrl;
 
 @Component({
@@ -18,20 +18,7 @@ export class RecognitionComponent implements OnInit, OnDestroy {
   displayedColumns: string[] = ['person', 'matches'];
   streamUrl: string;
 
-  dataSource$: Observable<any> = this.clientService.getUnknown(CAMERA_URL)
-    .pipe(
-      mergeMap(unknownClients => forkJoin(
-        unknownClients.map(client => this.clientService.getMatched(CAMERA_URL, client)
-          .pipe(
-            map(clients => ({
-                person: client,
-                matches: clients
-              })
-            )
-          )
-        )
-      ))
-    );
+  dataSource$: Observable<any> = this.clientService.getUnknown(CAMERA_NAME);
 
   subscription: Subscription;
 
@@ -47,13 +34,27 @@ export class RecognitionComponent implements OnInit, OnDestroy {
 
     this.streamUrl = VIDEO_STREAM_URL;
 
-    this.subscription = this.dataSource$.subscribe(data => {
-      this.clientsDS.data = data;
-    });
+    this.subscription = timer(0, 5000).pipe(
+      switchMap(() => this.dataSource$),
+      tap(data => {
+        this.clientsDS.data = data;
+      })
+    ).subscribe();
+  }
+
+  create(person: Client) {
+    this.clientService.create(CAMERA_NAME, person)
+      .pipe(
+        tap(() => {
+          this.clientsDS.data.splice(this.clientsDS.data.findIndex(item => item.person === person), 1, {person, matches: [person]});
+          this.clientsDS.data = [...this.clientsDS.data];
+        })
+      )
+      .subscribe();
   }
 
   bind(person: Client, match: Client) {
-    this.clientService.bind(CAMERA_URL, person, match)
+    this.clientService.bind(CAMERA_NAME, person, match)
       .pipe(
         tap(client => {
           this.clientsDS.data.splice(this.clientsDS.data.findIndex(item => item.person === person), 1, {person: client, matches: [match]});
@@ -70,7 +71,7 @@ export class RecognitionComponent implements OnInit, OnDestroy {
   rate(client: Client, stars: number) {
     client.stars = stars;
 
-    this.clientService.update(CAMERA_URL, client)
+    this.clientService.update(CAMERA_NAME, client)
       .pipe(
         tap(() => {
           this.clientsDS.data = [...this.clientsDS.data];
@@ -82,7 +83,7 @@ export class RecognitionComponent implements OnInit, OnDestroy {
   updateDescription(client: Client, description: string) {
     client.description = description;
 
-    this.clientService.update(CAMERA_URL, client)
+    this.clientService.update(CAMERA_NAME, client)
       .pipe(
         tap(() => {
           this.clientsDS.data = [...this.clientsDS.data];

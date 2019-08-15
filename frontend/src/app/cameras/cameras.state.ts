@@ -95,58 +95,36 @@ export class CamerasState {
 
   @Action(CreateCamera)
   createCamera({getState, patchState, dispatch}: StateContext<CamerasStateModel>, {payload}: CreateCamera) {
-    // TODO: uncomment when backend supports camera API
-    // return this.cameraService.create(payload.camera)
-    //   .pipe(
-    //     tap((camera: Camera) => {
-    //       const {cameras} = getState();
-    //       patchState({
-    //         cameras: [
-    //           ...cameras,
-    //           camera
-    //         ]
-    //       });
-    //
-    //       dispatch(new SelectCamera({camera}));
-    //     })
-    //   );
+    return this.cameraService.create(payload.camera)
+      .pipe(
+        tap((camera: Camera) => {
+          const {cameras} = getState();
+          patchState({
+            cameras: [
+              ...cameras,
+              camera
+            ]
+          });
 
-    const {cameras} = getState();
+          dispatch(new SelectCamera({camera}));
+        })
+      );
 
-    payload.camera.id = (cameras.reduce((memo, cmr) => +cmr.id > memo ? +cmr.id : memo, 0) + 1);
-
-    patchState({
-      cameras: [
-        ...cameras,
-        payload.camera
-      ]
-    });
-
-    return payload.camera;
   }
 
   @Action(DeleteCamera)
   deleteCamera({getState, patchState}: StateContext<CamerasStateModel>, {payload}: CreateCamera) {
-    // TODO: uncomment when backend supports camera API
-    // return this.cameraService.delete(payload.camera)
-    //   .pipe(
-    //     tap((camera: Camera) => {
-    //       const ctx = getState();
-    //       patchState({
-    //         cameras: [
-    //           ...ctx.cameras.filter(cmr => cmr.id !== camera.id)
-    //         ]
-    //       });
-    //     })
-    //   );
-
-    const {cameras} = getState();
-
-    patchState({
-      cameras: [
-        ...cameras.filter(cmr => cmr.id !== payload.camera.id)
-      ]
-    });
+    return this.cameraService.delete(payload.camera)
+      .pipe(
+        tap((camera: Camera) => {
+          const ctx = getState();
+          patchState({
+            cameras: [
+              ...ctx.cameras.filter(cmr => cmr.id !== camera.id)
+            ]
+          });
+        })
+      );
   }
 
   @Action(UpdateCamera)
