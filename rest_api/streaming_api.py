@@ -3,26 +3,31 @@ import json
 import os
 import pickle
 import socket
+import sys
 
 import flask
 from flask import Response, jsonify
 from flask_cors import cross_origin
 
+print(sys.path)
+root_path2 = os.getcwd()
+sys.path.append(root_path2)
+print(sys.path)
 from main.common import config_parser
 from rest_api.db.event_db_logger import EventDBLogger
 
 CONFIG = config_parser.parse()
-PORT = 14300
+PORT = 14100
 
 app = flask.Flask(__name__)
 
 # sock = socket.socket()
 
 root_path = os.path.dirname(os.getcwd())
-cam_info_json = root_path + '/rest_api/cam_info.json'
-db_faces = root_path + '/main/face_processing/known_faces/'
-db_faces = root_path + '/main/data/photo/0/known_faces/'
-db_objects = root_path + '/main/data/photo/'
+cam_info_json = root_path + '/FaceAnalytics/rest_api/cam_info.json'
+db_faces = root_path + '/FaceAnalytics/main/face_processing/known_faces/'
+db_faces = root_path + '/FaceAnalytics/main/data/photo/0/known_faces/'
+db_objects = root_path + '/FaceAnalytics/main/data/photo/'
 
 
 @app.route('/camera', methods=['GET'])
@@ -121,10 +126,10 @@ def get_objects():
     b_message = pickle.dumps(object_id_info)
     sock.send(b_message)
     data = b""
-    tmp = sock.recv(16384)
+    tmp = sock.recv(4096)
     while tmp:
         data += tmp
-        tmp = sock.recv(16384)
+        tmp = sock.recv(4096)
 
     result = pickle.loads(data)
     print(result)
@@ -175,10 +180,10 @@ def get_name_info():
     sock.send(b_message)
 
     data = b""
-    tmp = sock.recv(16384)
+    tmp = sock.recv(4096)
     while tmp:
         data += tmp
-        tmp = sock.recv(16384)
+        tmp = sock.recv(4096)
 
     result = pickle.loads(data)
 
@@ -207,12 +212,13 @@ def object_id():
     }
     sock.connect(('127.0.0.1', PORT))
     b_message = pickle.dumps(object_id_info)
+    # b_message size
     sock.send(b_message)
     data = b""
-    tmp = sock.recv(16384)
+    tmp = sock.recv(4096)
     while tmp:
         data += tmp
-        tmp = sock.recv(16384)
+        tmp = sock.recv(4096)
 
     result = pickle.loads(data)
     print(result)

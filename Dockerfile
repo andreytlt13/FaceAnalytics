@@ -24,6 +24,6 @@ RUN apt-get update && \
 RUN cd /FaceAnalytics && \
     pip3 install -r requirements.txt
 
-WORKDIR /FaceAnalytics/main
+WORKDIR /FaceAnalytics
 
-CMD [ "python3", "./run.py" ]
+CMD [ "python3", "main/run.py" ]

@@ -1,16 +1,16 @@
 import pandas as pd
 from sqlalchemy import *
 
-from common import config_parser
+from main.common import config_parser
 
 CONFIG = config_parser.parse()
-DEFAULT_PATH = 'sqlite:///data/db/4_floor.db'  # surveillance.db'
+DEFAULT_PATH = 'sqlite:///main/data/db/4_floor.db'  # surveillance.db'
 
 
 class EventDBLogger:
 
     def __init__(self, db_name):
-        engine = 'sqlite:///data/db/{}.db'.format(db_name)
+        engine = 'sqlite:///main/data/db/{}.db'.format(db_name)
         self.engine = create_engine(engine, echo=True)
         self.metadata = MetaData(self.engine, reflect=True)
         self.conn = self.engine.connect()

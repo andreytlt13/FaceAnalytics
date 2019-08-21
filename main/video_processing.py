@@ -2,6 +2,7 @@
 import datetime
 import json
 import os
+import sys
 import time
 
 import cv2
@@ -12,10 +13,13 @@ import tensorflow as tf
 
 import model.person_processing.heads.fc1024 as head
 import model.person_processing.nets.resnet_v1_50 as model
+from common import config_parser
+from common.object_tracker import TrackableObject, CentroidTracker
 from face_processing.best_face_selector import select_best_face
 from face_processing.face_recognition import recognize_face, load_known_face_encodings
-from main.common import config_parser
-from main.common.object_tracker import TrackableObject, CentroidTracker
+
+sys.path.append('/Users/andrey/PycharmProjects/FaceAnalytics')
+print(sys.path)
 from rest_api.db.event_db_logger import EventDBLogger
 
 CONFIG = config_parser.parse()
@@ -108,7 +112,7 @@ class VideoStream():
         }
 
         # extracting camera name from json
-        with open('../rest_api/cam_info.json') as json_file:
+        with open('rest_api/cam_info.json') as json_file:
             data = json.load(json_file)
         # creating db name for current camera
         for elem in data:
@@ -355,13 +359,13 @@ class VideoStream():
     def write_recognized_face(self, object_id, name):
 
         known_face_save_path = os.path.join(CONFIG["root_path"],
-                                            'data/photo/{}/known_faces/'.format(self.db_name))
+                                            'data/photo/{}/selected/'.format(self.db_name))
         os.makedirs(known_face_save_path, exist_ok=True)
         if len(self.trackableObjects) > 0:
             if len(self.trackableObjects[object_id].face_seq) > 0:
                 face_img = self.trackableObjects[object_id].face_seq[0]
                 # img = Image.fromarray(face_img, 'RGB')
-                img_path = known_face_save_path + '{}.jpg'.format(name)
+                img_path = known_face_save_path + '{}_{}.jpg'.format(object_id, name)
                 cv2.imwrite(img_path, face_img)
                 # cv2.imwrite(known_face_save_path + '{}_frame.jpg'.format(name), frame)
                 return img_path
@@ -377,9 +381,6 @@ class VideoStream():
             'event_time': datetime.datetime.now(),
         }
         self.connection.insert_describe(self.table_recog_log, event)
-
-
-
 
 
 
