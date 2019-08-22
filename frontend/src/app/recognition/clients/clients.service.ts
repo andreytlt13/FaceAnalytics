@@ -2,7 +2,7 @@ import {Injectable} from '@angular/core';
 import {HttpClient, HttpParams} from '@angular/common/http';
 import {forkJoin, from, Observable, of} from 'rxjs';
 import {Client} from './client';
-import {map, mergeAll, mergeMap, toArray} from 'rxjs/operators';
+import {map, mergeAll, mergeMap, tap, toArray} from 'rxjs/operators';
 
 import {environment} from '../../../environments/environment';
 import {isNumber} from 'lodash-es';
@@ -32,8 +32,9 @@ interface UpdatePersonResponse {
   providedIn: 'root'
 })
 export class ClientsService {
-  constructor(private readonly http: HttpClient) {
-  }
+  constructor(private readonly http: HttpClient) {}
+
+  private readonly nameInfoCache = new Map<string, Client>();
 
   getUnknown(cameraName: string): Observable<{ person: Client, matches: Client[] }[]> {
     const params = new HttpParams()
@@ -60,10 +61,14 @@ export class ClientsService {
               );
 
               if (client.client.name) {
-                observable = this.getKnown(cameraName, client.client.name).pipe(map(c => ({
-                  person: c,
-                  matches: [c]
-                })));
+                observable = this.getKnown(cameraName, client.client.name).pipe(map(c => {
+                  c.id = client.client.id;
+
+                  return {
+                    person: c,
+                    matches: [c]
+                  };
+                }));
               }
 
               return observable;
@@ -92,18 +97,24 @@ export class ClientsService {
           stars: client2.stars,
           description: client2.description,
           face_detected: client1.isFaceDetected
-        }))
+        })),
+        tap(c => this.nameInfoCache.set(c.name, c)),
       );
   }
 
   getKnown(cameraName: string, name: string): Observable<Client> {
+    if (this.nameInfoCache.has(name)) {
+      return of(this.nameInfoCache.get(name));
+    }
+
     const params = new HttpParams()
       .set('camera_name', cameraName)
       .set('name', name);
 
     return this.http.get<KnownPersonResponse>(`${environment.apiUrl}/camera/name/info`, {params})
       .pipe(
-        map(response => Client.parse(cameraName, response))
+        map(response => Client.parse(cameraName, response)),
+        tap(c => this.nameInfoCache.set(c.name, c))
       );
   }
 
@@ -123,7 +134,8 @@ export class ClientsService {
 
     return this.http.put<UpdatePersonResponse>(`${environment.apiUrl}/camera/object`, body)
       .pipe(
-        map(() => client)
+        map(() => client),
+        tap(c => this.nameInfoCache.set(client.name, client)),
       );
   }
 
@@ -146,7 +158,8 @@ export class ClientsService {
           stars: '0',
           description: '',
           face_detected: client.isFaceDetected
-        }))
+        })),
+        tap(c => this.nameInfoCache.set(c.name, c)),
       );
   }
 }
