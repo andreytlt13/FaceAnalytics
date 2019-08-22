@@ -11,18 +11,6 @@ export class Client {
     public isFaceDetected?: boolean,
   ) {}
 
-  get photo() {
-    if (isNumber(this.id) && this.id >= 0) {
-      return `${environment.apiUrl}/camera/object/photo?object_id=${this.id}&camera_name=${this.cameraName}`;
-    }
-
-    if (this.name) {
-      return `${environment.apiUrl}/camera/name/photo?name=${this.name}&camera_name=${this.cameraName}`;
-    }
-
-    throw new Error('Both id and name are not set to the client');
-  }
-
   static parse(cameraName: string, json: {
     id?: string | number,
     name?: string,
@@ -38,6 +26,18 @@ export class Client {
       isFinite(+json.stars) ? +json.stars : undefined,
       json.face_detected
     );
+  }
+
+  photo(by: string) {
+    if (by === 'id' && isNumber(this.id) && this.id >= 0) {
+      return `${environment.apiUrl}/camera/object/photo?object_id=${this.id}&camera_name=${this.cameraName}`;
+    }
+
+    if (by === 'name' && this.name) {
+      return `${environment.apiUrl}/camera/name/photo?name=${this.name}&camera_name=${this.cameraName}`;
+    }
+
+    throw new Error('Both id and name are not set to the client');
   }
 }
 
