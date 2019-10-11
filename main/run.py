@@ -37,8 +37,9 @@ args["source"] = "main/data/andrey_vitya.mp4"
 sock = socket.socket()
 sock.bind((args["server_ip"], args["port"]))
 sock.listen(5)
-# sock.setblocking(0)
+sock.setblocking(0)
 save_object_frequency = 500  # frames
+
 
 
 class CamHandler(BaseHTTPRequestHandler):
@@ -162,14 +163,17 @@ def main(args=None):
         i = 0
         fr_inxd = 0
         pk = 1
+        ages_list = []
         while True:
             frame, _, _ = vs.process_next_frame()
-
+            result=vs.age_gender_predict(ages_list)
+            if  result != None:
+               print(result)
+               print(ages_list,'*********')
             fr_inxd += 1
             if fr_inxd % save_object_frequency == 0:
                 save_object(obj=vs.trackableObjects, filename=cam_name)
                 print('[INFO] vs.trackableObjects saved {}'.format(fr_inxd))
-
             if(i == 0):
                 target.start()
             i +=1
