@@ -9,9 +9,10 @@ from socketserver import ThreadingMixIn
 from threading import Thread
 
 import cv2
-import numpy as  np
+import numpy as np
 
 root_path = os.getcwd()
+print(root_path)
 sys.path.append(root_path)
 
 from video_processing import VideoStream
@@ -23,14 +24,17 @@ ap = argparse.ArgumentParser()
 ap.add_argument("-src", "--source", required=False, help="cam url")
 ap.add_argument("-s", "--server_ip", required=False, default='0.0.0.0',
                 help="ip address of the server to which the client will connect")
-ap.add_argument("-p", "--port", required=False, default=14100,
+ap.add_argument("-p", "--port", required=False, default=14300,
                 help="socket port")
+ap.add_argument("-ht", "--httpserver", required=False, default=9091,
+                help="httpserver for video stream")
 
 args = vars(ap.parse_args())
 #args["source"] = "/Users/andrey/Downloads/Telegram Desktop/vlc_record_2019_05_30_12h50m55s.mp4"
 #args["source"] = "rtsp://user:Hneu74k092@10.101.106.104:554/live/main"
-#args["source"] = "rtsp://admin:admin@10.101.1.221:554/ch01/1" #base stream 0
+# args["source"] = "rtsp://admin:admin@10.101.1.221:554/ch01/0" #base stream 0
 args["source"] = "main/data/andrey_vitya.mp4"
+#args["source"] = "main/data/new_test_office.mp4"
 # args["source"] = 0
 
 
@@ -113,6 +117,7 @@ class WebcamVideoStream:
         # indicate that the thread should be stopped
         self.stopped = True
 
+
 def save_object(obj,filename):
     filepath = 'main/data/objects/'
     if not os.path.exists(filepath):
@@ -120,10 +125,12 @@ def save_object(obj,filename):
     with open(filepath+'{}.pkl'.format(filename), 'wb') as output:
         pickle.dump(obj, output, pickle.HIGHEST_PROTOCOL)
 
+
 def load_object(filename):
     with open('main/data/objects/{}.pkl'.format(filename), 'rb') as input:
         obj = pickle.load(input)
     return obj
+
 
 def main(args=None):
     global frame
@@ -156,7 +163,7 @@ def main(args=None):
             vs.trackableObjects = load_object(filename=cam_name)
             print('[INFO] vs.trackableObjects loaded')
 
-        server = ThreadedHTTPServer((ip, 9091), CamHandler)
+        server = ThreadedHTTPServer((ip, int(args["httpserver"])), CamHandler)  #9091
         print("[INFO] starting server")
         target = Thread(target=server.serve_forever, args=())
 
@@ -164,12 +171,12 @@ def main(args=None):
         fr_inxd = 0
         pk = 1
         ages_list = []
-        while True:
+        while True:                                              
             frame, _, _ = vs.process_next_frame()
-            result=vs.age_gender_predict(ages_list)
+            result = vs.age_gender_predict(ages_list)
             if  result != None:
                print(result)
-               print(ages_list,'*********')
+               print(ages_list, '*********')
             fr_inxd += 1
             if fr_inxd % save_object_frequency == 0:
                 save_object(obj=vs.trackableObjects, filename=cam_name)
@@ -185,7 +192,7 @@ def main(args=None):
             else:  # данные есть
                 pk += 1
                 print(pk)
-                # client.setblocking(0)  # снимаем блокировку и тут тоже
+                client.setblocking(0)  # снимаем блокировку и тут тоже
                 query = client.recv(4096)  #4096 1082  16384  159
                 query = pickle.loads(query)
                 print("Request type: " + query["type"])
@@ -231,9 +238,10 @@ def main(args=None):
                             b_message = pickle.dumps(message)
                             print("[INFO] size of sending object is {} ".format(sys.getsizeof(b_message)))
                             client.send(b_message)
-                            # client.close()
-                            #print("close")
-                        else:
+                            client.close()
+                            print("close")
+                            break
+                        elif (len(vs.trackableObjects.keys()) - 1) == n:
                             message = {
                                 'camera_url': camera_url,
                                 'name': None,
@@ -243,8 +251,9 @@ def main(args=None):
                             b_message = pickle.dumps(message)
                             print("[INFO] size of sending object is {} ".format(sys.getsizeof(b_message)))
                             client.send(b_message)
-                            # print("close")
-                            # client.close()
+                            print("close")
+                            client.close()
+                            break
                     client.close()
                     print("close")
                 elif query["type"] == "add_name":

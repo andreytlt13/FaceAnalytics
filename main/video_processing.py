@@ -13,14 +13,11 @@ import tensorflow as tf
 
 import model.person_processing.heads.fc1024 as head
 import model.person_processing.nets.resnet_v1_50 as model
+from age_gender import age_gender
 from common import config_parser
 from common.object_tracker import TrackableObject, CentroidTracker
 from face_processing.best_face_selector import select_best_face
 from face_processing.face_recognition import recognize_face, load_known_face_encodings
-from age_gender import WideResNet
-from age_gender import age_gender
-
-
 
 sys.path.append('/Users/andrey/PycharmProjects/FaceAnalytics')
 print(sys.path)
@@ -211,7 +208,7 @@ class VideoStream():
             t_updating_trObj_elapsed = time.monotonic() - t_updating_trObj
 
             # Face recognition
-            if self.info['TotalFrames'] % 5 == 0:
+            if self.info['TotalFrames'] % 10 == 0:
                 if CONFIG['face_detection'] == 'True':
                     t_face_recognition = time.monotonic()
                     frame = self.face_recognition(frame, orig_frame)
@@ -234,24 +231,30 @@ class VideoStream():
 
         return frame, time_log, self.trackableObjects
 
-    def age_gender_predict(self,ages_list):
+    def age_gender_predict(self, ages_list):
         if len(self.trackableObjects) > 0:
             for i in self.trackableObjects:
-                if (len(self.trackableObjects[i].face_seq)> 0) and self.trackableObjects[i].objectID not in ages_list:
+                if (len(self.trackableObjects[i].face_seq) > 0) and self.trackableObjects[i].objectID not in ages_list:
 
-                   img=self.trackableObjects[i].face_seq[0]
+                    img = self.trackableObjects[i].face_seq[0]
                    img_size = 64
-                   ages_list=ages_list.append(self.trackableObjects[i].objectID)
-                   return(age_gender(img_size, img))
-
-
-
+                    ages_list = ages_list.append(self.trackableObjects[i].objectID)
+                    result = (age_gender(img_size, img))
+                    if result is None:
+                        return result
+                    else:
+                        self.trackableObjects[i].gender = result[0]
+                        self.trackableObjects[i].age = result[1]
+                        self.ct.objects[i]['gender'] = result[0]
+                        self.ct.objects[i]['age'] = result[1]
+                        return result
 
     def draw_labels(self, frame, orig_frame, objects):
 
         for (objectID, info) in objects.items():
-
-            text = "ID {}".format(objectID)
+            text = "ID {} {} {}".format(objectID,
+                                        objects[objectID]['gender'],
+                                        objects[objectID]['age'])
             sX, sY, eX, eY = info['rect']
             output = frame.copy()
 

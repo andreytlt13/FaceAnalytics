@@ -44,7 +44,9 @@ class CentroidTracker:
             "centroid": centroid,
             "embeding": embeding,
             "rect": rect,
-            "img": img
+            "img": img,
+            "age": None,
+            "gender": None
         }
         self.disappeared[self.nextObjectID] = 0
         self.nextObjectID += 1
@@ -151,7 +153,9 @@ class CentroidTracker:
                     "centroid": inputCentroids[col],
                     "embeding": embeding_list[col],
                     "rect": rects[col],
-                    "img": img
+                    "img": img,
+                    "age": trackable_objects[objectID].age,
+                    "gender": trackable_objects[objectID].gender
                 }
 
                 self.disappeared[objectID] = 0
@@ -267,6 +271,8 @@ class TrackableObject:
         self.embeding = [embeding]
         self.names = [None]
         self.name = None
+        self.gender = None
+        self.age = None
         # self.face_seq = [None]
         self.face_seq = deque(maxlen=5)
         self.face_emb = [None]
@@ -285,6 +291,8 @@ class TrackableObject2:
         self.centroids = [centroid]
         self.names = [names]
         self.name = name
+        self.gender = None
+        self.age = None
         self.stars = stars
         self.description = description,
         # initialize a boolean used to indicate if the object has
