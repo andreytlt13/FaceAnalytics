@@ -31,7 +31,7 @@ app = flask.Flask(__name__)
 root_path = os.path.dirname(os.getcwd())
 cam_info_json = root_path + '/FaceAnalytics/rest_api/cam_info.json'
 db_faces = root_path + '/FaceAnalytics/main/face_processing/known_faces/'
-db_faces = root_path + '/FaceAnalytics/main/data/photo/0/known_faces/'
+db_faces = root_path + '/FaceAnalytics/main/data/photo/andrey_vitya_mp4/known_faces/'
 db_objects = root_path + '/FaceAnalytics/main/data/photo/'
 
 
@@ -146,7 +146,7 @@ def get_objects():
 @app.route('/camera/object/photo', methods=['GET'])
 @cross_origin()
 def get_object_photo():
-    camera_name = flask.request.args.get('camera_name')
+    camera_name = 'andrey_vitya_mp4'  # flask.request.args.get('camera_name')
     object_id = flask.request.args.get('object_id')
     img_path = os.path.join(db_objects, '{}/objects/id_{}/face/*'.format(camera_name, object_id))
     img_path = glob.glob(img_path)

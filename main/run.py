@@ -202,7 +202,9 @@ def main(args=None):
                         tmp = {
                             #'objectID': vs.trackableObjects[i].objectID,
                             'name': vs.trackableObjects[n].name,
-                            'names': vs.trackableObjects[n].names
+                            'names': vs.trackableObjects[n].names,
+                            'age': vs.trackableObjects[n].age,
+                            'gender': vs.trackableObjects[n].gender
                         }
                         message[n] = tmp
                     b_message = pickle.dumps(message)

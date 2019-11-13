@@ -237,7 +237,7 @@ class VideoStream():
                 if (len(self.trackableObjects[i].face_seq) > 0) and self.trackableObjects[i].objectID not in ages_list:
 
                     img = self.trackableObjects[i].face_seq[0]
-                   img_size = 64
+                    img_size = 64
                     ages_list = ages_list.append(self.trackableObjects[i].objectID)
                     result = (age_gender(img_size, img))
                     if result is None:
@@ -245,8 +245,8 @@ class VideoStream():
                     else:
                         self.trackableObjects[i].gender = result[0]
                         self.trackableObjects[i].age = result[1]
-                        self.ct.objects[i]['gender'] = result[0]
-                        self.ct.objects[i]['age'] = result[1]
+                        # self.ct.objects[i]['gender'] = result[0]
+                        # self.ct.objects[i]['age'] = result[1]
                         return result
 
     def draw_labels(self, frame, orig_frame, objects):

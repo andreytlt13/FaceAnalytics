@@ -12,3 +12,4 @@ pandas==0.24.2
 SQLAlchemy==1.2.10
 face_recognition_models==0.3.0
 Flask==1.0.2
+
