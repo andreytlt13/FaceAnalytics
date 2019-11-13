@@ -1,11 +1,12 @@
 import {Injectable} from '@angular/core';
 import {Observable, of} from 'rxjs';
 import {Camera} from './camera';
-import {HttpClient} from '@angular/common/http';
+import {HttpClient, HttpParams} from '@angular/common/http';
 import {map} from 'rxjs/operators';
 import {environment} from '../../../environments/environment';
 
 import CAMERAS from './mock-cameras';
+
 const CAMERA_URL = environment.apiUrl + '/camera';
 
 @Injectable({
@@ -38,7 +39,12 @@ export class CameraService {
 
     this.cameras.push(newCamera);
 
-    return of(Camera.parse(newCamera));
+    const observable = CAMERA_URL ? this.http.post(CAMERA_URL, {
+      camera_url: newCamera.camera_url,
+      camera_name: newCamera.name,
+    }).pipe(map(() => newCamera)) : of(Camera.parse(newCamera));
+
+    return observable;
   }
 
   // update(camera: Camera): Observable<Camera> {
@@ -67,6 +73,16 @@ export class CameraService {
 
     this.cameras.splice(this.cameras.indexOf(existing), 1);
 
-    return of({id: camera.id});
+    const params = new HttpParams({
+      fromObject: {
+        camera_name: camera.name
+      }
+    });
+
+    const observable = CAMERA_URL ? this.http.delete(CAMERA_URL, {
+      params
+    }).pipe(map(() => ({id: camera.id}))) : of({id: camera.id});
+
+    return observable;
   }
 }

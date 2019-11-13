@@ -1,13 +1,10 @@
 import {Injectable} from '@angular/core';
 import {HttpClient} from '@angular/common/http';
-import {map} from 'rxjs/operators';
-import {Graph} from './graph';
 import {Observable} from 'rxjs';
-import Heatmap from './heatmap';
 
 import {environment} from '../../../environments/environment';
 
-const DATA_URL = `${environment.apiUrl}/db_select`;
+const DATA_URL = `${environment.apiUrl}/camera/db_select`;
 
 @Injectable({
   providedIn: 'root'
@@ -17,7 +14,7 @@ export class EventDataService {
   constructor(private http: HttpClient) {
   }
 
-  load(cameraUrl, startDate, endDate): Observable<Object> {
+  load(cameraName, startDate, endDate): Observable<Object> {
     let url = DATA_URL;
     const queryParams = {
       start_date: startDate,
@@ -25,7 +22,7 @@ export class EventDataService {
     };
     const queryParamsString = Object.keys(queryParams).map(key => `${key}=${queryParams[key]}`).join('&');
 
-    url += `?table=${cameraUrl}&${queryParamsString}`;
+    url += `?${queryParamsString}&camera_name=${cameraName}`;
 
     return this.http.get(url);
   }
@@ -53,8 +50,6 @@ export interface CameraEvent {
   id: number;
   object_id: number;
   event_time: string;
-  enter: number;
-  exit: number;
-  x: number;
-  y: number;
+  centroid_x: number;
+  centroid_y: number;
 }

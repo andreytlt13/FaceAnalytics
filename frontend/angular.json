@@ -87,7 +87,7 @@
               "browserTarget": "face-analytics:build:local"
             },
             "stage": {
-              "port": 9091,
+              "port": 9092,
               "disableHostCheck": true,
               "host": "0.0.0.0",
               "browserTarget": "face-analytics:build:stage"

@@ -4,17 +4,17 @@ import {Observable, of} from 'rxjs';
 import {CamerasState} from '../cameras.state';
 import {Store} from '@ngxs/store';
 import {Graph} from '../event-data/graph';
-import {DeleteCamera, LoadGraphData, LoadHeatmap, SelectCamera} from '../cameras.actions';
+import {DeleteCamera, SelectCamera} from '../cameras.actions';
 
 import h337 from 'heatmap.js';
 import {ActivatedRoute, Router} from '@angular/router';
 import Heatmap from '../event-data/heatmap';
 import {CameraEvent, EventDataService} from '../event-data/event-data.service';
-import {catchError, delay, map, tap} from 'rxjs/operators';
+import {catchError, map, tap} from 'rxjs/operators';
 import {DateAdapter, MAT_DATE_FORMATS, MAT_DATE_LOCALE} from '@angular/material';
 import {MomentDateAdapter} from '@angular/material-moment-adapter';
-import {Moment} from 'moment';
 import * as moment from 'moment';
+import {Moment} from 'moment';
 
 export const MY_FORMATS = {
   parse: {
@@ -43,8 +43,8 @@ export class CameraViewComponent implements OnInit, OnDestroy {
   // public heatmapData$: Observable<Heatmap> = this.store.select(DashboardState.heatmapData);
   public graphData$: Observable<Graph>; // = this.store.select(DashboardState.graphData);
 
-  public startDate: Moment = moment().add(-1, 'day').startOf('day');
-  public endDate: Moment = moment().add(-1, 'day').endOf('day');
+  public startDate: Moment = moment().add(0, 'day').startOf('day');
+  public endDate: Moment = moment().add(0, 'day').endOf('day');
 
   public graphLoading = false;
 
@@ -91,7 +91,6 @@ export class CameraViewComponent implements OnInit, OnDestroy {
 
         if (camera) {
           this.store.dispatch(new SelectCamera({camera})).subscribe(() => {
-            this.streamLoading = true;
             // this.store.dispatch(new LoadGraphData({camera}));
             // this.store.dispatch(new LoadHeatmap({camera}));
 
@@ -152,7 +151,7 @@ export class CameraViewComponent implements OnInit, OnDestroy {
 
     this.graphLoading = true;
     this.graphData$ = this.eventDataService
-      .load(camera.camera_url, this.startDate.format('YYYY-MM-DD HH:mm:ss'), this.endDate.endOf('day').format('YYYY-MM-DD HH:mm:ss'))
+      .load(camera.name, this.startDate.format('YYYY-MM-DD HH:mm:ss'), this.endDate.endOf('day').format('YYYY-MM-DD HH:mm:ss'))
       .pipe(
         tap(() => this.graphLoading = false),
         map((events: CameraEvent[]) => Graph.parse('Unique objects per date', events, {
@@ -181,7 +180,7 @@ export class CameraViewComponent implements OnInit, OnDestroy {
 
     while (start < this.endDate.endOf('day')) {
       const heatmap = await this.eventDataService
-        .load(camera.camera_url, start.format('YYYY-MM-DD HH:mm:ss'), start.add(30, 'minute').format('YYYY-MM-DD HH:mm:ss'))
+        .load(camera.name, start.format('YYYY-MM-DD HH:mm:ss'), start.add(30, 'minute').format('YYYY-MM-DD HH:mm:ss'))
         .pipe(
           // delay(100),
           catchError(() => of([])),

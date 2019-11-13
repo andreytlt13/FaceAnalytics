@@ -7,8 +7,8 @@ export default class Heatmap {
   static parse(events: CameraEvent[]) {
     return new Heatmap(events.map((event: CameraEvent) => {
       return {
-        x: event.x,
-        y: event.y,
+        x: event.centroid_x,
+        y: event.centroid_y,
         value: 1
       };
     }));

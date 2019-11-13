@@ -38,6 +38,7 @@
     "moment": "^2.24.0",
     "plotly.js": "^1.47.4",
     "rxjs": "~6.5.1",
+    "uuid": "^3.3.2",
     "zone.js": "~0.8.29"
   },
   "devDependencies": {
