@@ -1,7 +1,10 @@
 import {environment} from '../../../environments/environment';
-import {isNumber} from 'lodash-es';
+import {isNil, isNumber} from 'lodash-es';
 
 export class Client {
+  // true if there's at least one feature of the person
+  public hasInfo = false;
+
   constructor(
     public cameraName: string,
     public name: string, // because id is not defined for known person
@@ -9,7 +12,11 @@ export class Client {
     public description?: string,
     public stars?: number,
     public isFaceDetected?: boolean,
-  ) {}
+    public age?: number,
+    public gender?: string,
+  ) {
+    this.hasInfo = !isNil(this.age) || !isNil(this.gender);
+  }
 
   static parse(cameraName: string, json: {
     id?: string | number,
@@ -17,6 +24,8 @@ export class Client {
     description?: string,
     stars?: string | number,
     face_detected?: boolean,
+    age?: number,
+    gender?: string,
   }) {
     return new Client(
       cameraName,
@@ -24,7 +33,9 @@ export class Client {
       isFinite(+json.id) ? +json.id : undefined,
       json.description,
       isFinite(+json.stars) ? +json.stars : undefined,
-      json.face_detected
+      json.face_detected,
+      json.age,
+      json.gender,
     );
   }
 

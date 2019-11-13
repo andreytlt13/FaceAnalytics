@@ -14,6 +14,8 @@ interface UnknownPersonResponse {
     name: string | null;
     names: string[];
     probability: number[];
+    age?: number;
+    gender?: string;
   };
 }
 
@@ -47,7 +49,9 @@ export class ClientsService {
           client: Client.parse(cameraName, {
             id,
             name: response[id].name ? response[id].name : undefined,
-            face_detected: response[id].face_detected
+            face_detected: response[id].face_detected,
+            age: response[id].age,
+            gender: response[id].gender,
           }),
           names: response[id].names && response[id].names.length > 0 && response[id].names[0] !== null ? response[id].names : [],
         }))),
