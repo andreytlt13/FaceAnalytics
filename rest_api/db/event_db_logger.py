@@ -95,6 +95,24 @@ class EventDBLogger:
             j = df.to_json(orient='records')
             return j
 
+    def select_group_by_hour(self, table, start_date, end_date):
+        select_st = table.select().where(
+            and_(
+                table.c.event_time > start_date,
+                table.c.event_time < end_date))
+        res = self.conn.execute(select_st).fetchall()
+        if len(res) == 0:
+            return pd.DataFrame().to_json(orient='records')
+        else:
+            df = pd.DataFrame(res)
+            df[2] = df[2].str[:13]
+            df = df.drop_duplicates(subset=[1, 2])
+            # res = pd.DataFrame(df).values.tolist()
+            # df = pd.DataFrame(res)
+            df.columns = res[0].keys()
+            j = df.to_json(orient='records')
+            return j
+
     def select_name_description(self, table, name):
         select_st = table.select().where(
             table.c.name == name)

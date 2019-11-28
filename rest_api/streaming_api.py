@@ -171,7 +171,7 @@ def get_name_photo():
 @app.route('/camera/name/info', methods=['GET'])
 @cross_origin()
 def get_name_info():
-    camera_url = flask.request.args.get('camera_url')
+    camera_url = flask.request.args.get('camera_name')
     name = flask.request.args.get('name')  # flask.request.values['name']
     # object_id = [0,1,2]#flask.request.args.get('object_id')
     sock = socket.socket()
@@ -272,10 +272,10 @@ def db_select():
     end_date = flask.request.args.get('end_date')
     name = flask.request.args.get('name')
     table = "event_logger"
-    db_name = "0"
+    db_name = "andrey_vitya_rec"
     connection = EventDBLogger(db_name)
     table = connection.create_table(table)
-    result = connection.select(table, start_date, end_date)
+    result = connection.select_group_by_hour(table, start_date, end_date)
     return Response(result, mimetype='application/json')
 
 

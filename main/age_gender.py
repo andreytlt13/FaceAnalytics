@@ -1,15 +1,16 @@
+import logging
 import os
+import sys
+
 import cv2
 import dlib
-import logging
-import sys
 import numpy as np
-from keras.models import Model
+from keras import backend as K
 from keras.layers import Input, Activation, add, Dense, Flatten, Dropout
 from keras.layers.convolutional import Conv2D, AveragePooling2D
 from keras.layers.normalization import BatchNormalization
+from keras.models import Model
 from keras.regularizers import l2
-from keras import backend as K
 
 sys.setrecursionlimit(2 ** 20)
 np.random.seed(2 ** 10)
@@ -169,6 +170,15 @@ class WideResNet:
         model.load_weights(os.path.join(directory, weightfile))
         return model
 
+
+def get_key(dict, val):
+    for key, value in dict.items():
+        for val_ in value:
+            if val == val_:
+                return key
+    return "key doesn't exist"
+
+
 def age_gender(img_size,img):
     model = WideResNet.age_gender_model_init("main/model/gender_age_emotion", "weights.28-3.73.hdf5")
     faces=WideResNet.readers(img,img_size)
@@ -177,7 +187,15 @@ def age_gender(img_size,img):
        predicted_genders = results[0]
        ages = np.arange(0, 101).reshape(101, 1)
        predicted_ages = results[1].dot(ages).flatten()
-       gender= "F" if predicted_genders[0][0]>0.5 else "M"
+       gender = "Female" if predicted_genders[0][0] > 0.5 else "Male"
        age=int(predicted_ages[0])
-       return gender,age
-
+       glosary = {
+           "0-10": list(range(0, 10)),
+           "10-15": list(range(10, 15)),
+           "15-25": list(range(15, 25)),
+           "25-44": list(range(25, 44)),
+           "44-60": list(range(44, 60)),
+           "60-90": list(range(60, 90))
+       }
+       age = get_key(glosary, age)
+       return gender, age

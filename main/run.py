@@ -35,12 +35,13 @@ args = vars(ap.parse_args())
 # args["source"] = "rtsp://admin:admin@10.101.1.221:554/ch01/0" #base stream 0
 args["source"] = "main/data/andrey_vitya.mp4"
 #args["source"] = "main/data/new_test_office.mp4"
+#args["source"] = "main/data/office_second_floor.mp4"
 # args["source"] = 0
 
 
 sock = socket.socket()
 sock.bind((args["server_ip"], args["port"]))
-sock.listen(5)
+sock.listen(10)
 sock.setblocking(0)
 save_object_frequency = 500  # frames
 
@@ -135,6 +136,7 @@ def load_object(filename):
 def main(args=None):
     global frame
     ip = args["server_ip"]
+
     try:
         if args["source"] == '0':
             camera_url = int(args["source"])
@@ -171,7 +173,7 @@ def main(args=None):
         fr_inxd = 0
         pk = 1
         ages_list = []
-        while True:                                              
+        while True:
             frame, _, _ = vs.process_next_frame()
             result = vs.age_gender_predict(ages_list)
             if  result != None:
@@ -192,9 +194,11 @@ def main(args=None):
             else:  # данные есть
                 pk += 1
                 print(pk)
-                client.setblocking(0)  # снимаем блокировку и тут тоже
+                #client.setblocking(0)  # снимаем блокировку и тут тоже
                 query = client.recv(4096)  #4096 1082  16384  159
                 query = pickle.loads(query)
+                print(query)
+                #client.setblocking(1)
                 print("Request type: " + query["type"])
                 if query["type"] == "get_objects":
                     message = {}
@@ -246,7 +250,7 @@ def main(args=None):
                         elif (len(vs.trackableObjects.keys()) - 1) == n:
                             message = {
                                 'camera_url': camera_url,
-                                'name': None,
+                                'name': query["name"],
                                 'description': None,
                                 'stars': None
                             }

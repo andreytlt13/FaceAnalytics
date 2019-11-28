@@ -219,7 +219,7 @@ class CentroidTracker:
             for (objectID, info) in self.objects.items():
                 if matrix.size == 0:
                     objectID_new = trackableObjects.__len__()
-                elif matrix[i, np.argmin(matrix[list(self.objects.keys()).index(objectID)])] < 16:
+                elif matrix[i, np.argmin(matrix[list(self.objects.keys()).index(objectID)])] < 26:
                     objectID_new = np.argmin(matrix[list(self.objects.keys()).index(objectID)])
                 else:
                     objectID_new = trackableObjects.__len__()
