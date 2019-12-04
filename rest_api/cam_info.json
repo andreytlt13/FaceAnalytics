@@ -3,12 +3,18 @@
         "camera_url": "rtsp://user:Hneu74k092@10.101.106.104:554/live/main",
         "status": "disabled",
         "url_stream": "http://10.101.1.23:9091/stream.mjpg",
-        "name": "fourth_floor"
+        "camera_name": "fourth_floor"
     },
     {
-        "camera_url": "main/data/andrey_vitya.mp4",
+        "camera_url": "rtsp://admin:admin@10.101.1.221:554/ch01/0",
         "status": "active",
-        "url_stream": "http://0.0.0.0:9091/stream.mjpg",
-        "name": "second_floor"
+        "url_stream": "http://10.101.2.64:9091/stream.mjpg",
+        "camera_name": "second_floor"
+    },
+    {
+        "camera_url": "rtsp://user:Hneu74k092@10.101.106.104:554/live/main",
+        "status": "disabled",
+        "url_stream": null,
+        "camera_name": "example"
     }
 ]

@@ -54,6 +54,7 @@ def get_camers_list():
 def add_camera():
 
     camera_url = flask.request.values['camera_url']
+    name = flask.request.values['name']
     status = "disabled"
     with open(cam_info_json, 'r') as f:
         data = json.load(f)
@@ -62,7 +63,7 @@ def add_camera():
         "camera_url": camera_url,
         "status": status,
         "url_stream": None,
-        "name": "4 floor"
+        "name": name
     }
 
     with open(cam_info_json, 'w') as f:
@@ -74,16 +75,16 @@ def add_camera():
     return jsonify(cam_info)
 
 
-@app.route('/camera/del', methods=['PUT'])
+@app.route('/camera/del', methods=['DELETE'])
 @cross_origin()
 def del_camera():
-    camera_url = flask.request.values['camera_url']
+    name = flask.request.values['camera_name']
 
     with open(cam_info_json, 'r') as f:
         data = json.load(f)
 
     for idx, val in enumerate(data):
-        if val['camera_url'] == camera_url:
+        if val['name'] == name:
             del data[idx]
 
     with open(cam_info_json, 'w') as f:
@@ -97,7 +98,7 @@ def del_camera():
 @app.route('/camera', methods=['PUT'])
 @cross_origin()
 def run_processing():
-    camera_url = flask.request.values['camera_url']
+    camera_name = flask.request.values['camera_name']
     print('[INFO] starting video stream...')
 
     # script = "{} -src {}".format('main/run.py',camera_url)
@@ -108,15 +109,15 @@ def run_processing():
         data = json.load(f)
 
     for idx, val in enumerate(data):
-        if val['camera_url'] == camera_url:
-            data[idx]['camera_url'] == 'active'
+        if val['camera_name'] == camera_name:
+            data[idx]['status'] == 'active'
 
     with open(cam_info_json, 'w') as f:
         if len(data) == 0:
             data = []
         json.dump(data, f, indent=4)
 
-    return Response({"starting":camera_url}, mimetype='application/json')
+    return Response({"starting": camera_name}, mimetype='application/json')
 
 
 @app.route('/camera/objects', methods=['GET'])
@@ -146,7 +147,7 @@ def get_objects():
 @app.route('/camera/object/photo', methods=['GET'])
 @cross_origin()
 def get_object_photo():
-    camera_name = 'andrey_vitya_mp4'  # flask.request.args.get('camera_name')
+    camera_name = 'second_floor'  # flask.request.args.get('camera_name')
     object_id = flask.request.args.get('object_id')
     img_path = os.path.join(db_objects, '{}/objects/id_{}/face/*'.format(camera_name, object_id))
     img_path = glob.glob(img_path)
