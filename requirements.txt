@@ -5,7 +5,7 @@ opencv_contrib_python==4.1.0.25
 scipy==1.1.0
 dlib==19.17.0
 Flask_Cors==3.0.7
-tensorflow==1.13.1
+tensorflow==2.3.1
 matplotlib==3.0.3
 pandas==0.24.2
 SQLAlchemy==1.2.10
