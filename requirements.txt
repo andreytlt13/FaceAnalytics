@@ -1,7 +1,7 @@
 Keras==2.2.4
 numpy==1.15.0
 imutils==0.5.0
-opencv_contrib_python==4.1.0.25
+opencv_contrib_python==4.1.1.26
 scipy==1.1.0
 dlib==19.17.0
 Flask_Cors==3.0.7
